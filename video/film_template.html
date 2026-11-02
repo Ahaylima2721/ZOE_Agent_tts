@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Evolução do portfólio e da Zoé</title>
+<script>
+/* câmera lenta para gravar sem perder quadros: tudo roda a __R da velocidade */
+window.__R = 0.4;
+(function (R) { const st = window.setTimeout, si = window.setInterval;
+  window.setTimeout = (f, ms, ...a) => st(f, (ms || 0) / R, ...a);
+  window.setInterval = (f, ms, ...a) => si(f, (ms || 0) / R, ...a); })(window.__R);
+</script>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;width:1920px;height:1080px;overflow:hidden}
+  #root{position:fixed;left:0;top:0;width:1280px;height:720px;transform:scale(1.5);transform-origin:0 0;overflow:hidden}
+  .zfx-layer .zfx:not(.zfx-anel):not(.zfx-flash):not(.zfx-carga){scale:2}
+  body{font-family:"Segoe UI",system-ui,-apple-system,sans-serif;color:#1A1726;
+       background:radial-gradient(900px 500px at 85% -10%,rgba(167,139,250,.28),transparent 60%),
+                  radial-gradient(700px 420px at -10% 110%,rgba(255,143,177,.16),transparent 60%),#F4F1EA}
+  body::before{content:"";position:fixed;inset:0;background-image:radial-gradient(rgba(26,23,38,.07) 1px,transparent 1.3px);background-size:22px 22px;pointer-events:none}
+
+/*ORB_CSS*/
+
+  /* olhos falando: guiados pelo volume real da voz */
+  .orb .orb-face i{scale:1 calc(1 - var(--fala,0) * .38);translate:0 calc(var(--fala,0) * -14%)}
+  .orb.narra::after{opacity:calc(.55 + var(--fala,0) * .45)}
+
+  .marca{position:fixed;left:56px;top:34px;font:600 13px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:#6D5E9C;display:flex;gap:10px;align-items:center;z-index:5}
+  .marca i{width:8px;height:8px;border-radius:50%;background:#8B5CF6;box-shadow:0 0 10px #A78BFA}
+
+  .cena{position:fixed;inset:0;opacity:0;transition:opacity .55s ease;pointer-events:none}
+  .cena.on{opacity:1}
+
+  /* ---- cenas do site ---- */
+  .lado{position:absolute;left:56px;top:110px;width:310px;display:grid;gap:14px}
+  .chip{justify-self:start;font:600 13px/1 ui-monospace,Menlo,monospace;color:#5B21B6;background:#EDE5FF;border:1px solid #D9C9FF;padding:7px 11px;border-radius:999px}
+  .lado h2{margin:0;font-size:40px;line-height:1.05;letter-spacing:-.02em;font-weight:750}
+  .lado p{margin:0;color:#5E5A72;font-size:15px}
+  .janela{position:absolute;left:400px;top:84px;width:824px;border-radius:14px;overflow:hidden;background:#fff;
+          box-shadow:0 30px 70px -30px rgba(40,10,90,.45),0 0 0 1px rgba(26,23,38,.08)}
+  .barra{height:30px;display:flex;align-items:center;gap:7px;padding:0 12px;background:#ECE9F2;border-bottom:1px solid #DDD8E8}
+  .barra i{width:10px;height:10px;border-radius:50%;background:#D3CEDF}
+  .barra span{margin-left:10px;flex:1;font:12px ui-monospace,Menlo,monospace;color:#7A7590;background:#fff;border-radius:6px;padding:3px 10px}
+  .tela{position:relative;width:824px;height:464px;overflow:hidden;background:#fff}
+  .tela img{display:block;width:824px;will-change:transform}
+  .tela iframe{width:1280px;height:720px;border:0;transform:scale(.64375);transform-origin:0 0;pointer-events:none}
+
+  .narrador{position:fixed;left:150px;top:420px;width:96px;height:96px;opacity:0;transition:opacity .5s;z-index:4}
+  .narrador.on{opacity:1}
+
+  /* ---- cenas da Zoé ---- */
+  .palco{position:absolute;left:0;right:0;top:120px;display:grid;justify-items:center;gap:22px}
+  #grande{width:250px;height:250px;cursor:default}
+  #grande .orb-face{gap:32px}
+  #grande .orb-face i{width:20px;height:auto;aspect-ratio:7/11;border-radius:999px;box-shadow:0 0 16px rgba(235,225,255,.95)}
+  #grande .orb-sparkle{top:13%;right:18%;width:9%;height:9%}
+  #grande::after{inset:-22%}
+  .zona{position:fixed;left:0;right:0;top:0;height:560px;display:grid;place-items:center;opacity:0;transition:opacity .55s}
+  .zona.on{opacity:1}
+  .tag{position:fixed;left:50%;top:84px;transform:translateX(-50%);font:600 13px/1 ui-monospace,Menlo,monospace;color:#5B21B6;background:#EDE5FF;border:1px solid #D9C9FF;padding:8px 13px;border-radius:999px;opacity:0;transition:opacity .4s;z-index:5}
+  .tag.on{opacity:1}
+  .titulo{position:fixed;left:0;right:0;top:470px;text-align:center;opacity:0;transition:opacity .6s}
+  .titulo.on{opacity:1}
+  .titulo h1{margin:0;font-size:44px;letter-spacing:-.025em;font-weight:780}
+  .titulo h1 em{font-style:normal;color:#7C3AED}
+
+  /* ---- linha do tempo ---- */
+  .tempo{position:fixed;left:56px;right:56px;top:590px;height:30px;opacity:0;transition:opacity .5s}
+  .tempo.on{opacity:1}
+  .tempo .trilho{position:absolute;left:0;right:0;top:9px;height:2px;background:#DDD6EA}
+  .tempo .feito{position:absolute;left:0;top:9px;height:2px;background:linear-gradient(90deg,#C9A7FF,#7C3AED);transition:width .8s cubic-bezier(.4,0,.2,1)}
+  .tempo .p{position:absolute;top:3px;transform:translateX(-50%);display:grid;justify-items:center;gap:6px}
+  .tempo .p b{width:14px;height:14px;border-radius:50%;background:#F4F1EA;border:2px solid #CFC6E2;transition:all .4s}
+  .tempo .p span{font:500 11px/1 ui-monospace,Menlo,monospace;color:#8B86A0;white-space:nowrap;transition:color .4s}
+  .tempo .p.ok b{background:#8B5CF6;border-color:#8B5CF6}
+  .tempo .p.agora b{background:#fff;border-color:#7C3AED;box-shadow:0 0 0 5px rgba(139,92,246,.2);transform:scale(1.25)}
+  .tempo .p.agora span{color:#5B21B6;font-weight:700}
+
+  /* ---- legenda ---- */
+  .legenda{position:fixed;left:50%;bottom:14px;transform:translateX(-50%);max-width:1080px;width:max-content;text-align:center;
+           font-size:18px;line-height:1.35;font-weight:520;color:#fff;background:rgba(26,23,38,.84);padding:8px 16px;border-radius:12px;
+           opacity:0;transition:opacity .25s;z-index:6}
+  .legenda.on{opacity:1}
+
+  /* ---- cartão final ---- */
+  .final{position:fixed;inset:0;display:grid;place-items:center;align-content:center;gap:14px;opacity:0;transition:opacity .8s;z-index:7;
+         background:radial-gradient(700px 400px at 50% 40%,rgba(167,139,250,.35),transparent 70%),#F4F1EA}
+  .final.on{opacity:1}
+  .final h1{margin:0;font-size:64px;letter-spacing:-.035em;font-weight:800}
+  .final p{margin:0;font:600 15px/1 ui-monospace,Menlo,monospace;color:#6D5E9C;letter-spacing:.06em;text-transform:uppercase}
+</style>
+</head>
+<body>
+<div id="root">
+  <div class="marca"><i></i>Ayalan Lima · portfólio &amp; Zoé</div>
+  <div id="cenas"></div>
+
+  <div class="zona" id="zona"><div class="orb narra" id="grande"><span class="orb-rings"><i></i><i></i><i></i></span><span class="orb-liquid"><i></i><i></i></span><span class="orb-face"><i></i><i></i></span><span class="orb-mouth"></span><span class="orb-sparkle"></span></div></div>
+  <div class="tag" id="tag"></div>
+  <div class="titulo" id="titulo"><h1>A evolução do portfólio <em>e da Zoé</em></h1></div>
+  <div class="narrador" id="narrador"><div class="orb narra" id="mini" style="width:96px;height:96px;cursor:default"><span class="orb-rings"><i></i><i></i><i></i></span><span class="orb-liquid"><i></i><i></i></span><span class="orb-face"><i></i><i></i></span><span class="orb-mouth"></span><span class="orb-sparkle"></span></div></div>
+
+  <div class="tempo" id="tempo"><div class="trilho"></div><div class="feito" id="feito"></div></div>
+  <div class="legenda" id="legenda"></div>
+  <div class="final" id="final"><div class="orb" style="width:120px;height:120px;cursor:default"><span class="orb-rings"><i></i><i></i><i></i></span><span class="orb-liquid"><i></i><i></i></span><span class="orb-face"><i></i><i></i></span><span class="orb-mouth"></span><span class="orb-sparkle"></span></div><h1>Ayalan Lima</h1><p>portfólio · Zoé, a assistente</p></div>
+</div>
+
+<script>
+/*ZOE_FX*/
+</script>
+<script>
+/*DADOS*/
+const $ = id => document.getElementById(id);
+const grande = $('grande'), mini = $('mini');
+
+/* monta as cenas do site */
+FILME.cenas.forEach((c, i) => {
+  if (c.tipo === 'zoe') return;
+  const el = document.createElement('div'); el.className = 'cena'; el.id = 'c' + i;
+  const tela = c.tipo === 'live'
+    ? `<iframe src="${c.src}" tabindex="-1"></iframe>`
+    : `<img src="${c.img}" alt="">`;
+  el.innerHTML = `<div class="lado"><span class="chip">${c.data} · fase ${c.fase + 1} de ${FILME.fases.length}</span><h2>${c.titulo}</h2></div>
+    <div class="janela"><div class="barra"><i></i><i></i><i></i><span>ayalan.dev / portfólio</span></div><div class="tela">${tela}</div></div>`;
+  $('cenas').appendChild(el); c.el = el;
+});
+
+/* linha do tempo */
+FILME.fases.forEach((f, i) => {
+  const p = document.createElement('div'); p.className = 'p'; p.style.left = (i / (FILME.fases.length - 1) * 100) + '%';
+  p.innerHTML = `<b></b><span>${f}</span>`; $('tempo').appendChild(p);
+});
+function fase(n) {
+  $('tempo').querySelectorAll('.p').forEach((p, i) => { p.classList.toggle('ok', i < n); p.classList.toggle('agora', i === n); });
+  $('feito').style.width = (n / (FILME.fases.length - 1) * 100) + '%';
+}
+
+const FX = { absorver: o => ZoeFx.absorver(o, { intervalo: 260, pensar: 2600 }), corada: o => ZoeFx.corada(o, 2000),
+  dancar: o => ZoeFx.dancar(o, 2200), confete: o => ZoeFx.confete(o), surpresa: o => ZoeFx.surpresa(o), ola: o => ZoeFx.ola(o, 'até já!') };
+
+let atual = -1, t0 = null, disparados = new Set(), finalizou = false;
+function entrar(i) {
+  const c = FILME.cenas[i];
+  FILME.cenas.forEach((x, j) => x.el && x.el.classList.toggle('on', j === i));
+  const ehZoe = c.tipo === 'zoe';
+  $('zona').classList.toggle('on', ehZoe);
+  $('narrador').classList.toggle('on', !ehZoe);
+  $('titulo').classList.toggle('on', c.id === 'abertura');
+  $('tag').textContent = c.tag || ''; $('tag').classList.toggle('on', !!c.tag);
+  $('tempo').classList.toggle('on', c.id !== 'abertura');
+  fase(c.fase !== undefined ? c.fase : FILME.fases.length - 1);
+  $('legenda').textContent = c.legenda;
+  const dur = (c.fim - c.ini + 0.6) * 1000;
+  if (c.tipo === 'site') {
+    const img = c.el.querySelector('img');
+    if (c.mov === 'pan') {
+      const h = img.naturalHeight * 824 / img.naturalWidth, alvo = Math.max(0, h - 464) * 0.55;
+      img.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(0)', offset: .12 }, { transform: `translateY(-${alvo}px)` }], { duration: dur, easing: 'ease-in-out', fill: 'forwards' });
+    } else {
+      /* leva o ponto (ox, oy) para o centro da janela, sem mostrar borda vazia */
+      const h = img.naturalHeight * 824 / img.naturalWidth, z = c.z;
+      const px = parseFloat(c.ox) / 100 * 824, py = parseFloat(c.oy) / 100 * h;
+      const tx = Math.min(0, Math.max(824 - 824 * z, 412 - px * z)), ty = Math.min(0, Math.max(464 - h * z, 232 - py * z));
+      img.style.transformOrigin = '0 0';
+      img.animate([{ transform: 'translate(0,0) scale(1)' }, { transform: 'translate(0,0) scale(1)', offset: .15 }, { transform: `translate(${tx}px,${ty}px) scale(${z})` }], { duration: dur, easing: 'cubic-bezier(.45,0,.25,1)', fill: 'forwards' });
+    }
+  }
+}
+
+function quadro(agora) {
+  if (t0 === null) { t0 = agora; window.__t0wall = Date.now(); }
+  const t = (agora - t0) / 1000 * window.__R;
+  /* cena atual */
+  let i = FILME.cenas.findIndex(c => t >= c.ini - 0.35 && t < c.fim + 0.25);
+  if (i !== -1 && i !== atual) { atual = i; entrar(i); }
+  const c = FILME.cenas[atual];
+  /* legenda só enquanto fala */
+  if (c) $('legenda').classList.toggle('on', t >= c.ini - 0.1 && t <= c.ini + c.fala + 0.25);
+  /* efeitos com hora marcada */
+  if (c && c.fx) c.fx.forEach(([dt, nome], k) => {
+    const chave = atual + ':' + k;
+    if (t >= c.ini + dt && !disparados.has(chave)) { disparados.add(chave); FX[nome](grande); }
+  });
+  if (c && c.tipo === 'live' && t >= c.ini + c.rolar && !disparados.has('rolar')) {
+    disparados.add('rolar'); window.__rolarDe = t;
+  }
+  /* portfólio real dentro da janela: mesma câmera lenta e rolagem guiada pelo relógio */
+  if (c && c.tipo === 'live') {
+    const fw = c.el.querySelector('iframe').contentWindow;
+    try {
+      if (!fw.__lento) { fw.__lento = true; const st = fw.setTimeout, R = window.__R; fw.setTimeout = (f, ms, ...a) => st(f, (ms || 0) / R, ...a); }
+      fw.document.getAnimations().forEach(a => { if (a.playbackRate !== window.__R) a.playbackRate = window.__R; });
+      if (window.__rolarDe !== undefined) { const k = Math.min(1, (t - window.__rolarDe) / 1.1); fw.scrollTo(0, 760 * (k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2)); }
+    } catch (e) {}
+  }
+  /* olhos no ritmo da voz */
+  const e = FILME.env[Math.min(FILME.env.length - 1, Math.floor(t * FILME.fps))] || 0;
+  grande.style.setProperty('--fala', e); mini.style.setProperty('--fala', e);
+  /* cartão final */
+  const fimCenas = FILME.cenas[FILME.cenas.length - 1].fim;
+  if (t > fimCenas + 0.2 && !finalizou) { finalizou = true; $('final').classList.add('on'); $('legenda').classList.remove('on'); }
+  if (t < FILME.total + 0.3) requestAnimationFrame(quadro); else window.__acabou = true;
+}
+window.iniciar = () => requestAnimationFrame(quadro);
+</script>
+</body>
+</html>
