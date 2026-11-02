@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zoe — Estados</title>
+<style>
+  :root{
+    --bg:#F6F4FB; --fg:#1E1B2E; --muted:#6B6785; --card:#FFFFFF; --line:#E4E0F0;
+    --face:#1E1B2E; --eye:#F4F1FF; --cheek:#FF8FB1; --aura:#7C6CFF;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){ --bg:#121019; --fg:#ECE9F7; --muted:#9A95B5; --card:#1B1826; --line:#2C2840; }
+  }
+  :root[data-theme="dark"]{ --bg:#121019; --fg:#ECE9F7; --muted:#9A95B5; --card:#1B1826; --line:#2C2840; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;
+       display:flex;flex-direction:column;align-items:center;padding:24px 16px;min-height:100vh}
+  h1{font-size:20px;margin:0 0 4px} p.sub{margin:0 0 20px;color:var(--muted);text-align:center}
+  .stage{position:relative;width:240px;height:240px;display:grid;place-items:center;cursor:pointer}
+  .aura{position:absolute;inset:10px;border-radius:50%;
+        background:radial-gradient(circle,var(--aura) 0%,transparent 70%);opacity:.55;
+        transition:background .24s cubic-bezier(.4,0,.2,1);animation:breathe 4s ease-in-out infinite}
+  .ring{position:absolute;inset:22px;border-radius:50%;border:3px solid transparent;border-top-color:var(--aura);opacity:0}
+  .head{position:relative;transition:transform .24s cubic-bezier(.4,0,.2,1)}
+  svg{display:block;overflow:visible}
+  .eye{fill:var(--eye);transition:all .24s cubic-bezier(.4,0,.2,1);transform-box:fill-box;transform-origin:center}
+  .eyes{transition:transform .6s cubic-bezier(.4,0,.2,1)}
+  .mouth{fill:none;stroke:var(--eye);stroke-width:5;stroke-linecap:round;transition:d .3s cubic-bezier(.34,1.56,.64,1)}
+  .mouth.fill{fill:var(--eye)}
+  .cheek{fill:var(--cheek);opacity:0;transition:opacity .3s}
+  .dots{position:absolute;bottom:-6px;right:-10px;background:var(--card);border:1px solid var(--line);border-radius:16px;
+        padding:8px 12px;display:flex;gap:5px;opacity:0;transform:translateY(8px);transition:all .24s}
+  .dots i{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:dot 1.2s infinite}
+  .dots i:nth-child(2){animation-delay:.16s}.dots i:nth-child(3){animation-delay:.32s}
+  .zzz{position:absolute;top:10px;right:20px;font-weight:700;color:var(--muted);opacity:0}
+  .bubble{min-height:48px;margin:18px 0 10px;max-width:420px;text-align:center;background:var(--card);border:1px solid var(--line);
+          border-radius:16px;padding:12px 16px;opacity:0;transform:translateY(8px);transition:all .24s}
+  .bubble.on{opacity:1;transform:none}
+  .status{font-size:13px;color:var(--muted);margin-bottom:14px}
+  .btns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:560px}
+  button{font:inherit;font-size:14px;border:1px solid var(--line);background:var(--card);color:var(--fg);
+         padding:7px 12px;border-radius:999px;cursor:pointer}
+  button:hover{border-color:var(--aura)} button.primary{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+  label{font-size:13px;color:var(--muted);margin-top:14px;display:flex;gap:6px;align-items:center}
+
+  /* ----- estados ----- */
+  .s-ouvindo .aura{animation:pulse .5s ease-in-out infinite alternate}
+  .s-ouvindo .head{transform:rotate(-4deg) scale(1.03)}
+  .s-pensando .ring{opacity:.9;animation:spin 1.4s linear infinite}
+  .s-pensando .eyes{animation:look 1.6s ease-in-out infinite}
+  .s-pensando .dots{opacity:1;transform:none}
+  .s-falando .aura{animation:pulse .28s ease-in-out infinite alternate}
+  .s-falando .head{animation:nod .5s ease-in-out infinite}
+  .s-feliz .head{animation:hop .7s cubic-bezier(.34,1.56,.64,1) 2}
+  .s-feliz .cheek,.s-riso .cheek{opacity:.8}
+  .s-riso .head{animation:hop .45s cubic-bezier(.34,1.56,.64,1) 3}
+  .s-empatica .head{transform:rotate(8deg)} .s-empatica .aura{animation-duration:6.6s}
+  .s-surpresa .head{animation:recoil .5s ease}
+  .s-confusa .head{transform:rotate(10deg)}
+  .s-erro .head{animation:shake .4s ease 2}
+  .s-dormindo .aura{opacity:.25;animation-duration:8s}
+  .s-dormindo .zzz{animation:zzz 2.4s ease-in infinite}
+
+  @keyframes breathe{0%,100%{transform:scale(.94)}50%{transform:scale(1.04)}}
+  @keyframes pulse{from{transform:scale(.95);opacity:.45}to{transform:scale(1.08);opacity:.8}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes look{0%,100%{transform:translate(4px,-4px)}50%{transform:translate(-4px,-4px)}}
+  @keyframes dot{0%,60%,100%{transform:none}30%{transform:translateY(-4px)}}
+  @keyframes nod{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.5px)}}
+  @keyframes hop{0%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
+  @keyframes recoil{30%{transform:translateY(2px) scale(1.04)}}
+  @keyframes shake{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+  @keyframes zzz{0%{opacity:0;transform:translate(0,10px)}30%{opacity:1}100%{opacity:0;transform:translate(14px,-24px)}}
+  @media (prefers-reduced-motion: reduce){ *{animation:none!important} .head{transform:none!important} }
+</style>
+</head>
+<body>
+  <h1>Zoe</h1>
+  <p class="sub">Demo dos estados descritos em <code>zoe.design</code>. Clique no rosto para rever a apresentação.</p>
+
+  <div class="stage s-idle" id="stage" title="Rever apresentação">
+    <div class="aura"></div><div class="ring"></div>
+    <div class="head">
+      <svg width="150" height="150" viewBox="0 0 150 150" aria-hidden="true">
+        <circle cx="75" cy="75" r="70" fill="var(--face)"/>
+        <ellipse class="cheek" cx="38" cy="92" rx="10" ry="6"/>
+        <ellipse class="cheek" cx="112" cy="92" rx="10" ry="6"/>
+        <g class="eyes" id="eyes">
+          <rect class="eye" id="eyeL" x="47" y="49" width="12" height="22" rx="6"/>
+          <rect class="eye" id="eyeR" x="91" y="49" width="12" height="22" rx="6"/>
+          <path class="mouth" id="happyL" d="" style="stroke-width:4"/>
+          <path class="mouth" id="happyR" d="" style="stroke-width:4"/>
+        </g>
+        <path class="mouth" id="mouth" d="M58 98 Q75 104 92 98"/>
+      </svg>
+    </div>
+    <div class="dots"><i></i><i></i><i></i></div>
+    <div class="zzz">z<small>z</small></div>
+  </div>
+
+  <div class="bubble" id="bubble" aria-live="polite"></div>
+  <div class="status" id="status" aria-live="polite">Estado: idle</div>
+
+  <div class="btns" id="btns"></div>
+  <label><input type="checkbox" id="voice"> Falar com voz do navegador (pt-BR)</label>
+
+<script>
+const $ = id => document.getElementById(id);
+const stage=$('stage'), eyeL=$('eyeL'), eyeR=$('eyeR'), mouth=$('mouth'), eyes=$('eyes');
+const happyL=$('happyL'), happyR=$('happyR'), bubble=$('bubble'), status=$('status');
+
+const AURA = {idle:'#7C6CFF',ouvindo:'#3DD6C4',pensando:'#B18CFF',falando:'#7C6CFF',feliz:'#FFC857',
+  riso:'#FFC857',travesso:'#7C6CFF',empatica:'#FF8FB1',surpresa:'#7C6CFF',confusa:'#B18CFF',erro:'#FF6B6B',dormindo:'#4A4566'};
+
+/* Bocas (seção 6 · sorrisos) */
+const MOUTH = {
+  neutra:          {d:'M60 100 L90 100'},
+  sorriso_leve:    {d:'M58 98 Q75 106 92 98'},
+  sorriso_aberto:  {d:'M54 94 Q75 124 96 94 Z', fill:true},
+  sorriso_travesso:{d:'M58 101 Q78 106 94 94'},
+  sorriso_empatico:{d:'M62 99 Q75 104 88 99'},
+  hmm:             {d:'M70 101 L88 99'},
+  o:               {d:'M75 92 a8 9 0 1 0 0.1 0 Z', fill:true},
+  ondulada:        {d:'M58 101 q6 -5 11 0 t11 0 t11 0'},
+  baixo:           {d:'M60 103 Q75 97 90 103'},
+};
+/* Olhos (seção 3) */
+const EYE = { aberto:22, semicerrado:10, fechado:2, arregalado:28 };
+
+const STATES = {
+  idle:      {eyes:['aberto','aberto'], mouth:'sorriso_leve'},
+  ouvindo:   {eyes:['aberto','aberto'], mouth:'neutra'},
+  pensando:  {eyes:['aberto','aberto'], mouth:'hmm', say:['Hmm, deixa eu ver…','Só um segundinho…','Tô conferindo aqui…','Boa pergunta, peraí…']},
+  falando:   {eyes:['aberto','aberto'], mouth:'sorriso_leve', say:['Seu lembrete tá marcado pra amanhã às nove.']},
+  feliz:     {eyes:['feliz','feliz'], mouth:'sorriso_aberto', say:['Pronto!','Feito!','Prontinho, tá aqui.'], back:1400, rate:1.06, pitch:1.1},
+  riso:      {eyes:['feliz','feliz'], mouth:'sorriso_aberto', say:['Haha, essa foi boa!'], back:1600, rate:1.04, pitch:1.15},
+  travesso:  {eyes:['aberto','wink'], mouth:'sorriso_travesso', say:['Tenho uma ideia…'], rate:1.04, pitch:1.15},
+  empatica:  {eyes:['lua','lua'], mouth:'sorriso_empatico', say:['Poxa, entendo. Vamos resolver juntas.'], rate:.92, pitch:.92},
+  surpresa:  {eyes:['arregalado','arregalado'], mouth:'o', say:['Sério?!'], back:900},
+  confusa:   {eyes:['aberto','semicerrado'], mouth:'ondulada', say:['Não peguei direito, pode repetir?']},
+  erro:      {eyes:['semicerrado','semicerrado'], mouth:'baixo', say:['Ops, algo deu errado do meu lado. Tenta de novo?'], rate:.97, pitch:.95},
+  dormindo:  {eyes:['fechado','fechado'], mouth:'neutra'},
+};
+
+let current='idle', backTimer=null, talkTimer=null, lastSay={};
+
+function setMouth(name){
+  const m=MOUTH[name]; mouth.setAttribute('d',m.d); mouth.classList.toggle('fill',!!m.fill);
+}
+function setEye(el, arc, kind){
+  const cx = el===eyeL?53:97;
+  if(kind==='feliz'||kind==='lua'||kind==='wink'){
+    el.style.opacity=0;
+    arc.setAttribute('d', kind==='feliz' ? `M${cx-8} 64 Q${cx} 52 ${cx+8} 64` : `M${cx-8} 58 Q${cx} 68 ${cx+8} 58`);
+    arc.style.opacity=1;
+  } else {
+    el.style.opacity=1; arc.style.opacity=0;
+    const h=EYE[kind]; el.setAttribute('height',h); el.setAttribute('y',60-h/2);
+    el.setAttribute('width', kind==='arregalado'?14:12); el.setAttribute('x', cx-(kind==='arregalado'?7:6));
+  }
+}
+function pick(state){
+  const list=STATES[state].say; if(!list) return null;
+  let s; do{ s=list[Math.floor(Math.random()*list.length)] }while(list.length>1 && s===lastSay[state]);
+  return lastSay[state]=s;
+}
+
+function setState(state, opts={}){
+  clearTimeout(backTimer); stopTalk();
+  const st=STATES[state]; current=state;
+  stage.className='stage s-'+state;
+  document.documentElement.style.setProperty('--aura',AURA[state]);
+  setEye(eyeL,happyL,st.eyes[0]); setEye(eyeR,happyR,st.eyes[1]);
+  setMouth(st.mouth);
+  status.textContent='Estado: '+state;
+  if(state!=='dormindo') blink();           // regra: toda transição dispara 1 piscar
+  const text = opts.text ?? pick(state);
+  if(text) speak(text, st, state);
+  else bubble.classList.remove('on');
+  if(st.back) backTimer=setTimeout(()=>setState('idle',{text:''}), st.back);
+}
+
+/* ---------- fala: legenda + visemas simulados por amplitude ---------- */
+function speak(text, st, state){
+  bubble.textContent=''; bubble.classList.add('on');
+  const words=text.split(' '); let i=0;
+  const animateMouth = state==='falando' || state==='pensando';
+  const tick=()=>{
+    if(i<words.length){ bubble.textContent=words.slice(0,++i).join(' ');
+      if(animateMouth){ const a=Math.random(); mouth.classList.add('fill');
+        mouth.setAttribute('d',`M60 98 Q75 ${98+8+a*14} 90 98 Q75 ${98+2} 60 98 Z`); }
+      talkTimer=setTimeout(tick, 230/(st.rate||1));
+    } else if(animateMouth){ setMouth(state==='falando'?'sorriso_leve':st.mouth);
+      if(state==='falando') backTimer=setTimeout(()=>setState('idle',{text:''}),600); }
+  };
+  tick();
+  if($('voice').checked && 'speechSynthesis' in window){
+    speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text);
+    u.lang='pt-BR'; u.rate=st.rate||1; u.pitch=st.pitch||1; speechSynthesis.speak(u);
+  }
+}
+function stopTalk(){ clearTimeout(talkTimer); if('speechSynthesis' in window) speechSynthesis.cancel(); }
+
+/* ---------- piscar (seção 4) ---------- */
+function blink(double){
+  [eyeL,eyeR].forEach(e=>{ if(e.style.opacity==='0') return;
+    const h=e.getAttribute('height'), y=e.getAttribute('y');
+    e.dataset.h=h; e.dataset.y=y; e.setAttribute('height',2); e.setAttribute('y',59);
+    setTimeout(()=>{ e.setAttribute('height',e.dataset.h); e.setAttribute('y',e.dataset.y); }, current==='pensando'?180:120);
+  });
+  if(double) setTimeout(()=>blink(false), 210);
+}
+(function blinkLoop(){
+  const range = current==='ouvindo'?[3500,7000]:current==='pensando'?[4000,8000]:[2200,6000];
+  setTimeout(()=>{ if(current!=='dormindo') blink(Math.random()<.15); blinkLoop(); },
+    range[0]+Math.random()*(range[1]-range[0]));
+})();
+
+/* ---------- microgestos ociosos ---------- */
+setInterval(()=>{
+  if(current!=='idle') return;
+  const r=Math.random();
+  if(r<.5){ eyes.style.transform=`translateX(${Math.random()<.5?-4:4}px)`; setTimeout(()=>eyes.style.transform='',900); }
+  else if(r<.8){ const h=stage.querySelector('.head'); h.style.transform='rotate(6deg)'; setTimeout(()=>h.style.transform='',900); }
+  else { setMouth('sorriso_aberto'); setTimeout(()=>current==='idle'&&setMouth('sorriso_leve'),900); }
+}, 8000);
+
+/* ---------- apresentação (seção 9) ---------- */
+let introTimers=[];
+function intro(){
+  introTimers.forEach(clearTimeout); introTimers=[];
+  const at=(t,f)=>introTimers.push(setTimeout(f,t));
+  setState('dormindo'); bubble.classList.remove('on');
+  at(600,  ()=>{ setState('idle',{text:''}); blink(true); });
+  at(1200, ()=>eyes.style.transform='translateX(-4px)');
+  at(1600, ()=>eyes.style.transform='translateX(4px)');
+  at(2000, ()=>eyes.style.transform='');
+  at(2200, ()=>setState('feliz',{text:'Oi! Eu sou a Zoe.'}));
+  at(4000, ()=>setState('pensando',{text:''}));
+  at(4600, ()=>setState('falando',{text:'Em que posso te ajudar hoje?'}));
+}
+stage.addEventListener('click', intro);
+
+/* ---------- botões ---------- */
+const btns=$('btns');
+const play=document.createElement('button'); play.textContent='▶ Apresentação'; play.className='primary'; play.onclick=intro; btns.append(play);
+Object.keys(STATES).forEach(s=>{ const b=document.createElement('button'); b.textContent=s;
+  b.onclick=()=>{ introTimers.forEach(clearTimeout); setState(s); }; btns.append(b); });
+
+intro();
+</script>
+</body>
+</html>
