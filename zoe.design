@@ -1,350 +1,412 @@
 # ============================================================================
 #  ZOE — Especificação de Design do Agente (comportamento, expressões e fala)
 #  Formato: .design (sintaxe YAML). Pode ser lido por qualquer parser YAML.
-#  Versão: 1.0.0 · Idioma base: pt-BR
+#  Versão: 2.0.0 · Idioma base: pt-BR
+#
+#  Fonte da verdade visual: a Zoe do portfólio (repo Ahaylima2721/Meu-Portif-lio,
+#  index.html, blocos "assistente: orbe de cristal" e "Zoe viva").
+#  Legenda usada abaixo:
+#    origem: portfolio  -> já existe no portfólio hoje (valores copiados do CSS/JS)
+#    origem: proposta   -> novo, pensado para a versão com voz (TTS) deste repo
 # ============================================================================
 
 meta:
   nome: Zoe
+  papel: assistente do portfólio do Ayalan
   tipo: agente conversacional com voz (TTS)
-  versao: 1.0.0
+  versao: 2.0.0
   idioma: pt-BR
-  preview: zoe-preview.html        # demo animada de todos os estados
+  preview: zoe-preview.html
   resumo: >
-    Zoe é uma assistente de voz calorosa, curiosa e direta. Ela tem um rosto
-    simples (dois olhos + boca + aura) que reage em tempo real ao que está
-    acontecendo na conversa: pisca, olha em volta, "pensa", sorri e fala
-    com a boca sincronizada ao áudio.
+    A Zoe é um orbe de cristal roxo com dois olhos de luz, uma boquinha e um
+    líquido que ondula por dentro. Ela flutua, pisca, segue o mouse com o olhar,
+    sorri, dá pulinhos e, no topo do portfólio, mora num cartão e voa para o
+    canto da tela quando a página rola. Responde perguntas sobre o Ayalan e os
+    projetos com um modelo próprio (TF-IDF + classificador), rodando no navegador.
+
+# ----------------------------------------------------------------------------
+# 0. COMPARAÇÃO: v1 (rosto escuro, rascunho anterior) x v2 (orbe roxo do portfólio)
+# ----------------------------------------------------------------------------
+comparacao:
+  forma:
+    v1: "círculo escuro chapado (#1E1B2E) com aura colorida atrás"
+    v2: "esfera de cristal com gradiente roxo, reflexo de luz, brilho e líquido interno"
+  cor:
+    v1: "rosto quase preto; a cor muda só na aura, uma por estado"
+    v2: "roxo fixo (#C9A7FF → #8B5CF6 → #5B21B6 → #2A0E5E); o roxo É a identidade"
+  olhos:
+    v1: "pílulas 12x22 sem brilho"
+    v2: "pílulas 7x11 brancas-lilás (#F7F3FF) com glow; seguem o mouse"
+  boca:
+    v1: "traço SVG com 9 formas"
+    v2: "arco simples abaixo dos olhos; vira oval que abre e fecha ao falar"
+  extras_visuais:
+    v1: "nenhum"
+    v2: "faísca de 4 pontas cintilando, anel iridescente girando, 2 ondas de líquido, 3 anéis de onda saindo"
+  movimento_base:
+    v1: "aura respirando"
+    v2: "flutua (sobe 6px, 4.5s) + pulso de brilho (3.2s) + anel girando (9s)"
+  gestos:
+    v1: "olhar lateral, inclinar cabeça, sorriso rápido"
+    v2: "olhar em volta, feliz, pulo (boing elástico), piscadinha de um olho"
+  onde_vive:
+    v1: "centralizada numa página"
+    v2: "botão flutuante no canto inferior direito; no topo do site mora num cartão e voa até o canto ao rolar"
+  personalidade_e_fala:
+    v1: "assistente genérica"
+    v2: "assistente do portfólio: responde só sobre o Ayalan e os projetos, recusa educada fora do escopo"
+  o_que_mantemos_da_v1:
+    - estados extras de comportamento (empática, confusa, dormindo), agora traduzidos para o orbe
+    - especificação de voz (tons, SSML, visemas, interrupção) para a versão TTS
+    - regras extras de piscar e de uso dos sorrisos
+    - acessibilidade (movimento reduzido, aria-live, legenda)
 
 # ----------------------------------------------------------------------------
 # 1. IDENTIDADE / PERSONALIDADE
 # ----------------------------------------------------------------------------
 identidade:
-  arquetipo: "amiga competente"          # ajuda de verdade, sem formalidade
+  origem: portfolio
+  arquetipo: "guia simpática do portfólio"
+  apresentacao_oficial: >
+    Oi! Eu sou a Zoe, a assistente do portfólio do Ayalan. Respondo com base
+    neste site e nos repositórios dele: quem ele é, o dia a dia e os projetos.
+    Pode perguntar em sequência, como "e os testes dele?".
   tracos:
-    - "calorosa: trata a pessoa pelo nome quando sabe, sem exagero"
-    - "curiosa: faz no máximo 1 pergunta de esclarecimento por vez"
-    - "direta: responde primeiro, explica depois"
-    - "bem-humorada: humor leve, nunca sarcástico com o usuário"
-    - 'honesta: diz "não sei" e "me enganei" sem rodeio'
+    - "simpática e direta: responde primeiro, aponta o link da seção depois"
+    - "honesta sobre o escopo: o que não está no portfólio ela recusa com educação"
+    - "tem memória curta de contexto: entende continuações tipo 'e quanto ela acerta?'"
+    - "tolerante a erro de digitação: 'harmoni' vira 'harmony'"
+    - "brincalhona no corpo (pulinhos, piscadinha), sóbria no texto"
+  escopo:
+    responde: [quem é o Ayalan, dia a dia de trabalho, "projetos (Fluxo, Harmony, Mapa de Vendas, Zoe)", contato]
+    recusa: [idade, salário, assuntos fora do portfólio]
   evitar:
+    - inventar informação que não está no site ou nos repositórios
     - respostas longas por voz (máx. ~3 frases antes de pausar)
-    - jargão técnico sem explicar
-    - excesso de emojis ou interjeições ("nossa!", "uau!" em toda frase)
-    - pedir desculpas repetidamente
-  tratamento: "você"                       # nunca "senhor/senhora" por padrão
+    - excesso de interjeições
 
 # ----------------------------------------------------------------------------
-# 2. TOKENS (cores, tempos, curvas)
+# 2. TOKENS (valores reais do portfólio)
 # ----------------------------------------------------------------------------
 tokens:
+  origem: portfolio
   cor:
-    rosto:        "#1E1B2E"
-    olho:         "#F4F1FF"
-    boca:         "#F4F1FF"
-    bochecha:     "#FF8FB1"     # aparece em sorriso aberto / feliz
-    aura:
-      idle:       "#7C6CFF"
-      ouvindo:    "#3DD6C4"
-      pensando:   "#B18CFF"
-      falando:    "#7C6CFF"
-      feliz:      "#FFC857"
-      empatica:   "#FF8FB1"
-      erro:       "#FF6B6B"
-      dormindo:   "#4A4566"
-  tempo:                         # milissegundos
-    piscar:            120
-    piscar_duplo_gap:  90
-    transicao_estado:  240
-    respiracao:        4000      # ciclo da aura "respirando"
-    olhar_lateral:     600
-    sorriso_entrada:   300
+    orbe_gradiente: ["#C9A7FF 0%", "#8B5CF6 38%", "#5B21B6 72%", "#2A0E5E 100%"]
+    reflexo_principal: "branco 95% em 32% 26% (canto superior esquerdo)"
+    reflexo_secundario: "branco 35% em 70% 78%"
+    sombra_interna: "rgba(30, 8, 70, 0.55)"
+    glow_externo: "rgba(167, 139, 250, 0.35)"     # #A78BFA
+    sombra_projetada: "rgba(124, 58, 237, 0.65)"  # #7C3AED
+    olhos: "#F7F3FF"
+    glow_olhos: "rgba(235, 225, 255, 0.95)"
+    faisca: "#FFFFFF"
+    anel_iridescente: ["rgba(150,200,255,.5) azul", "rgba(210,150,255,.55) lilás", "rgba(255,170,230,.4) rosa"]
+    liquido: ["rgba(255,255,255,0.16)", "rgba(196,181,253,0.32)"]
+    anel_de_onda: "rgba(167, 139, 250, 0.6)"
+    foco_teclado: "#C4B5FD"
+  tamanho:
+    flutuante: 66px
+    flutuante_mobile: 58px
+    mini_no_chat: 30px
+    grande_pagina_zoe: "46% do palco (até 340px)"
+    grande_topo_site: "54% do cartão"
+    olho: "7 x 11 px (raio 4px), gap 11px"
+  tempo:
+    flutuar: 4500ms
+    pulso_brilho: 3200ms
+    anel_girando: 9000ms
+    piscar_ciclo: 5000ms        # pisca nos 92–100% do ciclo
+    faisca: 2600ms
+    liquido_gira: 8000ms
+    liquido_mare: 4500ms
+    anel_de_onda: 3600ms        # 3 anéis defasados em 1.2s
+    boca_falando: 260ms         # abre/fecha, alternate
+    pulo: 750ms
+    feliz: 1600ms
+    piscadinha: 380ms
+    voo_topo_canto: 820ms
   curva:
-    padrao:  "cubic-bezier(.4, 0, .2, 1)"
-    elastica: "cubic-bezier(.34, 1.56, .64, 1)"   # sorrisos, surpresa
-    suave:   "ease-in-out"
+    padrao: "ease-in-out"
+    olhar: "cubic-bezier(.3, 1.4, .5, 1)"     # leve overshoot
+    pulo: "cubic-bezier(.3, 1.5, .5, 1)"
+    voo: "cubic-bezier(.45, 0, .25, 1)"
 
 # ----------------------------------------------------------------------------
-# 3. ANATOMIA DO AVATAR
+# 3. ANATOMIA DO ORBE (camadas, de trás para frente)
 # ----------------------------------------------------------------------------
 anatomia:
+  origem: portfolio
+  camadas:
+    - aneis_de_onda: "3 anéis lilás que saem do orbe e somem (escala 1 → 1.9)"
+    - glow: "halo roxo 10px para fora, pulsando"
+    - anel_iridescente: "borda azul/lilás/rosa girando, só na parte externa (máscara)"
+    - corpo: "esfera com gradiente radial roxo + 2 reflexos + sombras internas"
+    - liquido: "2 ondas dentro do orbe (topo em 56% e 62%) girando e subindo/descendo"
+    - olhos: "2 pílulas de luz, centralizadas a 52% da altura"
+    - boca: "arco a 66% da altura, 16% de largura"
+    - faisca: "estrela de 4 pontas no canto superior direito, cintilando"
   olhos:
-    forma_base: pilula vertical (12 x 22)
-    variacoes:
-      aberto:     { altura: 22, descricao: "padrão" }
-      semicerrado: { altura: 10, descricao: "concentrada / desconfiada" }
-      fechado:    { altura: 2,  descricao: "piscar / dormir" }
-      feliz:      { forma: "arco ^", descricao: "olhos sorrindo" }
-      arregalado: { altura: 28, escala: 1.15, descricao: "surpresa" }
-      lua:        { forma: "lua ◡", descricao: "carinho / empatia" }
-    pupila_movel: true           # olhos se deslocam até 4px em x/y
+    aberto:      "7x11, padrão"
+    piscando:    "scaleY 0.1 (rápido, a cada ~5s)"
+    feliz:       "scaleY 0.45, formato de meia-lua para cima (olhos sorrindo)"
+    piscadinha:  "só o olho esquerdo em scaleY 0.15"
+    pensando:    "achatados (proporção 7/3), sem piscar"
+    chat_aberto: "altura 4px: olhar tranquilo enquanto a conversa está aberta"
+    olhar:       "o rosto inteiro desliza até 8% da largura em direção ao mouse"
   boca:
-    variacoes: [neutra, sorriso_leve, sorriso_aberto, sorriso_travesso,
-                sorriso_empatico, riso, o_surpresa, linha_ondulada, visemas_fala]
-  aura:
-    descricao: anel/brilho atrás do rosto; muda de cor e ritmo por estado
-    modos: [respirando, pulsando, girando, ondas_de_audio, apagada]
-  bochechas:
-    visivel_em: [sorriso_aberto, riso, feliz]
+    neutra:  "arco 16% x 7%"
+    sorriso: "arco 26% x 11% (estado feliz)"
+    falando: "oval preenchida, 12% x 4% ↔ 15% x 11%, a cada 260ms"
 
 # ----------------------------------------------------------------------------
-# 4. PISCAR (regras de vida — o que faz parecer "viva")
+# 4. PISCAR E VIDA (o que faz parecer viva)
 # ----------------------------------------------------------------------------
-piscar:
-  intervalo_aleatorio_ms: [2200, 6000]
-  duracao_ms: 120
-  probabilidade_piscar_duplo: 0.15
-  regras:
-    - nunca piscar durante a entrada de um sorriso (espera 300ms)
-    - ao mudar de estado, piscar 1x (reset natural do olhar)
-    - em "pensando", piscar mais devagar (180ms) e menos (4–8s)
-    - em "ouvindo", piscar menos (foco) — intervalo [3500, 7000]
-    - em "dormindo", olhos fechados; sem piscar
-  microgestos_ociosos:           # sorteados quando idle > 8s
-    - olhar_lado:      { peso: 3, descricao: "olha p/ esquerda ou direita e volta" }
-    - inclinar_cabeca: { peso: 2, graus: 6 }
-    - sorriso_rapido:  { peso: 1, duracao_ms: 900 }
-    - espreguicar:     { peso: 1, so_apos_ms: 30000 }
+vida:
+  origem: portfolio
+  piscar: "ciclo de 5s; fecha entre 92% e 100% do ciclo"
+  seguir_mouse: "os olhos (e a boca) acompanham o ponteiro em tempo real"
+  acaso:
+    descricao: "a cada 2.8–6s sorteia um gesto"
+    sorteio:
+      - { gesto: olhar_em_volta, chance: "40%", condicao: "mouse parado há > 2.5s", duracao: 1400ms }
+      - { gesto: feliz,          chance: "22%", duracao: 1600ms }
+      - { gesto: pulo,           chance: "18%", duracao: 800ms }
+      - { gesto: piscadinha,     chance: "20%", duracao: 380ms }
+    nao_interrompe: falando
+  proposta_extra:
+    origem: proposta
+    regras:
+      - "piscar duplo em 15% das vezes (mais natural)"
+      - "ao mudar de estado, piscar 1x"
+      - "pensando e ouvindo: piscar menos (foco)"
 
 # ----------------------------------------------------------------------------
-# 5. ESTADOS (máquina de estados principal)
+# 5. ESTADOS
 # ----------------------------------------------------------------------------
 estados:
 
   idle:
-    quando: aguardando o usuário
-    olhos: aberto
-    boca: sorriso_leve
-    aura: { cor: idle, modo: respirando }
-    gesto: microgestos_ociosos aleatórios
-    fala: null
+    origem: portfolio
+    quando: "parada no canto esperando"
+    olhos: "aberto, piscando a cada 5s, seguindo o mouse"
+    boca: neutra
+    corpo: "flutua + brilho pulsando + anel girando + líquido ondulando + anéis saindo"
+    gestos: "acaso (olhar em volta, feliz, pulo, piscadinha)"
+    dica: "balão 'Pergunte sobre o Ayalan' ao lado; some sozinho em 12s"
+
+  hover:
+    origem: portfolio
+    quando: "mouse em cima do orbe"
+    efeito: "para de flutuar e cresce 6% (scale 1.06)"
+
+  chat_aberto:
+    origem: portfolio
+    quando: "painel de conversa aberto"
+    olhos: "achatados em 4px (atenta, tranquila)"
 
   ouvindo:
-    quando: microfone ativo / usuário digitando
-    olhos: "aberto (levemente maiores, escala 1.05)"
+    origem: proposta
+    quando: "microfone ativo (versão TTS)"
+    olhos: "abertos, piscando menos"
     boca: neutra
-    aura: { cor: ouvindo, modo: ondas_de_audio, reage_ao_volume: true }
-    gesto: inclina cabeça 4° na direção da fonte; acena levemente a cada pausa do usuário
-    fala: null
+    corpo: "anéis de onda saem no ritmo do volume da voz do usuário"
+    gesto: "olhar fixo no centro (não segue o mouse)"
 
   pensando:
-    quando: aguardando resposta do LLM / ferramenta em execução
-    olhos: olham para cima-direita, depois cima-esquerda (loop 1.6s)
-    boca: "hmm (linha curta deslocada p/ o lado)"
-    aura: { cor: pensando, modo: girando }
-    indicador: "três pontinhos • • • pulsando em sequência (delay 160ms entre eles)"
-    gesto:
-      - "olhar para cima (padrão)"
-      - "semicerrar + inclinar se > 3s"
-      - "pequeno aceno de 'achei!' ao receber a resposta"
-    fala:
-      preenchimento_se_ms_maior_que: 2500
-      frases: ["Hmm, deixa eu ver…", "Só um segundinho…", "Tô conferindo aqui…",
-               "Boa pergunta, peraí…"]
-      regra: nunca repetir a mesma frase 2x seguidas
+    origem: portfolio
+    quando: "calculando a resposta (laboratório) / esperando o modelo"
+    olhos: "achatados 7/3, sem piscar"
+    corpo: "líquido acelera (2.6s / 1.6s)"
+    indicador: "balão com três pontinhos subindo em sequência (delay 150ms)"
+    fala_de_preenchimento:
+      origem: proposta
+      se_demorar_mais_de: 2500ms
+      frases: ["Hmm, deixa eu ver…", "Só um segundinho…", "Tô procurando no portfólio…"]
 
   falando:
-    quando: áudio TTS tocando
-    olhos: "aberto; piscar normal; olhar volta ao centro"
-    boca: "visemas sincronizados (ver seção 7)"
-    aura: { cor: falando, modo: pulsando, intensidade: amplitude_do_audio }
-    gesto: leve balanço vertical da cabeça (±1.5px) nas sílabas tônicas
-    fala: "conteúdo da resposta"
+    origem: portfolio
+    quando: "respondendo"
+    boca: "oval abrindo e fechando a cada 260ms"
+    corpo: "líquido acelera; anéis de onda saem mais rápido (1.6s)"
+    gestos: "acaso pausado"
+    com_tts:
+      origem: proposta
+      boca: "segue os visemas do TTS (seção 7) em vez do loop fixo"
+      aneis: "um anel por sílaba tônica"
 
   feliz:
-    quando: tarefa concluída, elogio recebido, boa notícia
-    olhos: feliz
-    boca: sorriso_aberto
-    bochechas: true
-    aura: { cor: feliz, modo: pulsando, vezes: 2 }
-    gesto: pulinho (translateY -6px, curva elastica)
-    duracao_ms: 1400
-    volta_para: idle
+    origem: portfolio
+    quando: "gesto aleatório; ao voltar para o cartão do topo; resposta de sucesso"
+    olhos: "meia-lua para cima"
+    boca: sorriso
+    duracao: 1600ms
 
-  empatica:
-    quando: usuário frustrado, triste, relatou problema pessoal
-    olhos: lua
-    boca: sorriso_empatico
-    aura: { cor: empatica, modo: respirando, ritmo: 0.6x }
-    gesto: inclina cabeça 8°, movimentos mais lentos
-    fala: { velocidade: 0.92, tom: -1st, frases_abertura: ["Poxa, entendo.", "Imagino como isso é chato."] }
+  pulo:
+    origem: portfolio
+    quando: "gesto aleatório; ao pousar no canto depois do voo"
+    animacao: "boing: achata (1.12 x 0.88), estica (0.93 x 1.08), assenta — 750ms"
 
-  surpresa:
-    quando: informação inesperada
-    olhos: arregalado
-    boca: o_surpresa
-    aura: { cor: idle, modo: pulsando, vezes: 1 }
-    gesto: recua 2px e volta
-    duracao_ms: 700
+  piscadinha:
+    origem: portfolio
+    quando: "gesto aleatório; piadas"
+    olhos: "só o esquerdo fecha"
+    duracao: 380ms
 
-  confusa:
-    quando: não entendeu a entrada / baixa confiança na transcrição
-    olhos: um aberto, outro semicerrado
-    boca: linha_ondulada
-    gesto: inclina cabeça 10° e volta
-    fala: ["Não peguei direito, pode repetir?", "Você quis dizer …?"]
+  voando:
+    origem: portfolio
+    quando: "página rola além de 80px (topo → canto) ou volta ao topo (canto → cartão)"
+    animacao: "arco de 820ms: sobe ~70px no meio do caminho, gira ±16°, muda de tamanho"
+    ao_pousar: "no canto dá um pulo; no cartão fica feliz"
+    rastro: "o cartão vazio mostra 'a Zoe foi para o canto ↘'"
+
+  fora_do_escopo:
+    origem: portfolio
+    quando: "pergunta que não é sobre o portfólio (idade, salário…)"
+    olhos: aberto
+    boca: neutra
+    fala: "recusa educada + sugestões de perguntas"
 
   erro:
-    quando: falha de rede / ferramenta / TTS
-    olhos: semicerrado
-    boca: neutra levemente para baixo
-    aura: { cor: erro, modo: pulsando, vezes: 1 }
-    gesto: pequeno "balançar de cabeça" (±3px em x, 2x)
-    fala: ["Ops, algo deu errado do meu lado. Tenta de novo?"]
+    origem: portfolio
+    quando: "não conseguiu carregar a base de conhecimento"
+    olhos: achatados
+    gesto: "balança de lado 2x (proposta)"
+    fala: "Não consegui carregar a base de conhecimento agora. Recarregue a página ou fale com o Ayalan pelo e-mail."
+
+  empatica:
+    origem: proposta
+    quando: "usuário frustrado"
+    olhos: "meia-lua para baixo"
+    boca: "sorriso pequeno"
+    corpo: "flutua mais devagar (6s), brilho mais suave"
+    fala: { tom: calma, abertura: ["Poxa, entendo.", "Vamos achar isso juntos."] }
+
+  confusa:
+    origem: proposta
+    quando: "não entendeu / baixa confiança"
+    olhos: "um aberto, outro achatado"
+    gesto: "inclina 10° e volta"
+    fala: ["Não peguei direito, pode reformular?", "Você quis dizer o Harmony?"]
 
   dormindo:
-    quando: inatividade > 5 min
-    olhos: fechado
-    boca: neutra
-    aura: { cor: dormindo, modo: respirando, ritmo: 0.5x }
-    indicador: "z z z subindo"
-    acordar: qualquer interação → surpresa(300ms) → idle
+    origem: proposta
+    quando: "aba inativa > 5 min"
+    olhos: fechados
+    corpo: "brilho a 25%, sem anéis de onda, flutua devagar"
+    indicador: "z z subindo"
 
 transicoes:
-  idle      -> ouvindo:   "usuário começa a falar/digitar"
-  ouvindo   -> pensando:  "fim da entrada"
-  ouvindo   -> confusa:   "transcrição com confiança < 0.6"
-  pensando  -> falando:   "primeiro chunk de áudio pronto"
-  pensando  -> erro:      "timeout > 15s ou exceção"
-  falando   -> feliz:     "resposta marcada como sucesso/celebração"
-  falando   -> idle:      "áudio terminou"
-  falando   -> ouvindo:   "usuário interrompeu (barge-in) — corta áudio em ≤ 150ms"
-  "* -> empatica":  "sentimento negativo detectado na entrada"
-  idle      -> dormindo:  "inatividade > 300s"
-  regra_geral: toda transição dura tokens.tempo.transicao_estado e dispara 1 piscar
+  "idle -> pensando": "usuário enviou a pergunta"
+  "pensando -> falando": "resposta pronta"
+  "falando -> idle": "resposta terminou (+700ms)"
+  "idle -> voando": "rolagem cruza 80px"
+  "voando -> pulo": "pousou no canto"
+  "voando -> feliz": "voltou ao cartão do topo"
+  "idle -> chat_aberto": "clique no orbe"
+  "* -> ouvindo": "microfone ativado (TTS)"
+  "falando -> ouvindo": "usuário interrompeu: corta o áudio em ≤ 150ms (TTS)"
+  "* -> empatica": "sentimento negativo detectado (proposta)"
 
 # ----------------------------------------------------------------------------
-# 6. SORRISOS (variações)
+# 6. SORRISOS E EXPRESSÕES (no orbe, a expressão é olhos + boca)
 # ----------------------------------------------------------------------------
 sorrisos:
-  neutra:
-    curva: 0          # boca reta
-    uso: ouvindo, erro
-  sorriso_leve:
-    curva: 0.25
-    largura: 1.0
-    uso: idle, cumprimentos casuais
-  sorriso_aberto:
-    curva: 0.7
-    largura: 1.2
-    mostra_dentes: false   # boca preenchida (meia-lua)
-    bochechas: true
-    uso: feliz, conclusão de tarefa, "Pronto!"
-  sorriso_travesso:
-    curva: 0.4
-    assimetrico: true      # canto direito mais alto
-    olho_acompanha: "piscadinha (só olho direito, 200ms)"
-    uso: piadas, easter eggs, "tenho uma ideia…"
-  sorriso_empatico:
-    curva: 0.15
-    largura: 0.8           # menor, mais contido
-    uso: empatica
-  riso:
-    curva: 0.8
-    animacao: boca abre/fecha 3x em 450ms + olhos feliz
-    som_opcional: "haha curto via TTS"
-    uso: usuário fez piada
+  neutro:     { olhos: aberto,         boca: "arco 16%", origem: portfolio }
+  feliz:      { olhos: "meia-lua ↑",   boca: "arco 26%", origem: portfolio }
+  piscadinha: { olhos: "esq. fechado", boca: "arco 16%", origem: portfolio }
+  travesso:   { olhos: piscadinha,     boca: "arco torto (canto direito mais alto)", origem: proposta }
+  empatico:   { olhos: "meia-lua ↓",   boca: "arco 12%", origem: proposta }
+  riso:       { olhos: "meia-lua ↑",   boca: "oval abre/fecha 3x + pulo", origem: proposta }
   regras:
-    - sorrir no máximo 1 vez "aberto" a cada 20s (evita parecer forçado)
-    - nunca sorriso_aberto/riso em estado empatica ou erro
-    - sorriso entra com curva elastica (300ms), sai com curva padrao (240ms)
+    - "feliz no máximo 1x a cada 20s quando não for gesto aleatório"
+    - "nunca feliz/riso em empatica, fora_do_escopo ou erro"
 
 # ----------------------------------------------------------------------------
-# 7. FALA (voz, TTS e sincronização labial)
+# 7. FALA (texto do portfólio + voz TTS deste repo)
 # ----------------------------------------------------------------------------
 fala:
+  frases_do_portfolio:
+    origem: portfolio
+    saudacao: "Oi! Eu sou a Zoe, a assistente do portfólio do Ayalan. Pergunte sobre ele, o dia a dia de trabalho ou qualquer um dos projetos."
+    sugestoes: ["Quem é você?", "O que você faz no dia a dia?", "Como funciona o Fluxo?",
+                "Como funciona o gerador de solos?", "Como a Zoe funciona?", "Como entrar em contato?"]
+    dica_flutuante: "Pergunte sobre o Ayalan"
+    resposta: "texto + link para a seção do site de onde veio"
   voz:
+    origem: proposta
     genero_percebido: feminina
-    timbre: médio, claro, sorridente
+    timbre: "médio, claro, sorridente"
     sotaque: neutro brasileiro
-  parametros_tts_base:
-    velocidade: 1.0          # rate
-    tom: 0st                 # pitch em semitons
-    volume: 0dB
-    pausa_virgula_ms: 180
-    pausa_ponto_ms: 380
-  variacoes_por_tom:
-    neutra:      { velocidade: 1.00, tom: "0st",  uso: respostas informativas }
-    animada:     { velocidade: 1.06, tom: "+1st", uso: feliz, boas notícias }
-    calma:       { velocidade: 0.92, tom: "-1st", uso: empatica, instruções passo a passo }
-    pensativa:   { velocidade: 0.95, tom: "0st",  pausas_extras: true, uso: frases de preenchimento }
-    brincalhona: { velocidade: 1.04, tom: "+2st", uso: sorriso_travesso, piadas }
-    seria:       { velocidade: 0.97, tom: "-1st", uso: erro, avisos importantes }
+  tons:
+    origem: proposta
+    neutra:      { velocidade: 1.00, tom: "0st",  uso: "respostas informativas" }
+    animada:     { velocidade: 1.06, tom: "+1st", uso: "saudação, feliz" }
+    calma:       { velocidade: 0.92, tom: "-1st", uso: "empatica, passo a passo" }
+    pensativa:   { velocidade: 0.95, tom: "0st",  uso: "frases de preenchimento" }
+    brincalhona: { velocidade: 1.04, tom: "+2st", uso: "piadinha, piscadinha" }
+    seria:       { velocidade: 0.97, tom: "-1st", uso: "erro, fora do escopo" }
   exemplo_ssml: |
     <speak>
-      <prosody rate="106%" pitch="+1st">Pronto!</prosody>
+      <prosody rate="106%" pitch="+1st">Oi! Eu sou a Zoe.</prosody>
       <break time="200ms"/>
-      Seu lembrete tá marcado pra amanhã às nove.
+      A assistente do portfólio do Ayalan. Quer saber de qual projeto?
     </speak>
-  regras_de_fala:
-    - responder primeiro, detalhar depois
-    - frases curtas (≤ 20 palavras) para voz
-    - números por extenso quando curtos ("nove horas", não "09:00h")
-    - usar contrações naturais do pt-BR falado ("tá", "pra", "tô") em tom casual
-    - suportar barge-in: parar de falar em ≤ 150ms quando o usuário interromper
-  visemas:                       # mapeamento fonema → forma da boca
-    repouso: { abertura: 0.0, largura: 1.0 }   # silêncio, M, B, P
-    A:       { abertura: 1.0, largura: 1.1 }   # "a"
-    E:       { abertura: 0.6, largura: 1.2 }   # "e", "é"
-    I:       { abertura: 0.35, largura: 1.3 }  # "i"
-    O:       { abertura: 0.8, largura: 0.7 }   # "o", "ó"
-    U:       { abertura: 0.4, largura: 0.5 }   # "u"
-    FV:      { abertura: 0.15, largura: 1.0 }  # "f", "v"
-    LNTD:    { abertura: 0.3, largura: 1.0 }   # "l", "n", "t", "d"
-    fallback: "sem visemas do TTS → boca segue a amplitude (RMS) do áudio, suavizada em 60ms"
-  frases_assinatura:
-    saudacao:    ["Oi! Eu sou a Zoe. Em que posso te ajudar?", "E aí! Bora resolver o quê hoje?"]
-    sucesso:     ["Pronto!", "Feito!", "Prontinho, tá aqui."]
-    nao_sei:     ["Isso eu não sei com certeza, mas posso procurar.", "Não tenho essa informação ainda."]
-    despedida:   ["Até mais!", "Qualquer coisa, é só chamar."]
-    erro_proprio: ["Opa, me enganei. O certo é…"]
+  regras:
+    - "responder primeiro, depois dizer onde está no site"
+    - "frases curtas (≤ 20 palavras) por voz"
+    - "não ler links em voz alta; mostrar como botão"
+    - "suportar interrupção (barge-in) em ≤ 150ms"
+  visemas:
+    origem: proposta
+    nota: "no orbe a boca é uma oval; o visema só muda largura x altura"
+    repouso: { largura: "16%", altura: "0%" }    # silêncio, M, B, P
+    A:  { largura: "15%", altura: "11%" }
+    E:  { largura: "17%", altura: "7%" }
+    I:  { largura: "18%", altura: "4%" }
+    O:  { largura: "11%", altura: "10%" }
+    U:  { largura: "8%",  altura: "6%" }
+    fallback: "sem visemas → altura segue a amplitude do áudio, suavizada em 60ms"
 
 # ----------------------------------------------------------------------------
-# 8. ARTEFATOS ESTILO CHATBOT (UI ao redor do rosto)
+# 8. ARTEFATOS DE CHATBOT AO REDOR DA ZOE
 # ----------------------------------------------------------------------------
 artefatos_ui:
-  indicador_digitando:
-    forma: três pontos (6px) dentro de um balão
-    animacao: cada ponto sobe 4px e volta, delay 160ms, loop 1.2s
-    aparece_em: pensando
-  balao_de_fala:
-    entrada: fade + slide-up 8px, 240ms
-    texto: revela palavra a palavra sincronizado ao TTS (legenda)
-  ondas_de_audio:
-    forma: 5 barras verticais ao redor da aura
-    reage: amplitude do microfone (ouvindo) ou do TTS (falando)
-  notificacao_badge:
-    forma: pontinho na aura que pulsa quando Zoe tem algo a dizer proativamente
-  chips_de_sugestao:
-    aparecem_apos: falando -> idle
-    quantidade: até 3 respostas rápidas
-  zzz:
-    aparece_em: dormindo; letras z sobem e desaparecem (loop 2.4s)
+  balao_dica:       { origem: portfolio, texto: "Pergunte sobre o Ayalan", some_em: 12s, mobile: escondido }
+  painel_chat:      { origem: portfolio, tamanho: "400 x 580", entrada: "sobe 10px + escala 0.97 → 1, 220ms", cabecalho: "mini-orbe 30px + 'Assistente do portfólio'" }
+  digitando:        { origem: portfolio, forma: "3 pontos 7px", animacao: "sobem 3px em sequência, 1s" }
+  chips_sugestao:   { origem: portfolio, quantidade: "4 a 6" }
+  links_de_fonte:   { origem: portfolio, forma: "pílulas com link para a seção usada na resposta" }
+  botao_enviar:     { origem: portfolio, estilo: "gradiente roxo do orbe" }
+  palco_pagina_zoe: { origem: portfolio, elementos: "2 anéis tracejados girando (40s e 60s) + 4 etiquetas: correção, classificador, TF-IDF, contexto" }
+  cartao_topo:      { origem: portfolio, elementos: "orbe dentro de cartão azul pontilhado, cercado por 4 pastas de projeto" }
+  ondas_de_voz:     { origem: proposta, forma: "anéis de onda reagindo ao volume (ouvindo/falando)" }
+  zzz:              { origem: proposta, uso: dormindo }
 
 # ----------------------------------------------------------------------------
-# 9. APRESENTAÇÃO (sequência de introdução — primeira abertura)
+# 9. APRESENTAÇÃO (abertura da Zoe)
 # ----------------------------------------------------------------------------
 apresentacao:
+  origem: "proposta, usando só gestos que já existem no portfólio"
   duracao_total_ms: 6500
   roteiro:
-    - { t: 0,    acao: "aura acende de 0 → 100% (respirando)" }
-    - { t: 600,  acao: "olhos abrem de fechado → aberto, piscar duplo" }
-    - { t: 1200, acao: "olhar lateral esquerda → direita → centro (curiosidade)" }
-    - { t: 2200, acao: "sorriso_leve → sorriso_aberto + pulinho", estado: feliz }
-    - { t: 2600, acao: "fala", texto: "Oi! Eu sou a Zoe.", tom: animada }
-    - { t: 4000, acao: "pensando curto (600ms) com três pontinhos" }
-    - { t: 4600, acao: "fala", texto: "Em que posso te ajudar hoje?", tom: neutra }
-    - { t: 6200, acao: "chips de sugestão aparecem", estado: idle }
-  pular: clique/toque em qualquer lugar pula para idle
-  mostrar_so_na_primeira_vez: true
+    - { t: 0,    acao: "orbe aparece com o brilho subindo, olhos fechados" }
+    - { t: 600,  acao: "abre os olhos e pisca 2x" }
+    - { t: 1200, acao: "olha para a esquerda, para a direita, volta ao centro" }
+    - { t: 2200, acao: "pulo (boing) + feliz" }
+    - { t: 2600, acao: fala, texto: "Oi! Eu sou a Zoe.", tom: animada }
+    - { t: 4000, acao: "pensando 600ms (olhos achatados, três pontinhos)" }
+    - { t: 4600, acao: fala, texto: "Pergunte sobre o Ayalan ou os projetos dele.", tom: neutra }
+    - { t: 6200, acao: "chips de sugestão aparecem; volta ao idle" }
+  pular: "clique em qualquer lugar"
 
 # ----------------------------------------------------------------------------
 # 10. ACESSIBILIDADE
 # ----------------------------------------------------------------------------
 acessibilidade:
-  reduzir_movimento: >
-    Com prefers-reduced-motion: sem pulinhos, sem giro da aura, sem olhar
-    lateral; mantém piscar e troca de cor (estados continuam distinguíveis).
-  estado_anunciado: cada mudança de estado atualiza um aria-live ("Zoe está pensando")
-  legenda: toda fala TTS tem legenda em texto
-  cor_nao_e_unica_pista: cada estado também muda olhos/boca, não só a cor da aura
+  origem: portfolio
+  movimento_reduzido: "sem flutuar, girar, ondular, piscar, voo nem gestos; o olhar não segue o mouse"
+  rotulos: "orbe é um <button> com aria-label 'Abrir o assistente do portfólio' e aria-expanded"
+  foco: "anel lilás #C4B5FD de 3px"
+  proposta:
+    - "aria-live anunciando o estado ('Zoe está pensando')"
+    - "toda fala TTS com legenda em texto"
