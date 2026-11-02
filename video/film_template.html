@@ -4,7 +4,8 @@
 <meta charset="utf-8">
 <title>Evolução do portfólio e da Zoé</title>
 <script>
-/* câmera lenta para gravar sem perder quadros: tudo roda a __R da velocidade */
+/* câmera lenta (Animation.setPlaybackRate no gravador) desacelera rAF e animações;
+   os temporizadores do JS não, então são esticados aqui */
 window.__R = 0.4;
 (function (R) { const st = window.setTimeout, si = window.setInterval;
   window.setTimeout = (f, ms, ...a) => st(f, (ms || 0) / R, ...a);
@@ -170,7 +171,7 @@ function entrar(i) {
 
 function quadro(agora) {
   if (t0 === null) { t0 = agora; window.__t0wall = Date.now(); }
-  const t = (agora - t0) / 1000 * window.__R;
+  const t = (agora - t0) / 1000;   /* o relógio do rAF já anda na velocidade da câmera lenta */
   /* cena atual */
   let i = FILME.cenas.findIndex(c => t >= c.ini - 0.35 && t < c.fim + 0.25);
   if (i !== -1 && i !== atual) { atual = i; entrar(i); }
@@ -190,7 +191,6 @@ function quadro(agora) {
     const fw = c.el.querySelector('iframe').contentWindow;
     try {
       if (!fw.__lento) { fw.__lento = true; const st = fw.setTimeout, R = window.__R; fw.setTimeout = (f, ms, ...a) => st(f, (ms || 0) / R, ...a); }
-      fw.document.getAnimations().forEach(a => { if (a.playbackRate !== window.__R) a.playbackRate = window.__R; });
       if (window.__rolarDe !== undefined) { const k = Math.min(1, (t - window.__rolarDe) / 1.1); fw.scrollTo(0, 760 * (k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2)); }
     } catch (e) {}
   }
