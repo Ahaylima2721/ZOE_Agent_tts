@@ -14,7 +14,7 @@ meta:
   nome: Zoe
   papel: assistente do portfólio do Ayalan
   tipo: agente conversacional com voz (TTS)
-  versao: 2.1.0
+  versao: 2.2.0
   idioma: pt-BR
   preview: zoe-preview.html
   animacoes_extras: zoe-fx.js      # ver seção 11
@@ -24,6 +24,21 @@ meta:
     sorri, dá pulinhos e, no topo do portfólio, mora num cartão e voa para o
     canto da tela quando a página rola. Responde perguntas sobre o Ayalan e os
     projetos com um modelo próprio (TF-IDF + classificador), rodando no navegador.
+
+# ----------------------------------------------------------------------------
+# DECISÃO ATUAL: BOCA OCULTA
+# ----------------------------------------------------------------------------
+boca_oculta:
+  status: ativa
+  motivo: "a Zoe fica mais carismática só com os olhos; a boca volta junto com a versão com fala (TTS)"
+  como_funciona: "zoe-fx.js esconde .orb-mouth por padrão"
+  como_mostrar: "ZoeFx.boca(true) ou <html data-zoe-boca=\"on\">"
+  enquanto_oculta:
+    falando: "os olhos dão pulinhos no ritmo da fala (260ms) + líquido e anéis acelerados"
+    faminta: "olhos crescem e o rosto 'puxa o ar' (cresce e volta) enquanto os arquivos chegam"
+    surpresa: "olhos crescem 35% + pulinho + '!'"
+    bocejo: "olhos quase fechados + corpo esticando"
+  nota: "as seções abaixo que citam a boca descrevem a versão com fala"
 
 # ----------------------------------------------------------------------------
 # 0. COMPARAÇÃO: v1 (rosto escuro, rascunho anterior) x v2 (orbe roxo do portfólio)

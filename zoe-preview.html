@@ -156,6 +156,7 @@
   <p class="drop">Arraste arquivos do seu computador até a página: ela abre a boca, engole cada um e pensa.<br>
   Clique 5 vezes rápido nela, role a página, fique 25s parado, troque de aba e volte, ou copie um texto.</p>
   <label class="voice"><input type="checkbox" id="voice"> Falar com a voz do navegador (pt-BR)</label>
+  <label class="voice"><input type="checkbox" id="boca"> Mostrar a boca (prévia da versão com fala)</label>
 
   <h2>Antes e agora</h2>
   <div class="cmp">
@@ -197,6 +198,9 @@
      <script src="zoe-fx.js"><\/script>
      ZoeFx.absorver(orb)            // arquivos voando para dentro dela + pensando + "achei!"
      ZoeFx.vida(orb, { soltarArquivos: true })   // liga os comportamentos automáticos
+
+   Boca: fica OCULTA até a versão com fala ficar pronta. Para mostrar:
+     ZoeFx.boca(true)   (ou <html data-zoe-boca="on">)
 
    Todas as funções devolvem uma Promise que resolve quando a animação termina.
    Com "reduzir movimento" ligado, as partículas são puladas e só a expressão muda.
@@ -259,6 +263,13 @@
     '.orb.zfx-danca .orb-mouth{width:24%;height:10%}',
     '.orb.zfx-glitch{animation:orbFloat 4.5s ease-in-out infinite,zfxGlitch .45s steps(2) 2}',
     '.orb.zfx-glitch .orb-face i{animation:none;aspect-ratio:7/3}',
+
+    /* boca oculta até a versão com fala; a expressão fica nos olhos e no corpo */
+    'html:not([data-zoe-boca="on"]) .orb .orb-mouth{display:none}',
+    'html:not([data-zoe-boca="on"]) .orb.falando .orb-face i{animation:zfxFalaOlho .26s ease-in-out infinite alternate}',
+    'html:not([data-zoe-boca="on"]) .orb.zfx-faminta .orb-face{animation:zfxInspira .5s ease-in-out infinite alternate}',
+    '@keyframes zfxFalaOlho{from{transform:none}to{transform:scaleY(.82) translateY(-10%)}}',
+    '@keyframes zfxInspira{to{scale:1.1}}',
 
     '@keyframes zfxMastiga{to{height:5%;width:14%}}',
     '@keyframes zfxBoceja{0%{width:10%;height:4%}45%,65%{width:18%;height:19%}100%{width:10%;height:4%}}',
@@ -589,7 +600,17 @@
     }
   }
 
+  /* liga/desliga a boca (fica oculta até a versão com fala) */
+  function boca(on) {
+    preparar();
+    if (on) document.documentElement.setAttribute('data-zoe-boca', 'on');
+    else document.documentElement.removeAttribute('data-zoe-boca');
+  }
+
+  if (document.body) preparar(); else document.addEventListener('DOMContentLoaded', preparar);
+
   window.ZoeFx = {
+    boca: boca,
     absorver: absorver, eureka: eureka, confete: confete, coracoes: coracoes, dancar: dancar, tonta: tonta,
     surpresa: surpresa, bocejo: bocejo, corada: corada, ola: ola, lendo: lendo, procurando: procurando,
     carregando: carregando, glitch: glitch, gelatina: gelatina, gole: gole, onda: onda, vida: vida, preparar: pecas
@@ -716,6 +737,7 @@ Object.entries(FX).forEach(([k,f])=>{ const b=document.createElement('button'); 
   b.onclick=()=>{ clearAll(); setState('idle',{text:''}); status.innerHTML='animação: <b>'+k+'</b>'; f(); };
   document.getElementById('g-fx').append(b); });
 ZoeFx.vida(zoe, { soltarArquivos: true });
+document.getElementById('boca').onchange=e=>ZoeFx.boca(e.target.checked);
 
 intro();
 </script>
