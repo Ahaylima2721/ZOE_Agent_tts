@@ -112,6 +112,9 @@
   button.st:hover{border-color:#A78BFA}
   button.st.new{border-style:dashed}
   button.st.primary{color:#fff;border:0;background:radial-gradient(circle at 30% 25%,#C9A7FF,#7C3AED 55%,#5B21B6)}
+  .group code{font-size:11px}
+  p.drop{font-size:13px;color:var(--muted);text-align:center;max-width:520px;margin:6px 0 0;padding:10px 14px;border:1px dashed color-mix(in srgb,#A78BFA 55%,var(--line));border-radius:12px}
+  button.st.fx{background:color-mix(in srgb,#A78BFA 12%,var(--card))}
   label.voice{font-size:13px;color:var(--muted);margin-top:10px;display:flex;gap:6px;align-items:center}
 
   /* comparação */
@@ -129,7 +132,7 @@
 </head>
 <body>
   <h1>Zoe</h1>
-  <p class="sub">A assistente do portfólio, com os estados descritos em <code>zoe.design</code>. Clique no orbe para rever a apresentação.</p>
+  <p class="sub">A assistente do portfólio, com os estados descritos em <code>zoe.design</code>. Passe o mouse perto dela: os olhos seguem você.</p>
 
   <div class="stage">
     <span class="ring"></span><span class="ring r2"></span>
@@ -149,6 +152,9 @@
 
   <div class="group" id="g-port"><span>Já existem no portfólio</span></div>
   <div class="group" id="g-new"><span>Propostos para a versão com voz (borda tracejada)</span></div>
+  <div class="group" id="g-fx"><span>Animações extras (<code>zoe-fx.js</code>)</span></div>
+  <p class="drop">Arraste arquivos do seu computador até a página: ela abre a boca, engole cada um e pensa.<br>
+  Clique 5 vezes rápido nela, role a página, fique 25s parado, troque de aba e volte, ou copie um texto.</p>
   <label class="voice"><input type="checkbox" id="voice"> Falar com a voz do navegador (pt-BR)</label>
 
   <h2>Antes e agora</h2>
@@ -178,6 +184,7 @@
     <tr><td>Papel</td><td>Assistente genérica</td><td>Assistente do portfólio do Ayalan</td></tr>
   </table></div>
 
+<script src="zoe-fx.js"></script>
 <script>
 const zoe=document.getElementById('zoe'), face=document.getElementById('face'), bubble=document.getElementById('bubble');
 const typing=document.getElementById('typing'), zzz=document.getElementById('zzz'), status=document.getElementById('status');
@@ -241,15 +248,17 @@ if(!calmo){
   /* gestos ao acaso: olhar em volta 40%, feliz 22%, pulo 18%, piscadinha 20% */
   (function acaso(){
     setTimeout(()=>{
-      if(current==='idle' && !timers.length){
+      if(current==='idle' && !timers.length && !zoe.dataset.zfx){
         const r=Math.random(), b=zoe.getBoundingClientRect();
         if(r<.4 && Date.now()-ultimo>2500){ const a=Math.random()*6.283; olharPara(b.left+b.width/2+Math.cos(a)*400, b.top+b.height/2+Math.sin(a)*300); setTimeout(()=>face.style.transform='',1400); }
-        else if(r<.62) gesto('feliz',1600); else if(r<.8) gesto('pulo',800); else gesto('pisca',380);
+        else if(r<.58) gesto('feliz',1600); else if(r<.72) gesto('pulo',800); else if(r<.84) gesto('pisca',380);
+        else pick([()=>ZoeFx.ola(zoe),()=>ZoeFx.procurando(zoe),()=>ZoeFx.corada(zoe),()=>ZoeFx.dancar(zoe,2400),()=>ZoeFx.lendo(zoe,2400)])();
       }
       acaso();
     }, 2800+Math.random()*3200);
   })();
 }
+function pick(l){ return l[Math.floor(Math.random()*l.length)]; }
 function gesto(c,ms){ zoe.classList.add(c); setTimeout(()=>zoe.classList.remove(c),ms); }
 
 /* apresentação */
@@ -265,13 +274,35 @@ function intro(){
   at(4600, ()=>setState('falando',{keep:true,text:'Pergunte sobre o Ayalan ou os projetos dele.'}));
   at(6600, ()=>{ timers=[]; setState('idle',{text:''}); });
 }
-zoe.addEventListener('click', intro);
 
 /* botões */
 const play=document.createElement('button'); play.className='st primary'; play.textContent='▶ Apresentação'; play.onclick=intro;
 document.getElementById('g-port').append(play);
 Object.entries(STATES).forEach(([k,v])=>{ const b=document.createElement('button'); b.className='st'+(v.g==='new'?' new':''); b.textContent=k.replace(/_/g,' ');
   b.onclick=()=>setState(k); document.getElementById('g-'+v.g).append(b); });
+
+/* animações extras */
+const FX = {
+  'arquivos entrando': ()=>ZoeFx.absorver(zoe),
+  'carregando': ()=>ZoeFx.carregando(zoe),
+  'lendo': ()=>ZoeFx.lendo(zoe),
+  'procurando': ()=>ZoeFx.procurando(zoe),
+  'achei! (eureka)': ()=>ZoeFx.eureka(zoe),
+  'oi! (aceno)': ()=>ZoeFx.ola(zoe),
+  'surpresa': ()=>ZoeFx.surpresa(zoe),
+  'corada': ()=>ZoeFx.corada(zoe),
+  'corações': ()=>ZoeFx.coracoes(zoe),
+  'confete': ()=>ZoeFx.confete(zoe),
+  'dançando': ()=>ZoeFx.dancar(zoe),
+  'tonta': ()=>ZoeFx.tonta(zoe),
+  'bocejo': ()=>ZoeFx.bocejo(zoe),
+  'gelatina': ()=>ZoeFx.gelatina(zoe),
+  'glitch': ()=>ZoeFx.glitch(zoe),
+};
+Object.entries(FX).forEach(([k,f])=>{ const b=document.createElement('button'); b.className='st fx'; b.textContent=k;
+  b.onclick=()=>{ clearAll(); setState('idle',{text:''}); status.innerHTML='animação: <b>'+k+'</b>'; f(); };
+  document.getElementById('g-fx').append(b); });
+ZoeFx.vida(zoe, { soltarArquivos: true });
 
 intro();
 </script>

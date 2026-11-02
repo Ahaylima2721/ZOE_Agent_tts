@@ -14,9 +14,10 @@ meta:
   nome: Zoe
   papel: assistente do portfólio do Ayalan
   tipo: agente conversacional com voz (TTS)
-  versao: 2.0.0
+  versao: 2.1.0
   idioma: pt-BR
   preview: zoe-preview.html
+  animacoes_extras: zoe-fx.js      # ver seção 11
   resumo: >
     A Zoe é um orbe de cristal roxo com dois olhos de luz, uma boquinha e um
     líquido que ondula por dentro. Ela flutua, pisca, segue o mouse com o olhar,
@@ -410,3 +411,72 @@ acessibilidade:
   proposta:
     - "aria-live anunciando o estado ('Zoe está pensando')"
     - "toda fala TTS com legenda em texto"
+
+# ----------------------------------------------------------------------------
+# 11. ANIMAÇÕES EXTRAS (zoe-fx.js) — "quanto mais viva, melhor"
+#     Todas usam as mesmas peças do orbe do portfólio (.orb, .orb-face i,
+#     .orb-mouth, .orb-liquid) e funcionam no orbe pequeno (66px) e no grande.
+#     origem: proposta
+# ----------------------------------------------------------------------------
+animacoes_extras:
+  instalar: |
+    <script src="zoe-fx.js"></script>
+    <script>
+      var orb = document.getElementById('orb');
+      ZoeFx.vida(orb, { soltarArquivos: true });
+      // exemplos: ZoeFx.absorver(orb); ZoeFx.confete(orb); ZoeFx.dancar(orb);
+    </script>
+
+  absorver:
+    nome: "arquivos entrando + pensando"
+    api: "ZoeFx.absorver(orb, { arquivos, palavras, intervalo, pensar })"
+    roteiro:
+      - "boca abre em 'o' mastigando e os olhos crescem (faminta)"
+      - "cartões de arquivo (README.md, indice.json, modelo.py, motor.js…) aparecem em volta, um a cada 230ms"
+      - "cada um faz uma curva, gira e encolhe até sumir dentro do orbe"
+      - "a cada arquivo: 'gole' (achata e estica), um anel de onda e o líquido interno sobe um pouco"
+      - "depois pensa: olhos achatados, líquido acelerado, palavras (Fluxo, Harmony, TF-IDF, contexto) orbitando em elipse, mais fracas quando passam por trás"
+      - "termina com 'achei!': clarão, 12 estrelinhas saindo, pulo e olhos felizes; o líquido volta ao nível normal"
+    cores_por_tipo: { md: azul, json: âmbar, py: verde, js: amarelo, html: laranja, csv: verde-água, pdf: vermelho, imagens: rosa }
+    duracao: "~1.2s + 230ms por arquivo + 2.4s pensando + 1.6s comemorando"
+    no_portfolio:
+      - "ao abrir o chat pela primeira vez (ela 'lê' o portfólio)"
+      - "no laboratório da página da Zoe, ao clicar em Analisar"
+      - "ao perguntar 'Como a Zoe funciona?'"
+      - "quando alguém arrasta arquivos para a página (usa os nomes reais)"
+
+  carregando:  { api: "ZoeFx.carregando(orb, ms)", visual: "anel roxo se completa em volta dela enquanto pensa; termina em 'achei!'" }
+  lendo:       { api: "ZoeFx.lendo(orb, ms)", visual: "folha aparece na frente; os olhos varrem linha por linha e cada linha 'acende'" }
+  procurando:  { api: "ZoeFx.procurando(orb, ms)", visual: "lupa dá a volta no orbe e os olhos acompanham a lupa" }
+  eureka:      { api: "ZoeFx.eureka(orb)", visual: "clarão, 12 estrelinhas, anel de onda, pulo e olhos felizes" }
+  ola:         { api: "ZoeFx.ola(orb, texto)", visual: "balança de um lado para o outro (aceno) com balão 'oi!'" }
+  surpresa:    { api: "ZoeFx.surpresa(orb)", visual: "olhos crescem, boca 'o', pulinho rápido e um '!' estourando" }
+  corada:      { api: "ZoeFx.corada(orb, ms)", visual: "bochechas rosas aparecem, olhos felizes e inclina a cabeça, tímida" }
+  coracoes:    { api: "ZoeFx.coracoes(orb)", visual: "corações rosas sobem balançando; ela fica corada" }
+  confete:     { api: "ZoeFx.confete(orb)", visual: "40 confetes nas cores do portfólio explodem para cima e caem com gravidade; gelatina" }
+  dancar:      { api: "ZoeFx.dancar(orb, ms)", visual: "balança no ritmo com olhos felizes e notas musicais saindo (combina com o Harmony)" }
+  tonta:       { api: "ZoeFx.tonta(orb, ms)", visual: "olhos viram espirais girando, boca torta e 3 estrelas orbitando a cabeça" }
+  bocejo:      { api: "ZoeFx.bocejo(orb)", visual: "olhos quase fechados, boca abre devagar e o corpo estica" }
+  gelatina:    { api: "ZoeFx.gelatina(orb)", visual: "tremida elástica de gelatina" }
+  glitch:      { api: "ZoeFx.glitch(orb)", visual: "cores trocam e ela treme em degraus (para erros)" }
+
+  comportamentos_automaticos:      # ZoeFx.vida(orb)
+    clique: gelatina
+    cinco_cliques_em_2s: tonta
+    rolar_pagina: "inclina até 12° na direção da rolagem e volta"
+    arrastar_arquivo_na_pagina: "fica faminta (boca aberta) esperando"
+    soltar_arquivo: "absorver com os nomes reais dos arquivos"
+    parado_25s: bocejo
+    voltar_para_a_aba: "surpresa + balão 'voltou!'"
+    copiar_texto_da_pagina: corada
+    gestos_ao_acaso_extras: [ola, procurando, corada, dancar, lendo]
+
+  sugestao_de_gatilhos_no_chat:
+    "pensando (motor calculando)": "lendo ou procurando"
+    "resposta encontrada": eureka
+    "pergunta sobre o Harmony": dancar
+    "elogio / obrigado": coracoes
+    "pergunta fora do escopo": "surpresa leve, depois neutra"
+    "erro ao carregar a base": glitch
+
+  movimento_reduzido: "sem partículas nem voo; só a expressão (olhos e boca) muda"
