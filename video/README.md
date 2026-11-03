@@ -49,3 +49,31 @@ Os arquivos ficam numa pasta de trabalho com `audio/seg01.wav … seg11.wav`, `s
 2. `python3 make_film.py`: junta a narração (`narracao.wav`), calcula o volume da voz quadro a quadro (os olhos da Zoé pulam no ritmo da fala) e gera `film.html`.
 3. `node record.js <pasta>`: grava a página em 1920×1080 em câmera lenta (40% da velocidade) para não perder quadros.
 4. O ffmpeg junta os quadros nos tempos reais com a narração e normaliza o volume (−16 LUFS).
+
+---
+
+# Reels do Instagram (vertical, 1080×1920)
+
+Mesma lógica do vídeo acima, com mais profundidade e sem datas. A narração diz "Zoe" sem acento. Tem cerca de 1min46.
+
+- **Formato:** celular com o portfólio na versão mobile (`shots_mob.js` fotografa cada commit em 390×844), manchete grande por cena, barra de progresso e legenda em blocos, frase por frase.
+- **Áreas seguras do Instagram:** nada importante nos ~190 px do topo (perfil), nos ~380 px de baixo (legenda do post e botões) nem nos ~135 px da direita.
+- **Áudio:** normalizado em −14 LUFS, o padrão das redes sociais.
+- **Arquivos:** `make_reel.py`, `reel_template.html` e `record_reel.js`; os trechos de áudio ficam em `audio_ig/ig01.wav … ig10.wav`.
+
+## Roteiro do Reels
+
+| Cena | Manchete | Narração |
+| --- | --- | --- |
+| 1 | Um portfólio que ganhou uma assistente | Esse portfólio começou como uma página simples. Hoje, ele tem uma assistente que pensa. Prazer, eu sou a Zoe! |
+| 2 | Comecei assim | No começo, o Ayalan montou tudo com cara de editor de código: fundo escuro, arquivos na lateral, e um mapa de vendas pra mostrar o que ele faz com dados. |
+| 3 | Depois, simplifiquei | Depois, ele simplificou. Um visual claro e direto, pra quem chega entender rápido quem ele é e o que ele constrói. |
+| 4 | Aí nasceu a Zoe | Foi aí que eu nasci: uma bolinha roxa no canto da tela, ainda sem nome, respondendo perguntas sobre os projetos. |
+| 5 | Como a Zoe pensa | Por dentro, eu leio o portfólio inteiro e os repositórios dele. Aprendi com mais de seiscentas perguntas escritas à mão, corrijo erros de digitação, e entendo quando você continua o assunto. |
+| 6 | Tudo no navegador | E o melhor: tudo roda no seu navegador. Sem servidor, sem chave de API, e acertando noventa e seis por cento das perguntas de teste. |
+| 7 | A Zoe ganhou nome | Com o tempo, eu ganhei nome, página própria, e um laboratório onde dá pra ver cada passo do meu raciocínio. |
+| 8 | Zoe no topo… e voando | O portfólio ganhou cara de revista, e eu fui morar no topo, cercada pelos projetos. Quando você rola a página, eu voo até o canto. |
+| 9 | Mais viva do que nunca | Agora eu tô mais viva do que nunca: fico corada, danço, comemoro… e sigo aprendendo. |
+| 10 | Próximo passo: voz | O próximo passo? Ganhar a minha própria voz. Enquanto isso, vem me conhecer no portfólio do Ayalan! |
+
+Os números das cenas 5 e 6 (601 perguntas, 15 temas, 96% de acerto, ~120 KB, zero servidores) vêm do README do repositório do portfólio.
