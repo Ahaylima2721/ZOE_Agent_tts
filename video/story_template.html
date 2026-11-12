@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Zoe · Stories</title>
+<script>
+/* câmera lenta na gravação: o rAF e as animações já desaceleram; os temporizadores do JS são esticados aqui */
+window.__R = window.__semLento ? 1 : 0.4;   /* prévia rápida: __semLento */
+(function (R) { const st = window.setTimeout, si = window.setInterval;
+  window.setTimeout = (f, ms, ...a) => st(f, (ms || 0) / R, ...a);
+  window.setInterval = (f, ms, ...a) => si(f, (ms || 0) / R, ...a); })(window.__R);
+</script>
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;width:1080px;height:1920px;overflow:hidden;background:#F4F1EA}
+  #root{position:fixed;left:0;top:0;width:720px;height:1280px;transform:scale(1.5);transform-origin:0 0;overflow:hidden;
+        font-family:"Segoe UI",system-ui,-apple-system,sans-serif;color:#1A1726;
+        background:radial-gradient(620px 520px at 100% 0%,rgba(167,139,250,.32),transparent 65%),
+                   radial-gradient(520px 460px at 0% 100%,rgba(255,143,177,.18),transparent 65%),#F4F1EA}
+  #root::before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(26,23,38,.07) 1px,transparent 1.3px);background-size:20px 20px}
+  .zfx-layer .zfx:not(.zfx-anel):not(.zfx-flash):not(.zfx-carga){scale:2}
+
+/*ORB_CSS*/
+
+  .orb .orb-face i{scale:1 calc(1 - var(--fala,0) * .38);translate:0 calc(var(--fala,0) * -14%)}
+
+  /* ---- topo: marca + manchete (abaixo da área do perfil do Instagram) ---- */
+  .marca{position:absolute;left:44px;top:128px;font:600 12px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:#6D5E9C;display:flex;gap:9px;align-items:center;z-index:5}
+  .marca i{width:8px;height:8px;border-radius:50%;background:#8B5CF6;box-shadow:0 0 10px #A78BFA}
+  .manchete{position:absolute;left:44px;right:90px;top:152px;z-index:5}
+  .manchete h1{margin:0;font-size:44px;line-height:1.02;letter-spacing:-.03em;font-weight:800;opacity:0;transform:translateY(-8px);transition:opacity .14s,transform .14s}
+  .manchete h1.on{opacity:1;transform:none;transition:opacity .45s .18s,transform .5s .18s cubic-bezier(.3,1.3,.5,1)}
+  .manchete h1 em{font-style:normal;color:#7C3AED}
+  .passos{position:absolute;left:44px;top:262px;display:flex;gap:6px;z-index:5}
+  .passos b{width:26px;height:5px;border-radius:3px;background:#DDD6EA;transition:background .4s,width .4s}
+  .passos b.ok{background:#A78BFA}.passos b.agora{background:#7C3AED;width:44px}
+
+  .cena{position:absolute;inset:0;opacity:0;transition:opacity .5s ease}
+  .cena.on{opacity:1}
+
+  /* ---- celular ---- */
+  .cel{position:absolute;left:50%;top:296px;transform:translateX(-50%);width:310px;padding:10px;border-radius:46px;background:#16151C;
+       box-shadow:0 40px 80px -30px rgba(40,10,90,.55),0 0 0 1px rgba(255,255,255,.06) inset}
+  .cel::before{content:"";position:absolute;left:50%;top:18px;transform:translateX(-50%);width:84px;height:22px;border-radius:12px;background:#16151C;z-index:3}
+  .tela{position:relative;width:290px;height:627px;border-radius:36px;overflow:hidden;background:#fff}
+  .tela img{display:block;width:290px;will-change:transform}
+  .tela iframe{width:390px;height:844px;border:0;transform:scale(.74359);transform-origin:0 0;pointer-events:none}
+
+  .narrador{position:absolute;left:58px;top:770px;width:118px;height:118px;opacity:0;transition:opacity .5s;z-index:6}
+  .narrador.on{opacity:1}
+  .narrador .orb{width:118px;height:118px;cursor:default}
+
+  /* ---- Zoe grande ---- */
+  .zona{position:absolute;left:0;right:0;top:300px;height:600px;display:grid;place-items:center;opacity:0;transition:opacity .5s}
+  .zona.on{opacity:1}
+  #grande{width:270px;height:270px;cursor:default}
+  #grande .orb-face{gap:34px}
+  #grande .orb-face i{width:22px;height:auto;aspect-ratio:7/11;border-radius:999px;box-shadow:0 0 16px rgba(235,225,255,.95)}
+  #grande .orb-sparkle{top:13%;right:18%;width:9%;height:9%}
+  #grande::after{inset:-22%}
+
+  /* cartões de informação em volta da Zoe */
+  .cards{position:absolute;inset:0;pointer-events:none}
+  .card{position:absolute;padding:10px 14px;border-radius:14px;background:#fff;border:1px solid #E2DAF5;box-shadow:0 14px 30px -18px rgba(60,20,120,.5);
+        font-size:15px;line-height:1.25;opacity:0;transform:translateY(10px) scale(.96);transition:opacity .4s,transform .45s cubic-bezier(.3,1.4,.5,1);max-width:260px}
+  .card.on{opacity:1;transform:none}
+  .card b{display:block;font-size:30px;line-height:1;letter-spacing:-.02em;color:#6D28D9;margin-bottom:4px;font-variant-numeric:tabular-nums}
+  .card small{color:#5E5A72;font-size:13px}
+
+  /* ---- legenda (acima da área dos botões do Instagram) ---- */
+  .legenda{position:absolute;left:44px;right:90px;top:928px;min-height:96px;display:flex;align-items:flex-start;z-index:7}
+  .legenda span{font-size:25px;line-height:1.28;font-weight:650;color:#1A1726;background:#fff;box-decoration-break:clone;-webkit-box-decoration-break:clone;
+                padding:3px 10px;border-radius:8px;box-shadow:0 10px 24px -16px rgba(40,10,90,.5);opacity:0;transition:opacity .2s}
+  .legenda span.on{opacity:1}
+  .legenda span em{font-style:normal;color:#7C3AED}
+
+  /* ---- cartão final ---- */
+  .final{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:16px;opacity:0;transition:opacity .7s;z-index:9;
+         background:radial-gradient(520px 460px at 50% 42%,rgba(167,139,250,.4),transparent 70%),#F4F1EA}
+  .final.on{opacity:1}
+  .final h1{margin:0;font-size:56px;letter-spacing:-.035em;font-weight:800;text-align:center;line-height:1}
+  .final p{margin:0;font:600 14px/1.4 ui-monospace,Menlo,monospace;color:#6D5E9C;letter-spacing:.06em;text-transform:uppercase;text-align:center}
+</style>
+</head>
+<body>
+<div id="root">
+  <div class="marca"><i></i>Zoe · projeto de faculdade</div>
+  <div class="manchete" id="manchete"></div>
+  <div class="passos" id="passos"></div>
+  <div id="cenas"></div>
+
+  <div class="zona" id="zona">
+    <div class="orb" id="grande"><span class="orb-rings"><i></i><i></i><i></i></span><span class="orb-liquid"><i></i><i></i></span><span class="orb-face"><i></i><i></i></span><span class="orb-sparkle"></span></div>
+    <div class="cards" id="cards"></div>
+  </div>
+  <div class="narrador" id="narrador"><div class="orb" id="mini"><span class="orb-rings"><i></i><i></i><i></i></span><span class="orb-liquid"><i></i><i></i></span><span class="orb-face"><i></i><i></i></span><span class="orb-sparkle"></span></div></div>
+
+  <div class="legenda"><span id="legenda"></span></div>
+  <div class="final" id="final">
+    <div class="orb" style="width:150px;height:150px;cursor:default"><span class="orb-rings"><i></i><i></i><i></i></span><span class="orb-liquid"><i></i><i></i></span><span class="orb-face"><i></i><i></i></span><span class="orb-sparkle"></span></div>
+    <h1>Acompanhe a<br>evolução da Zoe</h1><p>projeto de faculdade · Ayalan Lima</p>
+  </div>
+</div>
+
+<script>
+/*ZOE_FX*/
+</script>
+<script>
+/*DADOS*/
+const $ = id => document.getElementById(id);
+const grande = $('grande'), mini = $('mini');
+
+/* cenas com celular */
+FILME.cenas.forEach((c, i) => {
+  if (c.tipo === 'zoe') return;
+  const el = document.createElement('div'); el.className = 'cena';
+  el.innerHTML = `<div class="cel"><div class="tela">${c.tipo === 'live' ? `<iframe src="${c.src}" tabindex="-1"></iframe>` : `<img src="${c.img}" alt="">`}</div></div>`;
+  $('cenas').appendChild(el); c.el = el;
+});
+/* manchetes */
+FILME.cenas.forEach((c, i) => { const h = document.createElement('h1'); h.innerHTML = c.manchete; h.style.position = 'absolute'; $('manchete').appendChild(h); c.h = h; });
+/* passos */
+for (let k = 0; k < FILME.passos; k++) $('passos').appendChild(document.createElement('b'));
+/* legenda em blocos: cada frase aparece no seu tempo, proporcional ao tamanho */
+FILME.cenas.forEach(c => {
+  const partes = c.legenda.match(/[^.!?…:]+[.!?…:]*/g).map(s => s.trim()).filter(Boolean);
+  const total = partes.reduce((a, p) => a + p.length, 0); let acc = 0;
+  c.blocos = partes.map(p => { const b = { txt: p, ini: c.ini + c.fala * acc / total }; acc += p.length; b.fim = c.ini + c.fala * acc / total; return b; });
+});
+
+const FX = {
+  ola: o => ZoeFx.ola(o, 'olá!'), absorver: o => ZoeFx.absorver(o, { intervalo: 300, pensar: 3600,
+    arquivos: ['index.html', 'README.md', 'treino.json', 'perfil.json', 'repositorios.json', 'extras.json', 'modelo.py', 'motor.js'],
+    palavras: ['correção', 'classificador', 'TF-IDF', 'contexto'] }),
+  absorver2: o => ZoeFx.absorver(o, { intervalo: 190, pensar: 1500, arquivos: ['treino.json', 'perfil.json', 'index.html', 'modelo.py', 'motor.js', 'README.md'], palavras: ['classificador', 'TF-IDF', 'contexto'] }),
+  eureka: o => ZoeFx.eureka(o), corada: o => ZoeFx.corada(o, 1800), dancar: o => ZoeFx.dancar(o, 2000), confete: o => ZoeFx.confete(o),
+  surpresa: o => ZoeFx.surpresa(o), procurando: o => ZoeFx.procurando(o, 2600), lendo: o => ZoeFx.lendo(o, 3000), coracoes: o => ZoeFx.coracoes(o)
+};
+
+let atual = -1, t0 = null, feitos = new Set(), finalizou = false;
+function entrar(i) {
+  const c = FILME.cenas[i];
+  FILME.cenas.forEach((x, j) => { x.el && x.el.classList.toggle('on', j === i); x.h.classList.toggle('on', j === i); });
+  const ehZoe = c.tipo === 'zoe';
+  $('zona').classList.toggle('on', ehZoe); $('narrador').classList.toggle('on', !ehZoe);
+  $('cards').innerHTML = (c.cards || []).map(k => `<div class="card" style="left:${k.x}px;top:${k.y}px">${k.html}</div>`).join('');
+  $('passos').querySelectorAll('b').forEach((b, k) => { b.classList.toggle('ok', k < c.passo); b.classList.toggle('agora', k === c.passo); });
+  const dur = (c.fim - c.ini + 0.6) * 1000;
+  if (c.tipo === 'site') {
+    const img = c.el.querySelector('img'), h = img.naturalHeight * 290 / img.naturalWidth;
+    if (c.mov === 'pan') {
+      const alvo = Math.max(0, h - 627) * (c.quanto || 0.6);
+      img.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(0)', offset: .15 }, { transform: `translateY(-${alvo}px)` }], { duration: dur, easing: 'ease-in-out', fill: 'forwards' });
+    } else {
+      const z = c.z, px = c.ox * 290, py = c.oy * h;
+      const tx = Math.min(0, Math.max(290 - 290 * z, 145 - px * z)), ty = Math.min(0, Math.max(627 - h * z, 313 - py * z));
+      img.style.transformOrigin = '0 0';
+      img.animate([{ transform: 'translate(0,0) scale(1)' }, { transform: 'translate(0,0) scale(1)', offset: .2 }, { transform: `translate(${tx}px,${ty}px) scale(${z})` }], { duration: dur, easing: 'cubic-bezier(.45,0,.25,1)', fill: 'forwards' });
+    }
+  }
+}
+
+function quadro(agora) {
+  if (t0 === null) { t0 = agora; window.__t0wall = Date.now(); }
+  const t = (agora - t0) / 1000;
+  const i = FILME.cenas.findIndex(c => t >= c.ini - 0.3 && t < c.fim + 0.2);
+  if (i !== -1 && i !== atual) { atual = i; entrar(i); }
+  const c = FILME.cenas[atual];
+  if (c) {
+    /* legenda em blocos */
+    const bl = c.blocos.find(b => t >= b.ini - 0.05 && t < b.fim + 0.15);
+    const leg = $('legenda');
+    if (bl) { if (leg.dataset.k !== bl.txt) { leg.dataset.k = bl.txt; leg.innerHTML = bl.txt.replace(/\bZoe\b/g, '<em>Zoe</em>'); } leg.classList.add('on'); }
+    else leg.classList.remove('on');
+    /* efeitos e cartões com hora marcada */
+    (c.fx || []).forEach(([dt, nome], k) => { const ch = atual + 'fx' + k; if (t >= c.ini + dt && !feitos.has(ch)) { feitos.add(ch); FX[nome](grande); } });
+    (c.cards || []).forEach((k, n) => { if (t >= c.ini + k.t) { const el = $('cards').children[n]; if (el && !el.classList.contains('on')) el.classList.add('on'); } });
+    /* contadores */
+    $('cards').querySelectorAll('[data-conta]').forEach(el => {
+      const k = c.cards[[...$('cards').children].indexOf(el.closest('.card'))], p = Math.max(0, Math.min(1, (t - c.ini - k.t) / 1.2));
+      el.textContent = Math.round(+el.dataset.conta * (1 - Math.pow(1 - p, 3))) + (el.dataset.suf || '');
+    });
+    /* portfólio real no celular: temporizadores lentos e rolagem guiada */
+    if (c.tipo === 'live') {
+      const fw = c.el.querySelector('iframe').contentWindow;
+      try {
+        if (!fw.__lento) { fw.__lento = true; const st = fw.setTimeout, R = window.__R; fw.setTimeout = (f, ms, ...a) => st(f, (ms || 0) / R, ...a); }
+        if (t >= c.ini + c.rolar) { const k = Math.min(1, (t - c.ini - c.rolar) / 1.2); fw.scrollTo(0, 900 * (k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2)); }
+      } catch (e) {}
+    }
+  }
+  const e = FILME.env[Math.min(FILME.env.length - 1, Math.floor(t * FILME.fps))] || 0;
+  grande.style.setProperty('--fala', e); mini.style.setProperty('--fala', e);
+  const fimCenas = FILME.cenas[FILME.cenas.length - 1].fim;
+  if (t > fimCenas + 0.1 && !finalizou) { finalizou = true; $('final').classList.add('on'); $('legenda').classList.remove('on'); }
+  if (t < FILME.total + 0.3) requestAnimationFrame(quadro); else window.__acabou = true;
+}
+window.iniciar = () => requestAnimationFrame(quadro);
+</script>
+</body>
+</html>

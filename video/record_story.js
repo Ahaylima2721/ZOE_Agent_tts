@@ -1,0 +1,22 @@
+const {chromium}=require('playwright'); const fs=require('fs');
+const S=process.argv[2], OUT=S+'/frames_story';
+(async()=>{
+  fs.rmSync(OUT,{recursive:true,force:true}); fs.mkdirSync(OUT);
+  const b=await chromium.launch({args:['--disable-web-security','--allow-file-access-from-files']});
+  const p=await b.newPage({viewport:{width:1080,height:1920},deviceScaleFactor:1});
+  const errs=[]; p.on('pageerror',e=>errs.push(e.message));
+  await p.goto('file://'+S+'/story.html',{waitUntil:'load'}); await p.waitForTimeout(2500);
+  const cdp=await p.context().newCDPSession(p); const frames=[]; let n=0;
+  cdp.on('Page.screencastFrame',async f=>{ const name=String(n++).padStart(5,'0')+'.jpg';
+    fs.writeFileSync(OUT+'/'+name,Buffer.from(f.data,'base64')); frames.push([name,f.metadata.timestamp]);
+    try{await cdp.send('Page.screencastFrameAck',{sessionId:f.sessionId});}catch(e){} });
+  await cdp.send('Page.startScreencast',{format:'jpeg',quality:92,maxWidth:1080,maxHeight:1920,everyNthFrame:1});
+  await p.waitForTimeout(300);
+  await cdp.send('Animation.enable'); await cdp.send('Animation.setPlaybackRate',{playbackRate:await p.evaluate(()=>window.__R)});
+  await p.evaluate(()=>window.iniciar());
+  await p.waitForFunction(()=>window.__acabou===true,null,{timeout:900000,polling:1000});
+  await cdp.send('Page.stopScreencast');
+  const t0=await p.evaluate(()=>window.__t0wall), R=await p.evaluate(()=>window.__R);
+  fs.writeFileSync(S+'/frames_story.json',JSON.stringify({t0,R,frames}));
+  console.log('frames',frames.length,'errs',errs.slice(0,5)); await b.close();
+})();

@@ -77,3 +77,22 @@ Mesma lógica do vídeo acima, com mais profundidade e sem datas. A narração d
 | 10 | Próximo passo: voz | O próximo passo? Ganhar a minha própria voz. Enquanto isso, vem me conhecer no portfólio do Ayalan! |
 
 Os números das cenas 5 e 6 (601 perguntas, 15 temas, 96% de acerto, ~120 KB, zero servidores) vêm do README do repositório do portfólio.
+
+---
+
+# Stories de 1 minuto: a Zoe se apresenta
+
+Vídeo vertical (1080×1920) de 55 segundos, com a Zoe como foco e sem boca (só os olhos). A voz é a Luana, um pouco mais lenta (`speed: 0.94`) e com os agudos levemente suavizados.
+
+- **Arquivos:** `make_story.py`, `story_template.html` e `record_story.js`; os trechos de áudio ficam em `audio_st/st01.wav … st07.wav`.
+- A cena "Ganhei vida" roda o portfólio no visual novo (branch `claude/gallant-curie-x6a4lp` do portfólio), em `v/novo/`.
+
+| Cena | Manchete | Narração |
+| --- | --- | --- |
+| 1 | Oi, eu sou a Zoe | Olá! Eu sou a Zoe. Nasci apenas como um chatbot… e hoje tenho o projeto de virar uma inteligência artificial. |
+| 2 | Nasci como um chatbot | Sou um projeto de faculdade do Ayalan. No começo, eu era só uma bolinha roxa no canto do portfólio dele. |
+| 3 | Ganhei nome e página | Depois ganhei nome, uma página só minha, e um laboratório que mostra como eu penso. |
+| 4 | Aprendi a responder | Aprendi com mais de seiscentas perguntas, e hoje acerto noventa e seis por cento dos testes. |
+| 5 | Ganhei vida | Também ganhei vida: eu pisco, sigo o seu olhar, e voo pela página. |
+| 6 | Próximos passos | Meus próximos passos? Ganhar a minha própria voz, e aprender cada vez mais, até virar uma inteligência artificial de verdade. |
+| 7 | Vem comigo | Vem acompanhar a minha evolução! |
