@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src ws://127.0.0.1:*; img-src 'self' data:">
+<title>Zoe</title>
+<link rel="stylesheet" href="orb.css">
+<link rel="stylesheet" href="expressions.css">
+<link rel="stylesheet" href="ui.css">
+</head>
+<body>
+<div class="stage" id="stage" data-corner="br" data-mode="orb">
+
+  <div class="orb-box" id="orbBox">
+    <button class="orb" id="zoe" aria-label="Zoe — clique para conversar, arraste para mover">
+      <span class="orb-rings"><i></i><i></i><i></i></span>
+      <span class="orb-liquid"><i></i><i></i></span>
+      <span class="orb-face" id="face"><i></i><i></i></span>
+      <span class="orb-mouth"></span>
+      <span class="orb-sparkle"></span>
+    </button>
+    <span class="zzz" id="zzz" aria-hidden="true">z<small>z</small></span>
+    <span class="badge" id="badge" hidden></span>
+  </div>
+
+  <div class="bubbles" id="bubbles" aria-live="polite"></div>
+
+  <section class="panel" id="panel" hidden aria-label="Painel da Zoe">
+    <header class="panel-head">
+      <div class="title"><b>Zoe</b> <span class="dot" id="connDot" title="conexão com o Zoe Core"></span></div>
+      <button class="chip focus-chip" id="focusChip" hidden></button>
+      <button class="icon" id="closePanel" aria-label="Fechar painel">✕</button>
+    </header>
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="conversa" aria-selected="true">Conversa</button>
+      <button role="tab" data-tab="avisos">Avisos</button>
+      <button role="tab" data-tab="ajustes">Ajustes</button>
+    </nav>
+
+    <div class="tab" id="tab-conversa">
+      <div class="log" id="log"></div>
+      <div class="quick" id="quick"></div>
+      <form class="composer" id="composer">
+        <input id="input" autocomplete="off" maxlength="2000" placeholder="Escreva para a Zoe… (ajuda)">
+        <button type="submit" aria-label="Enviar">➤</button>
+      </form>
+    </div>
+
+    <div class="tab" id="tab-avisos" hidden>
+      <ul class="list" id="noteList"></ul>
+    </div>
+
+    <form class="tab settings" id="tab-ajustes" hidden>
+      <fieldset>
+        <legend>Minha Zoe</legend>
+        <label>Como devo te chamar <input name="nome_usuario" maxlength="40"></label>
+      </fieldset>
+      <fieldset>
+        <legend>Conversas espontâneas</legend>
+        <label>Autonomia
+          <select name="autonomia">
+            <option value="observar">Apenas observar</option>
+            <option value="conversar">Observar e conversar</option>
+            <option value="recomendar">Conversar e recomendar</option>
+            <option value="intervir_com_autorizacao">Intervir com autorização</option>
+            <option value="intervir_automatico">Intervir automaticamente (regras)</option>
+          </select>
+        </label>
+        <label>Frequência
+          <select name="frequencia">
+            <option value="silenciosa">Silenciosa</option>
+            <option value="baixa">Baixa (até 2 por hora)</option>
+            <option value="normal">Normal (até 4 por hora)</option>
+            <option value="alta">Alta (até 10 por hora)</option>
+          </select>
+        </label>
+        <div class="row">
+          <label>Silêncio das <input type="time" name="silencio_inicio"></label>
+          <label>até <input type="time" name="silencio_fim"></label>
+        </div>
+        <label class="check"><input type="checkbox" name="notificacoes_nativas"> Usar notificação do sistema quando a orbe estiver fechada</label>
+      </fieldset>
+      <fieldset>
+        <legend>Produtividade</legend>
+        <div class="row">
+          <label>Foco (min) <input type="number" name="foco_minutos_padrao" min="1" max="240"></label>
+          <label>Ausente após (min) <input type="number" name="ocioso_minutos" min="1" max="240"></label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Aparência</legend>
+        <label class="check"><input type="checkbox" id="calmo"> Reduzir animações</label>
+      </fieldset>
+      <fieldset>
+        <legend>Privacidade</legend>
+        <p class="hint" id="monitorHint"></p>
+        <div class="row">
+          <button type="button" class="btn" id="toggleMonitor">Pausar monitoramento</button>
+          <button type="button" class="btn danger" id="emergency">Parar tudo</button>
+        </div>
+        <button type="button" class="btn ghost danger" id="wipe">Apagar meus dados…</button>
+      </fieldset>
+      <p class="saved" id="saved" aria-live="polite"></p>
+    </form>
+  </section>
+</div>
+<script src="../../zoe-fx.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

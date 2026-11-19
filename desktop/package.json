@@ -1,0 +1,15 @@
+{
+  "name": "zoe-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Zoe Desktop: a orbe flutuante da Zoe para Linux",
+  "main": "main.js",
+  "license": "UNLICENSED",
+  "scripts": {
+    "start": "electron .",
+    "test": "node tests/e2e.js"
+  },
+  "devDependencies": {
+    "electron": "33.2.1"
+  }
+}

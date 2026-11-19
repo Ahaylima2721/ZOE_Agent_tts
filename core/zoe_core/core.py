@@ -1,0 +1,114 @@
+"""ZOE CORE: liga banco, eventos, decisões, notificações, foco e clientes."""
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import time
+from typing import Any
+
+from .chat import ChatHandler
+from .db import Database
+from .decision import DecisionEngine
+from .events import Event, EventBus, EventType
+from .focus import FocusManager
+from .notifications import NotificationService
+
+log = logging.getLogger("zoe.core")
+
+
+class ClientHub:
+    """Clientes WebSocket conectados (orbe, painéis)."""
+
+    def __init__(self) -> None:
+        self.clients: set[Any] = set()
+
+    async def broadcast(self, msg: dict) -> int:
+        data = json.dumps(msg, ensure_ascii=False)
+        sent = 0
+        for ws in list(self.clients):
+            try:
+                await ws.send_str(data)
+                sent += 1
+            except Exception:
+                self.clients.discard(ws)
+        return sent
+
+
+class ZoeCore:
+    RETENTION_EVERY_S = 6 * 3600
+
+    def __init__(self, db: Database, clock=time.time):
+        self.db, self.clock = db, clock
+        self.started_at = clock()
+        self.bus = EventBus()
+        self.hub = ClientHub()
+        self.notifications = NotificationService(db, clock)
+        self.notifications.set_delivery(self.hub.broadcast)
+        self.decision = DecisionEngine(self.bus, db, self.notifications, self.hub.broadcast)
+        self.focus = FocusManager(self.bus, clock)
+        self.chat = ChatHandler(self)
+        self._bg: list[asyncio.Task] = []
+        # foco pode começar pelo chat, pela bandeja, pela API ou por uma ação de balão:
+        # em todos os casos a interface recebe o estado novo
+        self.bus.subscribe(lambda e: self.broadcast_state(),
+                           EventType.FOCUS_SESSION_STARTED, EventType.FOCUS_SESSION_ENDED)
+
+    # ---------------- ciclo de vida ----------------
+    async def start(self) -> None:
+        removed = self.db.apply_retention()
+        log.info("retenção aplicada: %s", removed)
+        self._bg.append(asyncio.create_task(self._retention_loop()))
+
+    async def stop(self) -> None:
+        await self.focus.stop(reason="encerramento")
+        for t in self._bg:
+            t.cancel()
+
+    async def _retention_loop(self) -> None:
+        while True:
+            await asyncio.sleep(self.RETENTION_EVERY_S)
+            self.db.apply_retention()
+
+    # ---------------- estado ----------------
+    def state(self) -> dict:
+        s = self.db.get_settings()
+        return {
+            "settings": s,
+            "expression": self.decision.base_expression,
+            "focus": self.focus.status(),
+            "monitoring": s["monitoramento_ativo"],
+            "interventions": s["intervencoes_ativas"],
+            "do_not_disturb_until": s["nao_perturbe_ate"] if s["nao_perturbe_ate"] > self.clock() else 0,
+            "uptime_s": round(self.clock() - self.started_at),
+            "clients": len(self.hub.clients),
+        }
+
+    async def broadcast_state(self) -> None:
+        await self.hub.broadcast({"type": "state", "state": self.state()})
+
+    def status_text(self) -> str:
+        st = self.state()
+        parts = [f"Estou ligada há {st['uptime_s'] // 60} min."]
+        parts.append("Monitoramento ativo." if st["monitoring"] else "Monitoramento pausado.")
+        if st["focus"]:
+            parts.append(f"Foco: faltam {st['focus']['remaining_s'] // 60} min.")
+        if st["do_not_disturb_until"]:
+            parts.append("Modo não perturbe ligado.")
+        return " ".join(parts)
+
+    async def publish(self, type_: EventType, payload: dict | None = None, source: str = "core") -> None:
+        await self.bus.publish(Event(type_, payload or {}, source, self.clock()))
+
+    async def set_monitoring(self, active: bool) -> None:
+        self.db.update_settings({"monitoramento_ativo": active, "intervencoes_ativas": active})
+        await self.publish(EventType.MONITORING_RESUMED if active else EventType.EMERGENCY_STOP)
+        await self.broadcast_state()
+
+    async def emergency_stop(self) -> None:
+        await self.set_monitoring(False)
+
+    async def handle_notification_action(self, nid: int, action: str | None) -> None:
+        self.notifications.ack(nid, action)
+        if action == "foco_novamente":
+            await self.focus.start(int(self.db.get_settings()["foco_minutos_padrao"]))

@@ -1,0 +1,317 @@
+"""API local (REST + WebSocket) do Zoe Core.
+
+Segurança:
+  - escuta só em 127.0.0.1;
+  - toda requisição precisa do token gerado no início (Authorization: Bearer
+    <token>, ou ?token= no WebSocket). O token fica em core.json (0600);
+  - sem CORS: páginas web abertas no navegador não conseguem usar a API;
+  - não existe rota que execute comandos arbitrários.
+"""
+from __future__ import annotations
+
+import asyncio
+import hmac
+import json
+import logging
+import os
+import re
+import secrets
+from pathlib import Path
+
+from aiohttp import WSMsgType, web
+
+from .config import AUTONOMY_LEVELS, FREQUENCIES
+from .core import ZoeCore
+from .decision import EXPRESSIONS
+from .events import CLIENT_EVENTS, EventType
+
+log = logging.getLogger("zoe.server")
+
+CORE_KEY = web.AppKey("core", ZoeCore)
+TOKEN_KEY = web.AppKey("token", str)
+
+_HHMM = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
+
+SETTINGS_VALIDATORS = {
+    "nome_usuario": lambda v: isinstance(v, str) and len(v) <= 40,
+    "autonomia": lambda v: v in AUTONOMY_LEVELS,
+    "frequencia": lambda v: v in FREQUENCIES,
+    "silencio_inicio": lambda v: isinstance(v, str) and bool(_HHMM.match(v)),
+    "silencio_fim": lambda v: isinstance(v, str) and bool(_HHMM.match(v)),
+    "nao_perturbe_ate": lambda v: isinstance(v, (int, float)) and v >= 0,
+    "foco_minutos_padrao": lambda v: isinstance(v, int) and 1 <= v <= 240,
+    "ocioso_minutos": lambda v: isinstance(v, int) and 1 <= v <= 240,
+    "notificacoes_nativas": lambda v: isinstance(v, bool),
+    "retencao_dias": lambda v: isinstance(v, dict) and all(
+        k in ("system_metrics", "application_usage", "events", "notifications") and isinstance(d, int) and 1 <= d <= 3650
+        for k, d in v.items()),
+}
+# monitoramento_ativo / intervencoes_ativas mudam só por /api/monitoring e
+# /api/emergency-stop, para sempre gerarem o evento correspondente.
+
+
+def _bad(msg: str, status: int = 400) -> web.Response:
+    return web.json_response({"error": msg}, status=status)
+
+
+@web.middleware
+async def auth_middleware(request: web.Request, handler):
+    token = request.app[TOKEN_KEY]
+    given = request.headers.get("Authorization", "").removeprefix("Bearer ").strip() or request.query.get("token", "")
+    if not hmac.compare_digest(given.encode(), token.encode()):
+        return _bad("não autorizado", 401)
+    return await handler(request)
+
+
+async def _json(request: web.Request) -> dict:
+    try:
+        data = await request.json()
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        raise web.HTTPBadRequest(text='{"error":"json inválido"}', content_type="application/json")
+    if not isinstance(data, dict):
+        raise web.HTTPBadRequest(text='{"error":"esperado um objeto"}', content_type="application/json")
+    return data
+
+
+# ---------------- rotas ----------------
+async def health(request):
+    return web.json_response({"ok": True, "name": "zoe-core", "version": "0.1.0"})
+
+
+async def get_state(request):
+    return web.json_response(request.app[CORE_KEY].state())
+
+
+async def get_settings(request):
+    return web.json_response(request.app[CORE_KEY].db.get_settings())
+
+
+async def patch_settings(request):
+    core = request.app[CORE_KEY]
+    data = await _json(request)
+    for k, v in data.items():
+        check = SETTINGS_VALIDATORS.get(k)
+        if not check:
+            return _bad(f"configuração desconhecida ou somente leitura: {k}")
+        if not check(v):
+            return _bad(f"valor inválido para {k}")
+    settings = core.db.update_settings(data)
+    await core.broadcast_state()
+    return web.json_response(settings)
+
+
+async def chat(request):
+    core = request.app[CORE_KEY]
+    data = await _json(request)
+    text = data.get("text")
+    if not isinstance(text, str):
+        return _bad("campo 'text' obrigatório")
+    await core.publish(EventType.USER_REQUEST, {"kind": "chat"}, source="api")
+    return web.json_response((await core.chat.reply(text)).to_dict())
+
+
+async def interactions(request):
+    limit = min(int(request.query.get("limit", 50)), 500)
+    return web.json_response(request.app[CORE_KEY].db.interactions(limit))
+
+
+async def notifications(request):
+    limit = min(int(request.query.get("limit", 50)), 500)
+    return web.json_response(request.app[CORE_KEY].notifications.history(limit))
+
+
+async def notification_ack(request):
+    core = request.app[CORE_KEY]
+    data = await _json(request)
+    try:
+        nid = int(request.match_info["id"])
+        await core.handle_notification_action(nid, data.get("action"))
+    except ValueError as e:
+        return _bad(str(e))
+    return web.json_response({"ok": True})
+
+
+async def post_event(request):
+    core = request.app[CORE_KEY]
+    data = await _json(request)
+    try:
+        etype = EventType(data.get("type"))
+    except ValueError:
+        return _bad("tipo de evento desconhecido")
+    if etype not in CLIENT_EVENTS:
+        return _bad("este evento não pode ser enviado por clientes", 403)
+    payload = data.get("payload") or {}
+    if not isinstance(payload, dict):
+        return _bad("payload deve ser um objeto")
+    await core.publish(etype, payload, source="desktop")
+    return web.json_response({"ok": True})
+
+
+async def focus_start(request):
+    core = request.app[CORE_KEY]
+    data = await _json(request)
+    mins = data.get("minutes", core.db.get_settings()["foco_minutos_padrao"])
+    if not isinstance(mins, (int, float)):
+        return _bad("minutes deve ser número")
+    try:
+        await core.focus.start(mins)
+    except ValueError as e:
+        return _bad(str(e))
+    return web.json_response(core.focus.status())
+
+
+async def focus_stop(request):
+    core = request.app[CORE_KEY]
+    stopped = await core.focus.stop()
+    return web.json_response({"stopped": stopped})
+
+
+async def monitoring(request):
+    core = request.app[CORE_KEY]
+    data = await _json(request)
+    if not isinstance(data.get("active"), bool):
+        return _bad("campo 'active' (bool) obrigatório")
+    await core.set_monitoring(data["active"])
+    return web.json_response(core.state())
+
+
+async def emergency_stop(request):
+    core = request.app[CORE_KEY]
+    await core.emergency_stop()
+    return web.json_response(core.state())
+
+
+async def delete_personal_data(request):
+    core = request.app[CORE_KEY]
+    data = await _json(request)
+    if data.get("confirm") != "APAGAR":
+        return _bad("envie {\"confirm\": \"APAGAR\"} para confirmar")
+    await core.focus.stop(reason="dados apagados")
+    core.db.delete_personal_data()
+    await core.broadcast_state()
+    return web.json_response({"ok": True})
+
+
+async def websocket(request):
+    core = request.app[CORE_KEY]
+    ws = web.WebSocketResponse(heartbeat=30)
+    await ws.prepare(request)
+    core.hub.clients.add(ws)
+    await ws.send_json({"type": "hello", "state": core.state(), "expressions": list(EXPRESSIONS)})
+    try:
+        async for msg in ws:
+            if msg.type != WSMsgType.TEXT:
+                continue
+            try:
+                data = json.loads(msg.data)
+            except json.JSONDecodeError:
+                continue
+            kind = data.get("type")
+            if kind == "ping":
+                await ws.send_json({"type": "pong"})
+            elif kind == "chat" and isinstance(data.get("text"), str):
+                await core.publish(EventType.USER_REQUEST, {"kind": "chat"}, source="ws")
+                reply = await core.chat.reply(data["text"])
+                await ws.send_json({"type": "chat.reply", "ref": data.get("ref"), **reply.to_dict()})
+            elif kind == "notification.ack" and isinstance(data.get("id"), int):
+                await core.handle_notification_action(data["id"], data.get("action"))
+    finally:
+        core.hub.clients.discard(ws)
+    return ws
+
+
+def build_app(core: ZoeCore, token: str) -> web.Application:
+    app = web.Application(middlewares=[auth_middleware], client_max_size=64 * 1024)
+    app[CORE_KEY] = core
+    app[TOKEN_KEY] = token
+    app.router.add_get("/api/health", health)
+    app.router.add_get("/api/state", get_state)
+    app.router.add_get("/api/settings", get_settings)
+    app.router.add_patch("/api/settings", patch_settings)
+    app.router.add_post("/api/chat", chat)
+    app.router.add_get("/api/interactions", interactions)
+    app.router.add_get("/api/notifications", notifications)
+    app.router.add_post("/api/notifications/{id}/ack", notification_ack)
+    app.router.add_post("/api/events", post_event)
+    app.router.add_post("/api/focus/start", focus_start)
+    app.router.add_post("/api/focus/stop", focus_stop)
+    app.router.add_post("/api/monitoring", monitoring)
+    app.router.add_post("/api/emergency-stop", emergency_stop)
+    app.router.add_post("/api/personal-data/delete", delete_personal_data)
+    app.router.add_get("/ws", websocket)
+
+    async def on_startup(app):
+        await core.start()
+
+    async def on_cleanup(app):
+        await core.stop()
+
+    async def on_shutdown(app):
+        # sem isto o aiohttp espera os WebSockets abertos antes de encerrar
+        for ws in list(core.hub.clients):
+            await ws.close(code=1001, message=b"zoe core encerrando")
+
+    app.on_startup.append(on_startup)
+    app.on_shutdown.append(on_shutdown)
+    app.on_cleanup.append(on_cleanup)
+    return app
+
+
+def write_runtime_file(path: Path, port: int, token: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    tmp = path.with_suffix(".tmp")
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w") as f:
+        json.dump({"host": "127.0.0.1", "port": port, "token": token, "pid": os.getpid()}, f)
+    os.replace(tmp, path)
+
+
+async def _watch_parent(stop: asyncio.Event) -> None:
+    """Encerra o Core quando o processo que o iniciou (Zoe Desktop) deixa de existir."""
+    parent = int(os.environ["ZOE_PARENT_PID"])
+    while True:
+        await asyncio.sleep(2)
+        try:
+            os.kill(parent, 0)
+        except ProcessLookupError:
+            log.info("processo pai %s terminou; encerrando", parent)
+            stop.set()
+            return
+        except PermissionError:
+            pass
+
+
+async def serve(core: ZoeCore, runtime_file: Path, port: int) -> None:
+    token = secrets.token_urlsafe(32)
+    app = build_app(core, token)
+    runner = web.AppRunner(app, access_log=None)
+    await runner.setup()
+    try:
+        site = web.TCPSite(runner, "127.0.0.1", port)
+        await site.start()
+    except OSError:
+        log.warning("porta %s ocupada; usando uma porta livre", port)
+        site = web.TCPSite(runner, "127.0.0.1", 0)
+        await site.start()
+    real_port = site._server.sockets[0].getsockname()[1]
+    write_runtime_file(runtime_file, real_port, token)
+    log.info("Zoe Core ouvindo em 127.0.0.1:%s (runtime: %s)", real_port, runtime_file)
+    stop = asyncio.Event()
+    loop = asyncio.get_running_loop()
+    import signal
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        try:
+            loop.add_signal_handler(sig, stop.set)
+        except NotImplementedError:   # Windows
+            pass
+    watcher = asyncio.create_task(_watch_parent(stop)) if os.environ.get("ZOE_PARENT_PID") else None
+    try:
+        await stop.wait()
+    finally:
+        if watcher:
+            watcher.cancel()
+        try:
+            runtime_file.unlink()
+        except FileNotFoundError:
+            pass
+        await runner.cleanup()
