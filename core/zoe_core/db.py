@@ -161,11 +161,35 @@ MIGRATIONS: list[str] = [
     );
     CREATE INDEX idx_goals_user_status ON goals(user_id, status);
     """,
+    # v3 — aprendizado (orquestrador em cascata + base de conhecimento)
+    """
+    ALTER TABLE interactions ADD COLUMN layer TEXT NOT NULL DEFAULT '';
+    ALTER TABLE interactions ADD COLUMN knowledge_id INTEGER;
+    CREATE INDEX idx_interactions_layer_time ON interactions(layer, timestamp);
+    CREATE TABLE knowledge (
+        id             INTEGER PRIMARY KEY,
+        user_id        INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        question       TEXT NOT NULL,
+        question_norm  TEXT NOT NULL,
+        answer         TEXT NOT NULL,
+        source         TEXT NOT NULL CHECK (source IN ('ia', 'correcao', 'web')),
+        status         TEXT NOT NULL CHECK (status IN ('candidata', 'validada', 'fonte', 'rejeitada')),
+        title          TEXT NOT NULL DEFAULT '',
+        url            TEXT NOT NULL DEFAULT '',
+        interaction_id INTEGER,
+        uses           INTEGER NOT NULL DEFAULT 0,
+        created_at     REAL NOT NULL,
+        last_used      REAL,
+        researched_at  REAL
+    );
+    CREATE INDEX idx_knowledge_status ON knowledge(status, created_at);
+    CREATE INDEX idx_knowledge_interaction ON knowledge(interaction_id);
+    """,
 ]
 
 # Tabelas com dados pessoais (apagadas em "apagar meus dados").
 PERSONAL_TABLES = (
-    "interests", "personal_projects", "personal_activities", "books", "tasks", "goals",
+    "interests", "personal_projects", "personal_activities", "books", "tasks", "goals", "knowledge",
     "focus_rules", "interactions", "notifications", "application_usage", "events",
 )
 
@@ -260,10 +284,12 @@ class Database:
         )
         return cur.lastrowid
 
-    def log_interaction(self, kind: str, context: str, response: str, ts: float | None = None) -> int:
+    def log_interaction(self, kind: str, context: str, response: str, ts: float | None = None,
+                        layer: str = "", knowledge_id: int | None = None) -> int:
         cur = self.execute(
-            "INSERT INTO interactions (user_id, interaction_type, context, response, timestamp) VALUES (1, ?, ?, ?, ?)",
-            (kind, context, response, ts if ts is not None else self.clock()),
+            "INSERT INTO interactions (user_id, interaction_type, context, response, timestamp, layer, knowledge_id) "
+            "VALUES (1, ?, ?, ?, ?, ?, ?)",
+            (kind, context, response, ts if ts is not None else self.clock(), layer, knowledge_id),
         )
         return cur.lastrowid
 

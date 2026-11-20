@@ -251,13 +251,17 @@
     const ref = ++refSeq;
     // a IA manda a resposta aos pedaços: o balão "digitando" vira o texto chegando
     streaming.set(ref, (piece) => {
-      if (typing.classList.contains('typing')) { typing.classList.remove('typing'); typing.textContent = ''; temp = null; render(); }
+      if (typing.classList.contains('typing')) { typing.classList.replace('typing', 'streaming'); typing.textContent = ''; temp = null; render(); }
       typing.textContent += piece; log.scrollTop = log.scrollHeight;
     });
     pending.set(ref, (m) => {
       streaming.delete(ref);
-      typing.remove(); temp = null; render();
-      addMsg('zoe', m.text); flash(m.expression, 2400); setQuick(m.quick_replies);
+      temp = null; render();
+      // a resposta ocupa o lugar do próprio balão "digitando": mantém a ordem mesmo com várias perguntas seguidas
+      const bubble = addMsg('zoe', m.text); typing.replaceWith(bubble);
+      flash(m.expression, 2400); setQuick(m.quick_replies);
+      window.ZoeAprendizado.decorate(bubble, m);
+      log.scrollTop = log.scrollHeight;
     });
     ws.send(JSON.stringify({ type: 'chat', text, ref }));
   }
@@ -267,7 +271,7 @@
   function selectTab(name) {
     document.querySelectorAll('.tabs button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === name)));
     ['conversa', 'recursos', 'memoria', 'avisos', 'ajustes'].forEach((t) => { $('tab-' + t).hidden = t !== name; });
-    if (name === 'memoria') window.ZoeMemoria.show();
+    if (name === 'memoria') { window.ZoeMemoria.show(); window.ZoeAprendizado.show(); }
     if (name === 'recursos') window.ZoeRecursos.show(); else window.ZoeRecursos.hide();
     if (name === 'avisos') loadNotes();
     if (name === 'ajustes') { loadSettings(); window.ZoeIA.show(); }
@@ -334,6 +338,7 @@
 
   window.ZoeMemoria.init({ api: window.zoe.api });
   window.ZoeIA.init({ api: window.zoe.api });
+  window.ZoeAprendizado.init({ api: window.zoe.api });
   window.ZoeRecursos.init({
     api: window.zoe.api,
     send: (msg) => { if (ws && ws.readyState === 1) ws.send(JSON.stringify(msg)); },

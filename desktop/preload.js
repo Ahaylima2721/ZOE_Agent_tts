@@ -8,6 +8,7 @@ contextBridge.exposeInMainWorld('zoe', {
   setMode: (mode) => ipcRenderer.send('ui:mode', mode),
   reportState: (st) => ipcRenderer.send('ui:state', st),
   contextMenu: () => ipcRenderer.send('ui:context-menu'),
+  openExternal: (url) => ipcRenderer.send('ui:open-external', url),
   dragStart: (p) => ipcRenderer.send('drag:start', p),
   dragMove: (p) => ipcRenderer.send('drag:move', p),
   dragEnd: (orbCenter) => ipcRenderer.send('drag:end', orbCenter),

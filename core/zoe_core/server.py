@@ -21,6 +21,7 @@ from pathlib import Path
 from aiohttp import WSMsgType, web
 
 from .ai.engine import is_local_url
+from .learning.research import is_allowed_url
 from .config import AUTONOMY_LEVELS, FREQUENCIES
 from .core import ZoeCore
 from .decision import EXPRESSIONS
@@ -48,6 +49,8 @@ SETTINGS_VALIDATORS = {
     "pc_alertas": lambda v: isinstance(v, bool),
     "checkins_memoria": lambda v: isinstance(v, bool),
     "ia_ativa": lambda v: isinstance(v, bool),
+    "pesquisa_web": lambda v: isinstance(v, bool),
+    "pesquisa_web_url": lambda v: isinstance(v, str) and is_allowed_url(v),   # só Wikipédia (ou servidor local de teste)
     "ia_modelo": lambda v: isinstance(v, str) and bool(re.fullmatch(r"[a-z0-9][a-z0-9._:/-]{0,79}", v)),
     "ia_url": lambda v: isinstance(v, str) and is_local_url(v),     # nunca um servidor externo
     "tom": lambda v: v in ("equilibrado", "direto", "descontraido"),
@@ -245,6 +248,55 @@ async def ai_pull(request):
     return web.json_response({"started": started, "pull": core.ai.pull_state})
 
 
+# ---------------- aprendizado ----------------
+def _kid(request) -> int:
+    try:
+        return int(request.match_info["id"])
+    except ValueError:
+        raise web.HTTPBadRequest(text='{"error":"id inválido"}', content_type="application/json")
+
+
+async def learning_overview(request):
+    core = request.app[CORE_KEY]
+    return web.json_response({"stats": core.learning_stats(), "items": core.knowledge.list()})
+
+
+async def learning_feedback(request):
+    core = request.app[CORE_KEY]
+    data = await _json(request)
+    if not isinstance(data.get("interaction_id"), int):
+        return _bad("interaction_id obrigatório")
+    try:
+        msg = core.learning_feedback(data["interaction_id"], data.get("vote"))
+    except ValueError as e:
+        return _bad(str(e))
+    return web.json_response({"message": msg})
+
+
+async def learning_update(request):
+    core = request.app[CORE_KEY]
+    data = await _json(request)
+    if data.get("status") not in ("validada", "rejeitada"):
+        return _bad("status deve ser validada ou rejeitada")
+    if not core.knowledge.set_status(_kid(request), data["status"]):
+        return _bad("item não encontrado", 404)
+    return web.json_response({"ok": True})
+
+
+async def learning_delete(request):
+    if not request.app[CORE_KEY].knowledge.delete(_kid(request)):
+        return _bad("item não encontrado", 404)
+    return web.json_response({"ok": True})
+
+
+async def learning_research(request):
+    """Pesquisa agora (botão), sem esperar a conversa terminar. Só com a opção ligada."""
+    core = request.app[CORE_KEY]
+    if not core.research.enabled()[0]:
+        return _bad("a pesquisa na internet está desligada em Ajustes", 409)
+    return web.json_response({"learned": await core.research.run()})
+
+
 async def post_event(request):
     core = request.app[CORE_KEY]
     data = await _json(request)
@@ -377,6 +429,11 @@ def build_app(core: ZoeCore, token: str) -> web.Application:
     app.router.add_get("/api/pc", pc_status)
     app.router.add_get("/api/memory", memory_all)
     app.router.add_get("/api/ai", ai_status)
+    app.router.add_get("/api/learning", learning_overview)
+    app.router.add_post("/api/learning/feedback", learning_feedback)
+    app.router.add_post("/api/learning/research", learning_research)
+    app.router.add_patch("/api/learning/{id}", learning_update)
+    app.router.add_delete("/api/learning/{id}", learning_delete)
     app.router.add_post("/api/ai/pull", ai_pull)
     app.router.add_post("/api/memory/{kind}", memory_create)
     app.router.add_patch("/api/memory/{kind}/{id}", memory_update)

@@ -11,6 +11,8 @@ from .ai.engine import AIEngine
 from .chat import ChatHandler
 from .companion import checkins
 from .companion.memory import Memory
+from .learning.knowledge import KnowledgeBase
+from .learning.research import Researcher
 from .db import Database
 from .decision import DecisionEngine
 from .events import Event, EventBus, EventType
@@ -56,6 +58,8 @@ class ZoeCore:
         self.decision = DecisionEngine(self.bus, db, self.notifications, self.hub.broadcast)
         self.focus = FocusManager(self.bus, clock)
         self.memory = Memory(db, clock)
+        self.knowledge = KnowledgeBase(db, clock)
+        self.research = Researcher(self)
         self.ai = AIEngine(self)
         self.chat = ChatHandler(self)
         # PC Companion: opcional, para a Zoe funcionar mesmo sem o psutil instalado
@@ -79,6 +83,7 @@ class ZoeCore:
         log.info("retenção aplicada: %s", removed)
         self._bg.append(asyncio.create_task(self._retention_loop()))
         self._bg.append(asyncio.create_task(self._checkin_loop()))
+        self.research.start()
         if self.pc:
             self.pc.start()
 
@@ -86,6 +91,7 @@ class ZoeCore:
         await self.focus.stop(reason="encerramento")
         if self.pc:
             await self.pc.stop()
+        await self.research.stop()
         for t in self._bg:
             t.cancel()
 
@@ -120,6 +126,36 @@ class ZoeCore:
         if choice:
             await self.publish(EventType.MEMORY_CHECKIN, choice, source="companion")
         return choice
+
+    # ---------------- aprendizado ----------------
+    def learning_feedback(self, interaction_id: int, vote: str) -> str:
+        """👍 promove a resposta da IA para a base; 👎 rejeita (e ela vai para a fila de pesquisa)."""
+        rows = self.db.query("SELECT * FROM interactions WHERE id = ?", (interaction_id,))
+        if not rows or vote not in ("up", "down"):
+            raise ValueError("interação ou voto inválido")
+        inter = rows[0]
+        row = self.knowledge.by_interaction(interaction_id) if inter["layer"] == "ia" else \
+            (self.knowledge.get(inter["knowledge_id"]) if inter["knowledge_id"] else None)
+        if vote == "up":
+            if row and row["status"] == "candidata":
+                self.knowledge.set_status(row["id"], "validada")
+                return "Obrigada! Guardei essa resposta: da próxima vez respondo sem precisar da IA."
+            return "Obrigada!"
+        if row:
+            self.knowledge.set_status(row["id"], "rejeitada")
+        return "Entendi, não vou repetir essa resposta. Se quiser, me corrija: \"na verdade, …\"."
+
+    def learning_stats(self, days: int = 30) -> dict:
+        since = self.clock() - days * 86400
+        rows = self.db.query("SELECT layer, COUNT(*) AS n FROM interactions WHERE interaction_type = 'chat' "
+                             "AND layer != '' AND timestamp > ? GROUP BY layer", (since,))
+        by = {r["layer"]: r["n"] for r in rows}
+        total = sum(by.values())
+        local = sum(by.get(k, 0) for k in ("regras", "memoria", "aprendizado", "base"))
+        kn = self.db.query("SELECT status, COUNT(*) AS n FROM knowledge GROUP BY status")
+        return {"days": days, "total": total, "by_layer": by, "local": local,
+                "sem_ia_pct": round(100 * local / total) if total else None,
+                "knowledge": {r["status"]: r["n"] for r in kn}}
 
     # ---------------- estado ----------------
     def state(self) -> dict:

@@ -15,6 +15,7 @@ const env = { ...process.env, ZOE_DATA_DIR: path.join(tmp, 'data'), ZOE_RUNTIME_
   XDG_CONFIG_HOME: path.join(tmp, 'config'), ZOE_DISABLE_GPU: '1' };
 delete env.XDG_SESSION_TYPE;
 const shots = process.env.ZOE_SHOTS;
+const children = [];   // servidores simulados (Ollama, Wikipédia): encerrados no fim
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function until(fn, ms = 8000, what = 'condição') {
@@ -145,11 +146,15 @@ async function coreApi(method, p, body) {
       await until(() => page.$$eval('.msg.zoe', (m) => /^CPU em \d+%, memória \d+%/.test(m.at(-1).textContent)), 5000, 'resumo');
     });
 
-    const lastZoe = () => page.$$eval('.msg.zoe', (m) => m.at(-1).textContent);
+    const FINAL = '.msg.zoe:not(.typing):not(.streaming)';   // resposta já completa (não em streaming)
+    const lastZoe = () => page.$$eval(FINAL, (m) => m.at(-1).textContent);
+    // espera um balão NOVO da Zoe (respostas iguais às anteriores não podem enganar o teste)
     const chat = async (text, expect) => {
+      const before = await page.$$eval(FINAL, (m) => m.length);
       await page.fill('#input', text);
       await page.press('#input', 'Enter');
-      await until(async () => expect.test(await lastZoe()), 5000, `resposta para "${text}"`);
+      await until(async () => (await page.$$eval(FINAL, (m) => m.length)) > before
+        && expect.test(await lastZoe()), 8000, `resposta para "${text}"`);
     };
 
     await step('memória: conversa pergunta o que falta em vez de inventar', async () => {
@@ -215,7 +220,7 @@ async function coreApi(method, p, body) {
     await step('ia: baixa o modelo pela Zoe, com progresso', async () => {
       const port = 20000 + Math.floor(Math.random() * 20000);
       fakeOllama = spawn('python3', [path.join(root, '..', 'core', 'tests', 'fake_ollama.py'), String(port), 'vazio'], { stdio: 'ignore' });
-      process.on('exit', () => fakeOllama.kill());   // mesmo se um passo falhar
+      children.push(fakeOllama);
       await until(async () => (await fetch(`http://127.0.0.1:${port}/api/version`)).ok, 8000, 'Ollama simulado');
       await coreApi('PATCH', '/api/settings', { ia_url: `http://127.0.0.1:${port}` });
       await page.click('[data-tab="conversa"]'); await page.click('[data-tab="ajustes"]');
@@ -232,8 +237,45 @@ async function coreApi(method, p, body) {
       await until(() => page.$$eval('.msg.zoe', (m) => { const t = m.at(-1).textContent; return t.startsWith('Oi!') && !t.includes('local.'); }), 5000, 'pedaço parcial');
       await until(() => page.$$eval('.msg.zoe', (m) => m.at(-1).textContent === 'Oi! Eu sou a Zoe, rodando num modelo local.'), 8000, 'resposta completa');
       assert.equal(await page.$$eval('.msg.zoe.typing', (m) => m.length), 0);
-      fakeOllama.kill();
     });
+
+    await step('chat: duas perguntas seguidas mantêm a ordem das respostas', async () => {
+      await page.fill('#input', 'primeira pergunta solta');
+      await page.press('#input', 'Enter');
+      await page.fill('#input', 'segunda pergunta solta');
+      await page.press('#input', 'Enter');
+      await until(() => page.$$eval('#log .msg.typing, #log .msg.streaming', (m) => m.length === 0), 10000, 'respostas');
+      const seq = await page.$$eval('#log .msg', (ms) => ms.slice(-4).map((m) => (m.classList.contains('eu') ? 'eu:' : 'zoe:') + m.textContent.slice(0, 16)));
+      assert.deepEqual(seq.map((x) => x.split(':')[0]), ['eu', 'zoe', 'eu', 'zoe']);
+      assert.ok(seq[0].includes('primeira') && seq[2].includes('segunda'));
+    });
+
+    await step('aprendizado: 👍 guarda a resposta e a próxima vem da base, sem IA', async () => {
+      await chat('me explica o que é um buraco negro', /rodando num modelo local\./);
+      await page.click('.msg.zoe:last-child .msg-fb .fb:has-text("👍")');
+      await until(() => page.$eval('.msg.zoe:last-child .msg-fb', (e) => /Guardei/.test(e.textContent)), 4000, 'confirmação do 👍');
+      await chat('me explica o que é um buraco negro', /Lembrei da nossa conversa de \d\d\/\d\d/);
+      const st = (await coreApi('GET', '/api/learning')).stats;
+      assert.equal(st.by_layer.base, 1);
+    });
+
+    let fakeWiki = null;
+    await step('aprendizado: pesquisa na Wikipédia e responde citando a fonte', async () => {
+      const port = 20000 + Math.floor(Math.random() * 20000);
+      fakeWiki = spawn('python3', [path.join(root, '..', 'core', 'tests', 'fake_wiki.py'), String(port)], { stdio: 'ignore' });
+      children.push(fakeWiki);
+      await until(async () => (await fetch(`http://127.0.0.1:${port}/w/rest.php/v1/search/page?q=x`)).ok, 8000, 'Wikipédia simulada');
+      await coreApi('PATCH', '/api/settings', { pesquisa_web: true, pesquisa_web_url: `http://127.0.0.1:${port}` });
+      await chat('Quem escreveu O Fantasma da Ópera?', /rodando num modelo local\./);
+      await page.click('[data-tab="memoria"]');
+      await page.click('#learnBox .btn:has-text("Pesquisar agora")');
+      await until(() => page.$eval('#learnBox', (e) => /com fonte · Wikipédia · O Fantasma da Ópera/.test(e.textContent)), 6000, 'item com fonte');
+      assert.match(await page.textContent('.learn-pct'), /^\d+%$/);
+      await page.click('[data-tab="conversa"]');
+      await chat('Quem escreveu O Fantasma da Ópera?', /Gaston Leroux/);
+      assert.match(await page.textContent('.msg.zoe:last-child .msg-src'), /Fonte: Wikipédia · O Fantasma da Ópera/);
+    });
+    await shot('11-aprendizado');
 
     await step('chat: balões longos não se sobrepõem (crescem e o chat rola)', async () => {
       const r = await page.evaluate(() => {
@@ -305,6 +347,7 @@ async function coreApi(method, p, body) {
 
     console.log(`\n${results.length} verificações passaram`);
   } finally {
+    children.forEach((c) => c.kill());
     await app.close().catch(() => {});
     fs.rmSync(tmp, { recursive: true, force: true });
   }

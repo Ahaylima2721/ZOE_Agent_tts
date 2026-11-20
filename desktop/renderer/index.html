@@ -68,6 +68,7 @@
     </div>
 
     <div class="tab mem" id="tab-memoria" hidden>
+      <div id="learnBox" class="learn"></div>
       <p class="rec-sum" id="memSum" aria-live="polite"></p>
       <div id="memList"></div>
     </div>
@@ -137,6 +138,7 @@
           <div class="meter" id="iaPullMeter" role="meter" aria-label="Download do modelo" aria-valuemin="0" aria-valuemax="100"><i id="iaPullFill"></i></div>
           <p class="hint" id="iaPullText"></p>
         </div>
+        <label class="check"><input type="checkbox" name="pesquisa_web"> Depois da conversa, conferir na Wikipédia o que só a IA respondeu (envia só o assunto, nunca a conversa)</label>
         <p class="hint">A IA só é usada quando os comandos da Zoe não entendem a mensagem. Ela recebe só o que está na memória e as últimas mensagens, e não executa nada no computador.</p>
       </fieldset>
       <fieldset>
@@ -176,6 +178,7 @@
 <script src="recursos.js"></script>
 <script src="memoria.js"></script>
 <script src="ia.js"></script>
+<script src="aprendizado.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

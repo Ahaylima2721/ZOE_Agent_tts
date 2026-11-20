@@ -12,6 +12,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from .companion.conversation import MemoryChat
+from .learning.knowledge import cacheable
 from .text import normalize  # noqa: F401  (reexportado: outros módulos importam daqui)
 
 if TYPE_CHECKING:
@@ -32,14 +33,25 @@ HELP = (
 )
 
 
+# Níveis da cascata (quem respondeu): do mais barato ao mais caro.
+LAYERS = ("regras", "memoria", "aprendizado", "base", "ia", "sem_resposta")
+LOCAL_LAYERS = ("regras", "memoria", "aprendizado", "base")
+
+
 @dataclass
 class Reply:
     text: str
     expression: str = "normal"
     quick_replies: tuple[str, ...] = ()
+    layer: str = "regras"
+    source: dict | None = None          # {"label", "url"} quando veio da base aprendida
+    knowledge_id: int | None = None
+    id: int | None = None               # id da interação (para 👍/👎)
+    feedback: bool = False              # mostrar 👍/👎?
 
     def to_dict(self) -> dict:
-        return {"text": self.text, "expression": self.expression, "quick_replies": list(self.quick_replies)}
+        return {"text": self.text, "expression": self.expression, "quick_replies": list(self.quick_replies),
+                "id": self.id, "layer": self.layer, "source": self.source, "feedback": self.feedback}
 
 
 # ---------------- PC Companion ----------------
@@ -55,12 +67,22 @@ class ChatHandler:
     def __init__(self, core: "ZoeCore"):
         self.core = core
         self.memchat = MemoryChat(core.memory, core.clock)
+        self.last: dict | None = None    # última pergunta respondida pela base ou pela IA (para correções)
 
     async def reply(self, text: str, on_delta=None) -> Reply:
         """on_delta(pedaço): recebe a resposta da IA aos poucos (streaming), quando ela for usada."""
         text = text.strip()[:2000]
         r = await self._route(text, normalize(text), on_delta)
-        self.core.db.log_interaction("chat", text, r.text)
+        core = self.core
+        r.id = core.db.log_interaction("chat", text, r.text, layer=r.layer, knowledge_id=r.knowledge_id)
+        core.research.touch()
+        if r.layer == "ia":
+            r.feedback = True
+            if cacheable(text):                  # entra como candidata; só vale depois de 👍 ou de uma fonte
+                core.knowledge.add(text, r.text, "ia", "candidata", interaction_id=r.id)
+        elif r.layer == "base":
+            r.feedback = True
+        self.last = {"question": text, "layer": r.layer, "id": r.id, "ts": core.clock()} if r.layer in ("ia", "base") else self.last
         return r
 
     async def _route(self, raw: str, t: str, on_delta=None) -> Reply:
@@ -71,7 +93,7 @@ class ChatHandler:
             return Reply("Hm? Pode escrever de novo?", "curiosa")
         ans = self.memchat.handle_pending(raw, t)      # resposta a uma pergunta que eu fiz
         if ans:
-            return Reply(*ans)
+            return Reply(*ans, layer="memoria")
         if t in ("ajuda", "help", "comandos", "o que voce faz", "o que voce sabe fazer"):
             return Reply(HELP, "feliz", ("foco 25", "status"))
         if re.fullmatch(r"(oi|ola|e ai|bom dia|boa tarde|boa noite|hey)( zoe)?", t):
@@ -117,24 +139,52 @@ class ChatHandler:
 
         ans = self.memchat.handle(raw, t)              # coisas que você me conta sobre você
         if ans:
-            return Reply(*ans)
+            return Reply(*ans, layer="memoria")
 
         if t in ("status", "como voce esta", "tudo bem"):
             return Reply(core.status_text(), "normal")
         if t in ("que horas sao", "horas", "que horas"):
             return Reply(f"Agora são {datetime.fromtimestamp(core.clock()):%H:%M}.", "normal")
 
-        # nenhuma regra local entendeu: aí sim a IA local (se estiver disponível)
+        # correção de uma resposta minha: vale mais que qualquer coisa guardada
+        fix = self._correction(raw)
+        if fix:
+            return fix
+
+        # nível 2: base aprendida (respostas que você confirmou, correções e fontes da web)
+        known = core.knowledge.lookup(raw)
+        if known:
+            core.knowledge.mark_used(known["id"])
+            return Reply(known["answer"], "feliz", layer="base", source=core.knowledge.source_of(known),
+                         knowledge_id=known["id"])
+
+        # nível 4: nenhuma regra local entendeu, aí sim a IA local (se estiver disponível)
         text, why = await core.ai.reply(raw, on_delta)
         if text:
-            return Reply(text, "normal")
+            return Reply(text, "normal", layer="ia")
         if why:
-            return Reply(f"Não sei responder isso sem a minha IA. {why}", "curiosa", ("ajuda",))
-        return Reply(
+            return Reply(f"Não sei responder isso sem a minha IA. {why}", "curiosa", ("ajuda",), layer="sem_resposta")
+        return Reply(layer="sem_resposta", text=
             "Não entendi. A conversa livre (Ollama) está desligada em Ajustes → Inteligência artificial. "
             "Escreva \"ajuda\" para ver o que já sei fazer.",
-            "curiosa", ("ajuda",),
+            expression="curiosa", quick_replies=("ajuda",),
         )
+
+    CORRECTION = re.compile(r"^(?:na\s+verdade|n[aã]o[,!]?\s+(?:[eé]|o\s+certo\s+[eé])|errado[,!]?|o\s+certo\s+[eé]|corre[cç][aã]o:?)"
+                            r"[,:!]?\s+(?P<x>.{3,})$", re.I)
+
+    def _correction(self, raw: str) -> Reply | None:
+        last = self.last
+        if not last or self.core.clock() - last["ts"] > 600:
+            return None
+        m = self.CORRECTION.match(raw.strip())
+        if not m or not cacheable(last["question"]):
+            return None
+        answer = m.group("x").strip()
+        answer = answer[:1].upper() + answer[1:]
+        self.core.knowledge.correct(last["question"], answer)
+        self.last = None
+        return Reply("Obrigada pela correção! Da próxima vez eu respondo assim.", "feliz", layer="aprendizado")
 
     async def _pc(self, t: str) -> Reply | None:
         if t not in PC_SUMMARY | PC_DIAGNOSE | PC_PROCESSES:

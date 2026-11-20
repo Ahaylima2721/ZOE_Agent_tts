@@ -215,3 +215,16 @@ legend { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transfor
 .ia-pull { display: grid; gap: 4px; }
 #iaPull { justify-self: start; }
 #iaPull[hidden] { display: none; }
+
+/* ---------- aprendizado: fonte, 👍/👎 e "O que aprendi" ---------- */
+.msg-src { margin-top: 6px; font-size: 11px; color: var(--muted); }
+.msg-src .link { border: 0; background: none; padding: 0; color: var(--accent); font: inherit; cursor: pointer; text-decoration: underline; text-align: left; }
+.msg-fb { display: flex; align-items: center; gap: 4px; margin-top: 6px; font-size: 12px; color: var(--muted); white-space: normal; }
+.msg-fb .fb { border: 1px solid var(--line); background: var(--bg); border-radius: 999px; padding: 1px 8px; cursor: pointer; font-size: 13px; line-height: 1.4; }
+.msg-fb .fb:hover { border-color: var(--accent); }
+.learn { display: grid; gap: 4px; margin-bottom: 4px; }
+.learn-head { display: flex; align-items: center; gap: 10px; }
+.learn-pct { font-size: 26px; line-height: 1; color: var(--accent); font-variant-numeric: tabular-nums; }
+.learn-txt { flex: 1; display: grid; font-size: 13px; }
+.learn-txt small { color: var(--muted); font-size: 12px; }
+.learn-layers { margin: 0; font-size: 12px; color: var(--muted); }

@@ -8,7 +8,7 @@
  * - Mede o tempo ocioso do sistema e envia USER_IDLE / USER_RETURNED ao Core.
  */
 'use strict';
-const { app, BrowserWindow, ipcMain, screen, Tray, Menu, powerMonitor, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, screen, Tray, Menu, powerMonitor, nativeImage, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -275,6 +275,10 @@ const API_ALLOW = [
   ['POST', /^\/api\/notifications\/\d+\/ack$/],
   ['GET', /^\/api\/memory$/],
   ['GET', /^\/api\/ai$/],
+  ['GET', /^\/api\/learning$/],
+  ['POST', /^\/api\/learning\/(feedback|research)$/],
+  ['PATCH', /^\/api\/learning\/\d+$/],
+  ['DELETE', /^\/api\/learning\/\d+$/],
   ['POST', /^\/api\/ai\/pull$/],
   ['POST', /^\/api\/memory\/[a-z_]+$/],
   ['PATCH', /^\/api\/memory\/[a-z_]+\/\d+$/],
@@ -292,6 +296,13 @@ ipcMain.on('ui:state', (_e, st) => {
     if (!monitoringActive) idleState = 'active';
     rebuildMenus();
   }
+});
+// links de fonte (Wikipédia) abrem no navegador do sistema; só https
+ipcMain.on('ui:open-external', (_e, url) => {
+  try {
+    const u = new URL(String(url));
+    if (u.protocol === 'https:') shell.openExternal(u.toString());
+  } catch { /* URL inválida: ignora */ }
 });
 ipcMain.on('ui:context-menu', () => { if (win) Menu.buildFromTemplate(menuTemplate()).popup({ window: win }); });
 

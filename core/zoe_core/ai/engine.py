@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Awaitable, Callable
 from urllib.parse import urlparse
 
 from ..companion.memory import KINDS, describe
+from ..text import tokens
 from .ollama import OllamaClient, OllamaError
 
 if TYPE_CHECKING:
@@ -138,17 +139,38 @@ class AIEngine:
         await self.core.hub.broadcast({"type": "ai.pull", "pull": self.pull_state})
 
     # ---------------- conversa ----------------
+    MAX_FACTS = 6
+    MAX_KNOWLEDGE = 3
+
+    def relevant_facts(self, user_text: str) -> list[str]:
+        """Contexto enxuto (etapa C): só o que tem a ver com a pergunta.
+        Sem nada relacionado, vai um retrato mínimo (o que está lendo/fazendo agora)."""
+        words = tokens(user_text)
+        scored, current = [], []
+        for key, items in self.core.memory.all().items():
+            for it in items:
+                text = describe(it)
+                overlap = len(tokens(text + " " + (it.get("notas") or "")) & words)
+                if overlap:
+                    scored.append((overlap, f"{KINDS[key].label}: {text}"))
+                elif (key == "livro" and it.get("status") == "lendo") or (key == "projeto" and it.get("status") == "ativo"):
+                    current.append(f"{KINDS[key].label}: {text}")
+        scored.sort(key=lambda x: -x[0])
+        facts = [f for _, f in scored[:self.MAX_FACTS]]
+        return facts or current[:3]
+
     def build_messages(self, user_text: str) -> list[dict]:
         s = self.core.db.get_settings()
         now = datetime.fromtimestamp(self.core.clock())
-        facts = []
-        for key, items in self.core.memory.all().items():
-            if items:
-                facts.append(f"- {KINDS[key].plural}: " + "; ".join(describe(i) for i in items[:5]))
-        about = "\n".join(facts) or "- (nada ainda: o usuário não contou nada sobre si)"
+        facts = self.relevant_facts(user_text)
+        about = "\n".join(f"- {f}" for f in facts) or "- (nada relacionado na memória)"
+        known = self.core.knowledge.related(user_text, self.MAX_KNOWLEDGE)
+        confirmed = "\n".join(f"- {k['question']} → {k['answer'][:300]}" for k in known)
         name = s.get("nome_usuario") or "(não informado)"
         system = (PERSONA + "\n" + TONE.get(s.get("tom", "equilibrado"), "") +
                   f"\n\nAgora: {now:%d/%m/%Y %H:%M}.\nNome do usuário: {name}.\nO que você sabe:\n{about}").strip()
+        if confirmed:
+            system += f"\nConhecimento confirmado (use isto em vez de supor):\n{confirmed}"
         msgs = [{"role": "system", "content": system}]
         for it in self._history():
             msgs.append({"role": "user", "content": it["context"][:500]})

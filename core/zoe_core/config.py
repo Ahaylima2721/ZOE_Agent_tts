@@ -86,6 +86,9 @@ DEFAULT_SETTINGS: dict = {
     "ia_ativa": True,
     "ia_modelo": "qwen3:0.6b",
     "ia_url": "http://127.0.0.1:11434",
+    # Aprendizado: conferir na Wikipédia, depois da conversa, o que só a IA respondeu (envia só o assunto)
+    "pesquisa_web": False,
+    "pesquisa_web_url": "https://pt.wikipedia.org",
     # PC Companion (seção 5)
     "pc_alertas": True,             # a Zoe comenta sobre RAM, CPU, disco, temperatura e bateria
     "pc_intervalo_s": 5,            # intervalo entre leituras
