@@ -123,6 +123,23 @@
         </div>
       </fieldset>
       <fieldset>
+        <legend>Inteligência artificial</legend>
+        <label class="check"><input type="checkbox" id="iaAtiva"> Conversa livre com um modelo local (Ollama)</label>
+        <label>Modelo <select id="iaModelo"></select></label>
+        <p class="hint ia-status" id="iaStatus" aria-live="polite">Verificando…</p>
+        <div class="ia-hint" id="iaHint" hidden>
+          <p class="hint">Instale o Ollama (uma vez) num terminal:</p>
+          <code>curl -fsSL https://ollama.com/install.sh | sh</code>
+          <p class="hint">Depois volte aqui para baixar o modelo.</p>
+        </div>
+        <button type="button" class="btn primary" id="iaPull" hidden>Baixar modelo</button>
+        <div class="ia-pull" id="iaPullBox" hidden>
+          <div class="meter" id="iaPullMeter" role="meter" aria-label="Download do modelo" aria-valuemin="0" aria-valuemax="100"><i id="iaPullFill"></i></div>
+          <p class="hint" id="iaPullText"></p>
+        </div>
+        <p class="hint">A IA só é usada quando os comandos da Zoe não entendem a mensagem. Ela recebe só o que está na memória e as últimas mensagens, e não executa nada no computador.</p>
+      </fieldset>
+      <fieldset>
         <legend>Recursos do computador</legend>
         <label class="check"><input type="checkbox" name="pc_alertas"> Avisar quando algo passar do limite</label>
         <div class="row">
@@ -158,6 +175,7 @@
 <script src="../../zoe-fx.js"></script>
 <script src="recursos.js"></script>
 <script src="memoria.js"></script>
+<script src="ia.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -82,6 +82,10 @@ DEFAULT_SETTINGS: dict = {
     "checkins_memoria": True,       # "Você conseguiu avançar naquele livro?"
     "tom": "equilibrado",           # equilibrado | direto | descontraido
     "assuntos_evitar": [],          # a Zoe não puxa conversa sobre estes assuntos
+    # Inteligência artificial (seção 7.3): modelo local via Ollama, só em 127.0.0.1
+    "ia_ativa": True,
+    "ia_modelo": "qwen3:0.6b",
+    "ia_url": "http://127.0.0.1:11434",
     # PC Companion (seção 5)
     "pc_alertas": True,             # a Zoe comenta sobre RAM, CPU, disco, temperatura e bateria
     "pc_intervalo_s": 5,            # intervalo entre leituras

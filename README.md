@@ -31,6 +31,12 @@ Em outras distribuições: `python3 -m pip install --user -r core/requirements.t
 cd desktop && npm install && npm start
 ```
 
+Opcional, para conversa livre com IA local: instale o [Ollama](https://ollama.com) e baixe o modelo pela própria Zoe (Ajustes → Inteligência artificial):
+
+```bash
+curl -fsSL https://ollama.com/install.sh | sh
+```
+
 A orbe aparece no canto inferior direito. **Clique** para conversar, **arraste** para mover e use o **clique direito** para abrir o menu (ocultar, foco, pausar, parar tudo). Escreva `ajuda` para ver os comandos.
 
 Se o Electron reclamar do *SUID sandbox* (comum no Ubuntu 24.04+), rode uma vez:

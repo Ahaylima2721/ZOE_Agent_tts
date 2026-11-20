@@ -30,6 +30,8 @@ Toda requisição precisa do token: `Authorization: Bearer <token>`, ou `?token=
 | POST | `/api/personal-data/delete` | `{confirm: "APAGAR"}` | apaga conversas, avisos, eventos e dados pessoais |
 | GET | `/api/pc` | — | `{snapshot, history{t,cpu,ram}}`: leitura atual e o último ~minuto. 503 se faltar o psutil |
 | GET | `/api/pc/diagnose` | — | `{summary, findings[], processes}`: diagnóstico na hora (funciona mesmo com alertas desligados) |
+| GET | `/api/ai` | — | `{enabled, url, model, models[], ollama, version, installed[], model_installed, pull, hint}` |
+| POST | `/api/ai/pull` | `{}` | começa a baixar o modelo configurado (só quando o usuário pede); 503 sem Ollama. Progresso pelo WebSocket (`ai.pull`) |
 | GET | `/api/memory` | — | `{kinds[], items{tipo: [...]}}`: tudo o que a Zoe guardou + a descrição dos campos de cada tipo |
 | POST | `/api/memory/{tipo}` | campos do tipo | `{item, created}`: 201 se criou; 200 se já existia um item com o mesmo nome (atualiza em vez de duplicar) |
 | PATCH | `/api/memory/{tipo}/{id}` | campos parciais | `{item}`; 400 para campo/valor inválido, 404 se não existir |
@@ -47,6 +49,9 @@ Toda requisição precisa do token: `Authorization: Bearer <token>`, ou `?token=
 | `foco_minutos_padrao` | 1–240 | `25` |
 | `ocioso_minutos` | 1–240 | `5` |
 | `notificacoes_nativas` | bool (usa `notify-send` quando a orbe está fechada) | `true` |
+| `ia_ativa` | bool: usar a IA local quando as regras não entendem | `true` |
+| `ia_modelo` | nome do modelo no Ollama (`qwen3:0.6b`, `gemma3:270m`, `qwen2.5:0.5b`, `gemma3:1b`…) | `qwen3:0.6b` |
+| `ia_url` | **só** `http://127.0.0.1`, `localhost` ou `::1` (nunca um servidor externo) | `http://127.0.0.1:11434` |
 | `checkins_memoria` | bool: perguntar sobre o que você contou (livro, projeto, estudo, hobby, objetivo) | `true` |
 | `tom` | `equilibrado` · `direto` · `descontraido` | `equilibrado` |
 | `assuntos_evitar` | lista de textos (até 30): a Zoe não puxa conversa sobre itens que contenham estes termos | `[]` |
@@ -68,6 +73,8 @@ Do servidor para o cliente:
 | `notification` | `notification {id, message, category, origin, expression, actions[{id,label}]}` | aviso aprovado pelas regras |
 | `chat.reply` | `ref`, `text`, `expression`, `quick_replies[]` | resposta a um `chat` |
 | `pong` | — | resposta a `ping` |
+| `chat.delta` | `ref`, `text` | pedaço da resposta da IA enquanto ela é gerada; o `chat.reply` final traz o texto limpo |
+| `ai.pull` | `pull {model, status, completed, total, done, error}` | progresso do download do modelo |
 | `pc` | `snapshot`, `history` | a cada leitura, só para quem pediu `pc.subscribe` (aba Recursos aberta) |
 
 Do cliente para o servidor: `{type:"chat", text, ref}`, `{type:"notification.ack", id, action}`, `{type:"pc.subscribe", on}` e `{type:"ping"}`.
@@ -126,6 +133,14 @@ Tabelas da seção 8 da especificação: `users`, `interests`, `personal_project
 - Há índices nas colunas de tempo e status: `idx_metrics_time`, `idx_appusage_app_time`, `idx_events_type_time`, `idx_notifications_status` e outros.
 - `focus_rules.intervention_level` tem `CHECK` de 1 a 4 e é único por aplicativo.
 - **Retenção:** aplicada ao iniciar e a cada 6 h, conforme `retencao_dias`. Conversas e dados pessoais não expiram sozinhos; apagam-se por "Apagar meus dados".
+
+## Inteligência artificial (Ollama)
+
+- **Quando é usada:** só quando nenhuma regra local entende a mensagem (comandos, foco, PC e memória continuam locais e instantâneos).
+- **O que recebe:** personalidade e regras ("nunca invente fatos sobre o usuário"), data e hora, nome, tom, até 5 itens de cada tipo da memória e as últimas 6 trocas do chat. Nada de métricas, processos ou arquivos.
+- **O que pode fazer:** só gerar texto. Não há ferramentas, comandos nem acesso ao sistema; a resposta é limpa (sem markdown, sem `<think>`, no máximo ~900 caracteres) antes de aparecer.
+- **Recursos:** `num_ctx` 2048, `num_predict` 220, `keep_alive` 5 min (o modelo sai da memória quando não é usado), um pedido por vez. Em modelos Qwen3 o modo "pensar" é desligado (`think: false`).
+- **Sem Ollama ou sem o modelo**, a Zoe diz exatamente o que falta (instalar o Ollama ou baixar o modelo) e o resto funciona igual.
 
 ## Memória pessoal
 

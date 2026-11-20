@@ -106,7 +106,7 @@
 
   // ---------------- conexão com o Core ----------------
   let ws = null, state = null, retry = 500, refSeq = 0, offlineReason = '';
-  const pending = new Map();
+  const pending = new Map(), streaming = new Map();
   function setOnline(on) {
     orb.classList.toggle('offline', !on);
     $('connDot').classList.toggle('on', on);
@@ -126,7 +126,9 @@
       else if (m.type === 'pc') window.ZoeRecursos.update(m);
       else if (m.type === 'expression') m.ttl_ms ? flash(m.name, m.ttl_ms) : setBase(m.name);
       else if (m.type === 'notification') notify(m.notification);
+      else if (m.type === 'chat.delta' && streaming.has(m.ref)) streaming.get(m.ref)(m.text);
       else if (m.type === 'chat.reply' && pending.has(m.ref)) { pending.get(m.ref)(m); pending.delete(m.ref); }
+      else if (m.type === 'ai.pull') window.ZoeIA.onPull(m.pull);
     };
   }
   function scheduleReconnect() { setTimeout(connect, retry); retry = Math.min(retry * 2, 15000); }
@@ -247,7 +249,13 @@
     const typing = addMsg('zoe typing', ''); typing.innerHTML = '<i></i><i></i><i></i>';
     temp = 'pensando'; render();
     const ref = ++refSeq;
+    // a IA manda a resposta aos pedaços: o balão "digitando" vira o texto chegando
+    streaming.set(ref, (piece) => {
+      if (typing.classList.contains('typing')) { typing.classList.remove('typing'); typing.textContent = ''; temp = null; render(); }
+      typing.textContent += piece; log.scrollTop = log.scrollHeight;
+    });
     pending.set(ref, (m) => {
+      streaming.delete(ref);
       typing.remove(); temp = null; render();
       addMsg('zoe', m.text); flash(m.expression, 2400); setQuick(m.quick_replies);
     });
@@ -262,7 +270,7 @@
     if (name === 'memoria') window.ZoeMemoria.show();
     if (name === 'recursos') window.ZoeRecursos.show(); else window.ZoeRecursos.hide();
     if (name === 'avisos') loadNotes();
-    if (name === 'ajustes') loadSettings();
+    if (name === 'ajustes') { loadSettings(); window.ZoeIA.show(); }
   }
   document.querySelectorAll('.tabs button').forEach((b) => { b.onclick = () => selectTab(b.dataset.tab); });
 
@@ -325,6 +333,7 @@
   };
 
   window.ZoeMemoria.init({ api: window.zoe.api });
+  window.ZoeIA.init({ api: window.zoe.api });
   window.ZoeRecursos.init({
     api: window.zoe.api,
     send: (msg) => { if (ws && ws.readyState === 1) ws.send(JSON.stringify(msg)); },

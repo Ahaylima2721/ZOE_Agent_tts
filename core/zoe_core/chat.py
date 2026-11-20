@@ -56,13 +56,14 @@ class ChatHandler:
         self.core = core
         self.memchat = MemoryChat(core.memory, core.clock)
 
-    async def reply(self, text: str) -> Reply:
+    async def reply(self, text: str, on_delta=None) -> Reply:
+        """on_delta(pedaço): recebe a resposta da IA aos poucos (streaming), quando ela for usada."""
         text = text.strip()[:2000]
-        r = await self._route(text, normalize(text))
+        r = await self._route(text, normalize(text), on_delta)
         self.core.db.log_interaction("chat", text, r.text)
         return r
 
-    async def _route(self, raw: str, t: str) -> Reply:
+    async def _route(self, raw: str, t: str, on_delta=None) -> Reply:
         core, s = self.core, self.core.db.get_settings()
         nome = s.get("nome_usuario") or ""
 
@@ -123,8 +124,14 @@ class ChatHandler:
         if t in ("que horas sao", "horas", "que horas"):
             return Reply(f"Agora são {datetime.fromtimestamp(core.clock()):%H:%M}.", "normal")
 
+        # nenhuma regra local entendeu: aí sim a IA local (se estiver disponível)
+        text, why = await core.ai.reply(raw, on_delta)
+        if text:
+            return Reply(text, "normal")
+        if why:
+            return Reply(f"Não sei responder isso sem a minha IA. {why}", "curiosa", ("ajuda",))
         return Reply(
-            "Ainda não sei conversar livremente — meu modelo de linguagem local (Ollama) chega numa próxima fase. "
+            "Não entendi. A conversa livre (Ollama) está desligada em Ajustes → Inteligência artificial. "
             "Escreva \"ajuda\" para ver o que já sei fazer.",
             "curiosa", ("ajuda",),
         )

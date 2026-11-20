@@ -20,6 +20,7 @@ from pathlib import Path
 
 from aiohttp import WSMsgType, web
 
+from .ai.engine import is_local_url
 from .config import AUTONOMY_LEVELS, FREQUENCIES
 from .core import ZoeCore
 from .decision import EXPRESSIONS
@@ -46,6 +47,9 @@ SETTINGS_VALIDATORS = {
     "notificacoes_nativas": lambda v: isinstance(v, bool),
     "pc_alertas": lambda v: isinstance(v, bool),
     "checkins_memoria": lambda v: isinstance(v, bool),
+    "ia_ativa": lambda v: isinstance(v, bool),
+    "ia_modelo": lambda v: isinstance(v, str) and bool(re.fullmatch(r"[a-z0-9][a-z0-9._:/-]{0,79}", v)),
+    "ia_url": lambda v: isinstance(v, str) and is_local_url(v),     # nunca um servidor externo
     "tom": lambda v: v in ("equilibrado", "direto", "descontraido"),
     "assuntos_evitar": lambda v: isinstance(v, list) and len(v) <= 30 and all(isinstance(x, str) and 0 < len(x.strip()) <= 60 for x in v),
     "pc_intervalo_s": lambda v: isinstance(v, int) and not isinstance(v, bool) and 2 <= v <= 60,
@@ -227,6 +231,20 @@ async def memory_delete(request):
     return web.json_response({"ok": True})
 
 
+async def ai_status(request):
+    return web.json_response(await request.app[CORE_KEY].ai.status())
+
+
+async def ai_pull(request):
+    """Baixa o modelo configurado (só quando o usuário pede). Progresso vai pelo WebSocket (ai.pull)."""
+    core = request.app[CORE_KEY]
+    st = await core.ai.status()
+    if not st["ollama"]:
+        return _bad(st["hint"], 503)
+    started = core.ai.start_pull()
+    return web.json_response({"started": started, "pull": core.ai.pull_state})
+
+
 async def post_event(request):
     core = request.app[CORE_KEY]
     data = await _json(request)
@@ -288,11 +306,29 @@ async def delete_personal_data(request):
     return web.json_response({"ok": True})
 
 
+async def _ws_chat(core, ws, text: str, ref) -> None:
+    async def delta(piece: str) -> None:
+        if not ws.closed:
+            await ws.send_json({"type": "chat.delta", "ref": ref, "text": piece})
+
+    try:
+        await core.publish(EventType.USER_REQUEST, {"kind": "chat"}, source="ws")
+        reply = await core.chat.reply(text, on_delta=delta)
+        if not ws.closed:
+            await ws.send_json({"type": "chat.reply", "ref": ref, **reply.to_dict()})
+    except Exception:
+        log.exception("falha respondendo no chat")
+        if not ws.closed:
+            await ws.send_json({"type": "chat.reply", "ref": ref, "text": "Tive um problema para responder. Tenta de novo?",
+                                "expression": "preocupada", "quick_replies": []})
+
+
 async def websocket(request):
     core = request.app[CORE_KEY]
     ws = web.WebSocketResponse(heartbeat=30)
     await ws.prepare(request)
     core.hub.clients.add(ws)
+    tasks: set[asyncio.Task] = set()
     await ws.send_json({"type": "hello", "state": core.state(), "expressions": list(EXPRESSIONS)})
     try:
         async for msg in ws:
@@ -306,9 +342,9 @@ async def websocket(request):
             if kind == "ping":
                 await ws.send_json({"type": "pong"})
             elif kind == "chat" and isinstance(data.get("text"), str):
-                await core.publish(EventType.USER_REQUEST, {"kind": "chat"}, source="ws")
-                reply = await core.chat.reply(data["text"])
-                await ws.send_json({"type": "chat.reply", "ref": data.get("ref"), **reply.to_dict()})
+                # em tarefa própria: a IA pode levar segundos e o WebSocket continua respondendo (ping, ack…)
+                tasks.add(asyncio.create_task(_ws_chat(core, ws, data["text"], data.get("ref"))))
+                tasks = {t for t in tasks if not t.done()}
             elif kind == "notification.ack" and isinstance(data.get("id"), int):
                 await core.handle_notification_action(data["id"], data.get("action"))
             elif kind == "pc.subscribe" and core.pc:
@@ -340,6 +376,8 @@ def build_app(core: ZoeCore, token: str) -> web.Application:
     app.router.add_post("/api/events", post_event)
     app.router.add_get("/api/pc", pc_status)
     app.router.add_get("/api/memory", memory_all)
+    app.router.add_get("/api/ai", ai_status)
+    app.router.add_post("/api/ai/pull", ai_pull)
     app.router.add_post("/api/memory/{kind}", memory_create)
     app.router.add_patch("/api/memory/{kind}/{id}", memory_update)
     app.router.add_delete("/api/memory/{kind}/{id}", memory_delete)

@@ -274,6 +274,8 @@ const API_ALLOW = [
   ['POST', /^\/api\/(chat|focus\/start|focus\/stop|monitoring|emergency-stop|personal-data\/delete)$/],
   ['POST', /^\/api\/notifications\/\d+\/ack$/],
   ['GET', /^\/api\/memory$/],
+  ['GET', /^\/api\/ai$/],
+  ['POST', /^\/api\/ai\/pull$/],
   ['POST', /^\/api\/memory\/[a-z_]+$/],
   ['PATCH', /^\/api\/memory\/[a-z_]+\/\d+$/],
   ['DELETE', /^\/api\/memory\/[a-z_]+\/\d+$/],

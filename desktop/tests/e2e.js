@@ -7,6 +7,7 @@ const assert = require('assert/strict');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const { spawn } = require('child_process');
 
 const root = path.join(__dirname, '..');
 const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'zoe-e2e-'));
@@ -202,6 +203,36 @@ async function coreApi(method, p, body) {
         return s.tom === 'direto' && JSON.stringify(s.assuntos_evitar) === '["trabalho","dieta"]';
       }, 3000, 'preferências');
       await page.click('[data-tab="conversa"]');
+    });
+
+    await step('ia: sem Ollama, Ajustes explica como instalar', async () => {
+      await page.click('[data-tab="ajustes"]');
+      await until(() => page.$eval('#iaStatus', (e) => /Ollama não encontrado/.test(e.textContent)), 5000, 'status');
+      assert.equal(await page.isVisible('#iaHint code'), true);
+    });
+
+    let fakeOllama = null;
+    await step('ia: baixa o modelo pela Zoe, com progresso', async () => {
+      const port = 20000 + Math.floor(Math.random() * 20000);
+      fakeOllama = spawn('python3', [path.join(root, '..', 'core', 'tests', 'fake_ollama.py'), String(port), 'vazio'], { stdio: 'ignore' });
+      process.on('exit', () => fakeOllama.kill());   // mesmo se um passo falhar
+      await until(async () => (await fetch(`http://127.0.0.1:${port}/api/version`)).ok, 8000, 'Ollama simulado');
+      await coreApi('PATCH', '/api/settings', { ia_url: `http://127.0.0.1:${port}` });
+      await page.click('[data-tab="conversa"]'); await page.click('[data-tab="ajustes"]');
+      await until(() => page.isVisible('#iaPull'), 5000, 'botão de baixar');
+      await page.click('#iaPull');
+      await until(() => page.$eval('#iaStatus', (e) => /^Pronta: qwen3:0\.6b/.test(e.textContent)), 15000, 'modelo pronto');
+    });
+    await shot('10-ia-ajustes');
+
+    await step('ia: conversa livre chega aos pedaços (streaming)', async () => {
+      await page.click('[data-tab="conversa"]');
+      await page.fill('#input', 'me fala de você');
+      await page.press('#input', 'Enter');
+      await until(() => page.$$eval('.msg.zoe', (m) => { const t = m.at(-1).textContent; return t.startsWith('Oi!') && !t.includes('local.'); }), 5000, 'pedaço parcial');
+      await until(() => page.$$eval('.msg.zoe', (m) => m.at(-1).textContent === 'Oi! Eu sou a Zoe, rodando num modelo local.'), 8000, 'resposta completa');
+      assert.equal(await page.$$eval('.msg.zoe.typing', (m) => m.length), 0);
+      fakeOllama.kill();
     });
 
     await step('fechar painel e receber balão de notificação com ações', async () => {

@@ -32,7 +32,8 @@ def clock():
 @pytest.fixture
 def db(clock):
     d = Database(":memory:", clock=clock)
-    d.update_settings({"notificacoes_nativas": False})
+    # IA aponta para uma porta fechada: testes determinísticos mesmo se houver um Ollama na máquina
+    d.update_settings({"notificacoes_nativas": False, "ia_url": "http://127.0.0.1:9"})
     yield d
     d.close()
 

@@ -7,6 +7,7 @@ import logging
 import time
 from typing import Any
 
+from .ai.engine import AIEngine
 from .chat import ChatHandler
 from .companion import checkins
 from .companion.memory import Memory
@@ -55,6 +56,7 @@ class ZoeCore:
         self.decision = DecisionEngine(self.bus, db, self.notifications, self.hub.broadcast)
         self.focus = FocusManager(self.bus, clock)
         self.memory = Memory(db, clock)
+        self.ai = AIEngine(self)
         self.chat = ChatHandler(self)
         # PC Companion: opcional, para a Zoe funcionar mesmo sem o psutil instalado
         self.pc, self.pc_error = None, None

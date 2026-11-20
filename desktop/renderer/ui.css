@@ -205,3 +205,14 @@ legend { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transfor
 .mem-actions { grid-column: 1 / -1; display: flex; gap: 8px; }
 .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
 .settings textarea { border: 1px solid var(--line); background: var(--bg2); border-radius: 10px; padding: 6px 10px; width: 100%; }
+
+/* ---------- Ajustes → Inteligência artificial ---------- */
+.ia-status[data-ok="true"] { color: var(--ok); }
+.ia-hint { display: grid; gap: 6px; }
+.ia-hint[hidden], .ia-pull[hidden] { display: none; }
+.ia-hint code { display: block; font: 12px/1.4 ui-monospace, monospace; background: var(--bg2); border: 1px solid var(--line);
+  border-radius: 8px; padding: 6px 8px; user-select: all; overflow-wrap: anywhere; }
+.ia-pull { display: grid; gap: 4px; }
+#iaPull { justify-self: start; }
+#iaPull[hidden] { display: none; }
+.msg.zoe:not(.typing) { min-height: 1.45em; }
