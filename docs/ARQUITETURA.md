@@ -6,13 +6,13 @@ Este documento responde aos itens da seção 13 da especificação: o que já ex
 
 | Arquivo | O que é | Como foi aproveitado |
 | --- | --- | --- |
-| `zoe.design` | Especificação visual e de comportamento (YAML): tokens, anatomia da orbe, estados, sorrisos, voz | Continua sendo a fonte da verdade visual |
+| `zoe.design` | Especificação visual e de comportamento (YAML): tokens, anatomia da orbe, estados e sorrisos | Continua sendo a fonte da verdade visual |
 | `zoe-preview.html` | Demo da orbe roxa, com o CSS do portfólio e todos os estados | O CSS da orbe foi copiado sem mudanças para `desktop/renderer/orb.css` |
 | `zoe-fx.js` | Animações extras (absorver arquivos, confete, aceno etc.), em JS puro, sem dependências | Carregado diretamente pela Zoe Desktop (`../../zoe-fx.js`) |
-| `video/` | Pipeline de vídeo (Playwright + ffmpeg) para redes sociais | Não muda |
 
 Conclusões:
 
+- A parte de fala da versão antiga (voz TTS, boca, vídeos narrados em `video/`) foi removida: a Zoe se expressa só pelos olhos, pelo corpo e por texto.
 - O projeto é **HTML/CSS/JS puro**, sem React e sem etapa de build. A orbe já tem as camadas (líquido, anéis, faísca), o piscar, o olhar que segue o mouse e vários estados.
 - Não havia app desktop, serviço local nem banco de dados. A Fase 1 cria isso **sem reescrever a orbe**.
 

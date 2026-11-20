@@ -3,15 +3,14 @@
 
    Funciona com o mesmo HTML do portfólio:
      <button class="orb"><span class="orb-face"><i></i><i></i></span> ... </button>
-   (as camadas .orb-liquid / .orb-rings / .orb-mouth são criadas se faltarem)
+   (as camadas .orb-liquid / .orb-rings são criadas se faltarem)
 
    Uso:
      incluir o arquivo zoe-fx.js na página (tag script com src="zoe-fx.js")
      ZoeFx.absorver(orb)            // arquivos voando para dentro dela + pensando + "achei!"
      ZoeFx.vida(orb, { soltarArquivos: true })   // liga os comportamentos automáticos
 
-   Boca: fica OCULTA até a versão com fala ficar pronta. Para mostrar:
-     ZoeFx.boca(true)   (ou <html data-zoe-boca="on">)
+   A Zoe não tem boca: toda expressão fica nos olhos e no corpo.
 
    Todas as funções devolvem uma Promise que resolve quando a animação termina.
    Com "reduzir movimento" ligado, as partículas são puladas e só a expressão muda.
@@ -60,30 +59,23 @@
     '.orb-liquid i:nth-child(1){top:calc(56% - var(--zfx-nivel,0%))}',
     '.orb-liquid i:nth-child(2){top:calc(62% - var(--zfx-nivel,0%))}',
 
-    /* expressões novas (mesmas peças do portfólio: .orb-face i e .orb-mouth) */
+    /* expressões novas (mesma peça do portfólio: .orb-face i) */
     '.orb.zfx-faminta .orb-face i{animation:none;transform:scale(1.25)}',
-    '.orb.zfx-faminta .orb-mouth{border:0;background:' + EYE + ';border-radius:50%;width:12%;height:12%;animation:zfxMastiga .5s ease-in-out infinite alternate}',
     '.orb.zfx-surpresa .orb-face i{animation:none;transform:scale(1.35)}',
-    '.orb.zfx-surpresa .orb-mouth{border:0;background:' + EYE + ';border-radius:50%;width:9%;height:9%}',
     '.orb.zfx-bocejo .orb-face i{animation:none;transform:scaleY(.25)}',
-    '.orb.zfx-bocejo .orb-mouth{border:0;background:' + EYE + ';border-radius:50%;animation:zfxBoceja 1.8s ease-in-out}',
     '.orb.zfx-tonta .orb-face i{animation:zfxGira .7s linear infinite;height:auto;aspect-ratio:1;border-radius:50%;background:transparent;border:2px solid ' + EYE + ';border-right-color:transparent;transform:none}',
-    '.orb.zfx-tonta .orb-mouth{transform:translateX(-50%) rotate(-14deg);width:12%}',
     '.orb.zfx-danca{animation:orbFloat 4.5s ease-in-out infinite,zfxDanca .9s ease-in-out infinite}',
     '.orb.zfx-danca .orb-face i{animation:none;transform:scaleY(.45) translateY(-20%);border-radius:999px 999px 4px 4px}',
-    '.orb.zfx-danca .orb-mouth{width:24%;height:10%}',
     '.orb.zfx-glitch{animation:orbFloat 4.5s ease-in-out infinite,zfxGlitch .45s steps(2) 2}',
     '.orb.zfx-glitch .orb-face i{animation:none;aspect-ratio:7/3}',
 
-    /* boca oculta até a versão com fala; a expressão fica nos olhos e no corpo */
-    'html:not([data-zoe-boca="on"]) .orb .orb-mouth{display:none}',
-    'html:not([data-zoe-boca="on"]) .orb.falando .orb-face i{animation:zfxFalaOlho .26s ease-in-out infinite alternate}',
-    'html:not([data-zoe-boca="on"]) .orb.zfx-faminta .orb-face{animation:zfxInspira .5s ease-in-out infinite alternate}',
+    /* sem boca: ao responder os olhos dão pulinhos; faminta "puxa o ar" */
+    '.orb .orb-mouth{display:none}',
+    '.orb.falando .orb-face i{animation:zfxFalaOlho .26s ease-in-out infinite alternate}',
+    '.orb.zfx-faminta .orb-face{animation:zfxInspira .5s ease-in-out infinite alternate}',
     '@keyframes zfxFalaOlho{from{transform:none}to{transform:scaleY(.82) translateY(-10%)}}',
     '@keyframes zfxInspira{to{scale:1.1}}',
 
-    '@keyframes zfxMastiga{to{height:5%;width:14%}}',
-    '@keyframes zfxBoceja{0%{width:10%;height:4%}45%,65%{width:18%;height:19%}100%{width:10%;height:4%}}',
     '@keyframes zfxGira{to{rotate:360deg}}',
     '@keyframes zfxDanca{0%,100%{rotate:-9deg;translate:-4px 0}50%{rotate:9deg;translate:4px -4px}}',
     '@keyframes zfxGlitch{0%{filter:hue-rotate(0);translate:0}25%{filter:hue-rotate(90deg);translate:-3px 1px}50%{filter:hue-rotate(-60deg) saturate(1.6);translate:3px -1px}75%{filter:hue-rotate(40deg);translate:-2px 0}100%{filter:none;translate:0}}'
@@ -101,7 +93,6 @@
     var face = orb.querySelector('.orb-face');
     if (!orb.querySelector('.orb-rings')) orb.insertAdjacentHTML('afterbegin', '<span class="orb-rings" aria-hidden="true"><i></i><i></i><i></i></span>');
     if (!orb.querySelector('.orb-liquid')) orb.querySelector('.orb-rings').insertAdjacentHTML('afterend', '<span class="orb-liquid" aria-hidden="true"><i></i><i></i></span>');
-    if (!orb.querySelector('.orb-mouth') && face) face.insertAdjacentHTML('afterend', '<span class="orb-mouth" aria-hidden="true"></span>');
     if (!orb.querySelector('.zfx-bochecha')) orb.insertAdjacentHTML('beforeend', '<span class="zfx-bochecha e" aria-hidden="true"></span><span class="zfx-bochecha d" aria-hidden="true"></span>');
   }
 
@@ -411,17 +402,9 @@
     }
   }
 
-  /* liga/desliga a boca (fica oculta até a versão com fala) */
-  function boca(on) {
-    preparar();
-    if (on) document.documentElement.setAttribute('data-zoe-boca', 'on');
-    else document.documentElement.removeAttribute('data-zoe-boca');
-  }
-
   if (document.body) preparar(); else document.addEventListener('DOMContentLoaded', preparar);
 
   window.ZoeFx = {
-    boca: boca,
     absorver: absorver, eureka: eureka, confete: confete, coracoes: coracoes, dancar: dancar, tonta: tonta,
     surpresa: surpresa, bocejo: bocejo, corada: corada, ola: ola, lendo: lendo, procurando: procurando,
     carregando: carregando, glitch: glitch, gelatina: gelatina, gole: gole, onda: onda, vida: vida, preparar: pecas

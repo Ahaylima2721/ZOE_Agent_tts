@@ -14,7 +14,6 @@ Uma companheira digital para o Linux: uma orbe roxa que flutua na área de traba
 | `docs/ARQUITETURA.md` | Análise do projeto, escolhas de tecnologia, X11/Wayland, fases |
 | `docs/API.md` | API REST e WebSocket, eventos, banco de dados, permissões |
 | `packaging/install-linux.sh` | Instala no menu de aplicativos e no início automático (sem root) |
-| `video/` | Pipeline dos vídeos da Zoe |
 
 ## Rodar
 

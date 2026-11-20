@@ -37,7 +37,6 @@
   .orb-rings { position:absolute; inset:0; z-index:-3; pointer-events:none; }
   .orb-rings i { position:absolute; inset:0; border-radius:50%; border:2px solid rgba(167,139,250,.6); opacity:0; animation: ondaFora 3.6s ease-out infinite; }
   .orb-rings i:nth-child(2){ animation-delay:1.2s } .orb-rings i:nth-child(3){ animation-delay:2.4s }
-  .orb-mouth { position:absolute; z-index:2; left:50%; top:66%; width:16%; height:7%; transform:translateX(-50%); border-bottom:2px solid #F7F3FF; border-radius:0 0 50% 50% / 0 0 100% 100%; filter: drop-shadow(0 0 4px rgba(235,225,255,.9)); transition: width .25s, height .25s, top .25s; }
 
   /* tamanho grande, como na página da Zoe (orb-xl) */
   .orb.xl { width:200px; height:200px; cursor:default; }
@@ -45,31 +44,23 @@
   .orb.xl .orb-face { gap:26px; }
   .orb.xl .orb-face i { width:16px; height:auto; aspect-ratio:7/11; border-radius:999px; box-shadow:0 0 14px rgba(235,225,255,.95); }
   .orb.xl .orb-sparkle { top:13%; right:18%; width:9%; height:9%; }
-  .orb.xl .orb-mouth { border-bottom-width:3px; }
 
   /* ---- estados do portfólio ---- */
-  .orb.feliz .orb-mouth { width:26%; height:11%; }
   .orb.feliz .orb-face i { animation:none; transform: scaleY(.45) translateY(-20%); border-radius:999px 999px 4px 4px; }
   .orb.pisca .orb-face i:first-child { animation:none; transform: scaleY(.15); }
   .orb.pensando .orb-face i { aspect-ratio:7/3; animation:none; }
   .orb.chat .orb-face i { aspect-ratio:7/4; animation:none; }
-  .orb.falando .orb-mouth { border:0; background:#F7F3FF; border-radius:50%; height:4%; width:12%; animation: fala .26s ease-in-out infinite alternate; }
   .orb.falando .orb-liquid i, .orb.pensando .orb-liquid i { animation-duration:2.6s,1.6s; }
   .orb.falando .orb-rings i { animation-duration:1.6s; }
   .orb.pulo { animation: orbFloat 4.5s ease-in-out infinite, boing .75s cubic-bezier(.3,1.5,.5,1); }
 
-  /* ---- estados propostos (versão TTS) ---- */
-  .orb.ouvindo .orb-face i { animation-duration:8s; }
-  .orb.ouvindo .orb-rings i { animation-duration:1.1s; }
+  /* ---- estados propostos ---- */
   .orb.empatica { animation-duration:6s; }
   .orb.empatica::after { animation-duration:5s; }
   .orb.empatica .orb-face i { animation:none; transform: scaleY(.45) translateY(20%); border-radius:4px 4px 999px 999px; }
-  .orb.empatica .orb-mouth { width:12%; height:6%; }
   .orb.confusa .orb-face i:last-child { aspect-ratio:7/3; animation:none; }
   .orb.confusa { animation: orbFloat 4.5s ease-in-out infinite, inclina 1.2s ease-in-out; }
-  .orb.confusa .orb-mouth { width:12%; transform: translateX(-30%) rotate(-12deg); }
   .orb.erro .orb-face i { aspect-ratio:7/3; animation:none; }
-  .orb.erro .orb-mouth { border-bottom:0; border-top:2px solid #F7F3FF; border-radius:50% 50% 0 0 / 100% 100% 0 0; top:70%; width:12%; height:5%; }
   .orb.erro { animation: orbFloat 4.5s ease-in-out infinite, nega .4s ease 2; }
   .orb.dormindo { animation-duration:8s; filter: saturate(.6) brightness(.8); }
   .orb.dormindo::after { opacity:.25; animation:none; }
@@ -84,7 +75,6 @@
   @keyframes ondaGira { to{transform:rotate(360deg)} }
   @keyframes mare { 0%,100%{translate:0 0} 50%{translate:0 -7%} }
   @keyframes ondaFora { 0%{transform:scale(1);opacity:.6} 100%{transform:scale(1.9);opacity:0} }
-  @keyframes fala { to{height:11%;width:15%} }
   @keyframes boing { 0%{scale:1} 25%{scale:1.12 .88} 50%{scale:.93 1.08} 75%{scale:1.03 .97} 100%{scale:1} }
   @keyframes inclina { 30%,70%{rotate:10deg} }
   @keyframes nega { 25%{translate:-5px 0} 75%{translate:5px 0} }
@@ -115,7 +105,6 @@
   .group code{font-size:11px}
   p.drop{font-size:13px;color:var(--muted);text-align:center;max-width:520px;margin:6px 0 0;padding:10px 14px;border:1px dashed color-mix(in srgb,#A78BFA 55%,var(--line));border-radius:12px}
   button.st.fx{background:color-mix(in srgb,#A78BFA 12%,var(--card))}
-  label.voice{font-size:13px;color:var(--muted);margin-top:10px;display:flex;gap:6px;align-items:center}
 
   /* comparação */
   .cmp{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;width:min(720px,100%)}
@@ -140,7 +129,7 @@
       <span class="orb-rings"><i></i><i></i><i></i></span>
       <span class="orb-liquid"><i></i><i></i></span>
       <span class="orb-face" id="face"><i></i><i></i></span>
-      <span class="orb-mouth"></span>
+      
       <span class="orb-sparkle"></span>
     </div>
     <div class="typing" id="typing"><i></i><i></i><i></i></div>
@@ -151,12 +140,10 @@
   <div class="status" id="status" aria-live="polite">estado: <b>idle</b></div>
 
   <div class="group" id="g-port"><span>Já existem no portfólio</span></div>
-  <div class="group" id="g-new"><span>Propostos para a versão com voz (borda tracejada)</span></div>
+  <div class="group" id="g-new"><span>Propostos (borda tracejada)</span></div>
   <div class="group" id="g-fx"><span>Animações extras (<code>zoe-fx.js</code>)</span></div>
-  <p class="drop">Arraste arquivos do seu computador até a página: ela abre a boca, engole cada um e pensa.<br>
+  <p class="drop">Arraste arquivos do seu computador até a página: ela fica faminta, engole cada um e pensa.<br>
   Clique 5 vezes rápido nela, role a página, fique 25s parado, troque de aba e volte, ou copie um texto.</p>
-  <label class="voice"><input type="checkbox" id="voice"> Falar com a voz do navegador (pt-BR)</label>
-  <label class="voice"><input type="checkbox" id="boca"> Mostrar a boca (prévia da versão com fala)</label>
 
   <h2>Antes e agora</h2>
   <div class="cmp">
@@ -170,7 +157,7 @@
       <b>v1 · rascunho anterior</b><small>Rosto escuro chapado, cor só na aura</small>
     </div>
     <div>
-      <div style="padding:14px"><div class="orb" style="cursor:default"><span class="orb-rings"><i></i><i></i><i></i></span><span class="orb-liquid"><i></i><i></i></span><span class="orb-face"><i></i><i></i></span><span class="orb-mouth"></span><span class="orb-sparkle"></span></div></div>
+      <div style="padding:14px"><div class="orb" style="cursor:default"><span class="orb-rings"><i></i><i></i><i></i></span><span class="orb-liquid"><i></i><i></i></span><span class="orb-face"><i></i><i></i></span><span class="orb-sparkle"></span></div></div>
       <b>v2 · Zoe do portfólio</b><small>Orbe de cristal roxo, líquido, brilho e faísca</small>
     </div>
   </div>
@@ -192,15 +179,14 @@
 
    Funciona com o mesmo HTML do portfólio:
      <button class="orb"><span class="orb-face"><i></i><i></i></span> ... </button>
-   (as camadas .orb-liquid / .orb-rings / .orb-mouth são criadas se faltarem)
+   (as camadas .orb-liquid / .orb-rings são criadas se faltarem)
 
    Uso:
      incluir o arquivo zoe-fx.js na página (tag script com src="zoe-fx.js")
      ZoeFx.absorver(orb)            // arquivos voando para dentro dela + pensando + "achei!"
      ZoeFx.vida(orb, { soltarArquivos: true })   // liga os comportamentos automáticos
 
-   Boca: fica OCULTA até a versão com fala ficar pronta. Para mostrar:
-     ZoeFx.boca(true)   (ou <html data-zoe-boca="on">)
+   A Zoe não tem boca: toda expressão fica nos olhos e no corpo.
 
    Todas as funções devolvem uma Promise que resolve quando a animação termina.
    Com "reduzir movimento" ligado, as partículas são puladas e só a expressão muda.
@@ -249,30 +235,23 @@
     '.orb-liquid i:nth-child(1){top:calc(56% - var(--zfx-nivel,0%))}',
     '.orb-liquid i:nth-child(2){top:calc(62% - var(--zfx-nivel,0%))}',
 
-    /* expressões novas (mesmas peças do portfólio: .orb-face i e .orb-mouth) */
+    /* expressões novas (mesma peça do portfólio: .orb-face i) */
     '.orb.zfx-faminta .orb-face i{animation:none;transform:scale(1.25)}',
-    '.orb.zfx-faminta .orb-mouth{border:0;background:' + EYE + ';border-radius:50%;width:12%;height:12%;animation:zfxMastiga .5s ease-in-out infinite alternate}',
     '.orb.zfx-surpresa .orb-face i{animation:none;transform:scale(1.35)}',
-    '.orb.zfx-surpresa .orb-mouth{border:0;background:' + EYE + ';border-radius:50%;width:9%;height:9%}',
     '.orb.zfx-bocejo .orb-face i{animation:none;transform:scaleY(.25)}',
-    '.orb.zfx-bocejo .orb-mouth{border:0;background:' + EYE + ';border-radius:50%;animation:zfxBoceja 1.8s ease-in-out}',
     '.orb.zfx-tonta .orb-face i{animation:zfxGira .7s linear infinite;height:auto;aspect-ratio:1;border-radius:50%;background:transparent;border:2px solid ' + EYE + ';border-right-color:transparent;transform:none}',
-    '.orb.zfx-tonta .orb-mouth{transform:translateX(-50%) rotate(-14deg);width:12%}',
     '.orb.zfx-danca{animation:orbFloat 4.5s ease-in-out infinite,zfxDanca .9s ease-in-out infinite}',
     '.orb.zfx-danca .orb-face i{animation:none;transform:scaleY(.45) translateY(-20%);border-radius:999px 999px 4px 4px}',
-    '.orb.zfx-danca .orb-mouth{width:24%;height:10%}',
     '.orb.zfx-glitch{animation:orbFloat 4.5s ease-in-out infinite,zfxGlitch .45s steps(2) 2}',
     '.orb.zfx-glitch .orb-face i{animation:none;aspect-ratio:7/3}',
 
-    /* boca oculta até a versão com fala; a expressão fica nos olhos e no corpo */
-    'html:not([data-zoe-boca="on"]) .orb .orb-mouth{display:none}',
-    'html:not([data-zoe-boca="on"]) .orb.falando .orb-face i{animation:zfxFalaOlho .26s ease-in-out infinite alternate}',
-    'html:not([data-zoe-boca="on"]) .orb.zfx-faminta .orb-face{animation:zfxInspira .5s ease-in-out infinite alternate}',
+    /* sem boca: ao responder os olhos dão pulinhos; faminta "puxa o ar" */
+    '.orb .orb-mouth{display:none}',
+    '.orb.falando .orb-face i{animation:zfxFalaOlho .26s ease-in-out infinite alternate}',
+    '.orb.zfx-faminta .orb-face{animation:zfxInspira .5s ease-in-out infinite alternate}',
     '@keyframes zfxFalaOlho{from{transform:none}to{transform:scaleY(.82) translateY(-10%)}}',
     '@keyframes zfxInspira{to{scale:1.1}}',
 
-    '@keyframes zfxMastiga{to{height:5%;width:14%}}',
-    '@keyframes zfxBoceja{0%{width:10%;height:4%}45%,65%{width:18%;height:19%}100%{width:10%;height:4%}}',
     '@keyframes zfxGira{to{rotate:360deg}}',
     '@keyframes zfxDanca{0%,100%{rotate:-9deg;translate:-4px 0}50%{rotate:9deg;translate:4px -4px}}',
     '@keyframes zfxGlitch{0%{filter:hue-rotate(0);translate:0}25%{filter:hue-rotate(90deg);translate:-3px 1px}50%{filter:hue-rotate(-60deg) saturate(1.6);translate:3px -1px}75%{filter:hue-rotate(40deg);translate:-2px 0}100%{filter:none;translate:0}}'
@@ -290,7 +269,6 @@
     var face = orb.querySelector('.orb-face');
     if (!orb.querySelector('.orb-rings')) orb.insertAdjacentHTML('afterbegin', '<span class="orb-rings" aria-hidden="true"><i></i><i></i><i></i></span>');
     if (!orb.querySelector('.orb-liquid')) orb.querySelector('.orb-rings').insertAdjacentHTML('afterend', '<span class="orb-liquid" aria-hidden="true"><i></i><i></i></span>');
-    if (!orb.querySelector('.orb-mouth') && face) face.insertAdjacentHTML('afterend', '<span class="orb-mouth" aria-hidden="true"></span>');
     if (!orb.querySelector('.zfx-bochecha')) orb.insertAdjacentHTML('beforeend', '<span class="zfx-bochecha e" aria-hidden="true"></span><span class="zfx-bochecha d" aria-hidden="true"></span>');
   }
 
@@ -600,17 +578,9 @@
     }
   }
 
-  /* liga/desliga a boca (fica oculta até a versão com fala) */
-  function boca(on) {
-    preparar();
-    if (on) document.documentElement.setAttribute('data-zoe-boca', 'on');
-    else document.documentElement.removeAttribute('data-zoe-boca');
-  }
-
   if (document.body) preparar(); else document.addEventListener('DOMContentLoaded', preparar);
 
   window.ZoeFx = {
-    boca: boca,
     absorver: absorver, eureka: eureka, confete: confete, coracoes: coracoes, dancar: dancar, tonta: tonta,
     surpresa: surpresa, bocejo: bocejo, corada: corada, ola: ola, lendo: lendo, procurando: procurando,
     carregando: carregando, glitch: glitch, gelatina: gelatina, gole: gole, onda: onda, vida: vida, preparar: pecas
@@ -634,15 +604,14 @@ const STATES = {
   piscadinha:  {g:'port', cls:'pisca', tmp:380},
   fora_do_escopo:{g:'port', cls:'', say:'Isso foge do portfólio, então prefiro não responder. Que tal perguntar sobre os projetos?', rate:.97},
   erro:        {g:'port', cls:'erro', say:'Não consegui carregar a base de conhecimento agora. Recarregue a página ou fale com o Ayalan pelo e-mail.', rate:.97},
-  ouvindo:     {g:'new', cls:'ouvindo', say:null},
-  empatica:    {g:'new', cls:'empatica', say:'Poxa, entendo. Vamos achar isso juntos.', rate:.92, pitch:.92},
+  empatica:    {g:'new', cls:'empatica', say:'Poxa, entendo. Vamos achar isso juntos.', rate:.92},
   confusa:     {g:'new', cls:'confusa', say:'Não peguei direito, pode reformular? Você quis dizer o Harmony?'},
   dormindo:    {g:'new', cls:'dormindo', zzz:true},
 };
-const ALL = ['chat','pensando','falando','feliz','pulo','pisca','ouvindo','empatica','confusa','erro','dormindo'];
+const ALL = ['chat','pensando','falando','feliz','pulo','pisca','empatica','confusa','erro','dormindo'];
 let current='idle', timers=[], talk=null;
 
-function clearAll(){ timers.forEach(clearTimeout); timers=[]; clearTimeout(talk); if('speechSynthesis' in window) speechSynthesis.cancel(); }
+function clearAll(){ timers.forEach(clearTimeout); timers=[]; clearTimeout(talk); }
 function setState(name, opts={}){
   if(!opts.keep) clearAll();
   const st=STATES[name]; current=name;
@@ -664,10 +633,6 @@ function speak(text, st, name){
     if(i<words.length){ bubble.textContent=words.slice(0,++i).join(' '); talk=setTimeout(tick, 210/(st.rate||1)); }
     else { zoe.classList.remove('falando'); if(st.back) timers.push(setTimeout(()=>setState('idle',{text:''}),700)); }
   })();
-  if(document.getElementById('voice').checked && 'speechSynthesis' in window){
-    speechSynthesis.cancel(); const u=new SpeechSynthesisUtterance(text);
-    u.lang='pt-BR'; u.rate=st.rate||1; u.pitch=st.pitch||1; speechSynthesis.speak(u);
-  }
 }
 
 /* olhar segue o mouse (igual ao portfólio) */
@@ -737,7 +702,6 @@ Object.entries(FX).forEach(([k,f])=>{ const b=document.createElement('button'); 
   b.onclick=()=>{ clearAll(); setState('idle',{text:''}); status.innerHTML='animação: <b>'+k+'</b>'; f(); };
   document.getElementById('g-fx').append(b); });
 ZoeFx.vida(zoe, { soltarArquivos: true });
-document.getElementById('boca').onchange=e=>ZoeFx.boca(e.target.checked);
 
 intro();
 </script>
