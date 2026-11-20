@@ -104,16 +104,17 @@
   orb.addEventListener('contextmenu', (e) => { e.preventDefault(); window.zoe.contextMenu(); });
 
   // ---------------- conexão com o Core ----------------
-  let ws = null, state = null, retry = 500, refSeq = 0;
+  let ws = null, state = null, retry = 500, refSeq = 0, offlineReason = '';
   const pending = new Map();
   function setOnline(on) {
     orb.classList.toggle('offline', !on);
     $('connDot').classList.toggle('on', on);
-    $('connDot').title = on ? 'conectada ao Zoe Core' : 'sem conexão com o Zoe Core';
+    $('connDot').title = on ? 'conectada ao Zoe Core' : (offlineReason || 'sem conexão com o Zoe Core');
+    if (on) offlineReason = '';
   }
   async function connect() {
     const info = await window.zoe.coreInfo();
-    if (!info.ok) { setOnline(false); return scheduleReconnect(); }
+    if (!info.ok) { offlineReason = info.error || ''; setOnline(false); return scheduleReconnect(); }
     ws = new WebSocket(info.wsUrl);
     ws.onopen = () => { retry = 500; setOnline(true); };
     ws.onclose = () => { setOnline(false); scheduleReconnect(); };
@@ -224,7 +225,12 @@
     text = text.trim();
     if (!text) return;
     addMsg('eu', text); input.value = '';
-    if (!ws || ws.readyState !== 1) { addMsg('zoe', 'Estou sem conexão com o meu serviço local agora. Tento de novo em instantes.'); flash('preocupada', 2500); return; }
+    if (!ws || ws.readyState !== 1) {
+      addMsg('zoe', offlineReason
+        ? `Não consigo responder ainda. ${offlineReason}`
+        : 'Estou sem conexão com o meu serviço local agora. Tento de novo em instantes.');
+      flash('preocupada', 2500); return;
+    }
     const typing = addMsg('zoe typing', ''); typing.innerHTML = '<i></i><i></i><i></i>';
     temp = 'pensando'; render();
     const ref = ++refSeq;

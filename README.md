@@ -19,9 +19,13 @@ Uma companheira digital para o Linux: uma orbe roxa que flutua na área de traba
 
 Requisitos: Python 3.10+, Node 18+ e um compositor (GNOME, KDE ou picom).
 
+No Ubuntu/Debian:
+
 ```bash
-python3 -m pip install --user -r core/requirements.txt
+sudo apt install -y python3-aiohttp
 ```
+
+Em outras distribuições: `python3 -m pip install --user -r core/requirements.txt`.
 
 ```bash
 cd desktop && npm install && npm start

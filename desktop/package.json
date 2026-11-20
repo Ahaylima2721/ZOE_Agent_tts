@@ -7,7 +7,7 @@
   "license": "UNLICENSED",
   "scripts": {
     "start": "electron .",
-    "test": "node tests/e2e.js"
+    "test": "node tests/e2e.js && node tests/e2e_sem_aiohttp.js"
   },
   "devDependencies": {
     "electron": "33.2.1"

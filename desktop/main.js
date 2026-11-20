@@ -76,22 +76,49 @@ function connectCore() {
   return connecting;
 }
 
+// Falhas seguidas ao iniciar o Core: espera cada vez mais antes de tentar de novo
+// (em vez de reiniciar sem parar) e guarda o motivo para mostrar na interface.
+let coreFailures = 0, coreRetryAt = 0, coreError = null;
+
+function explainCoreFailure(stderr, spawnErr) {
+  if (spawnErr && spawnErr.code === 'ENOENT') {
+    return 'Não encontrei o Python 3. Instale com: sudo apt install python3';
+  }
+  const mod = /No module named '([^']+)'/.exec(stderr);
+  if (mod && mod[1].split('.')[0] === 'aiohttp') {
+    return 'Falta a biblioteca aiohttp do Python. Instale com: sudo apt install python3-aiohttp';
+  }
+  if (mod) return `Falta o módulo Python "${mod[1]}".`;
+  const last = stderr.trim().split('\n').pop();
+  return last ? `Meu serviço local falhou: ${last}` : 'Meu serviço local não iniciou.';
+}
+
 async function doConnectCore() {
   let info = readRuntime();
-  if (await healthy(info)) { core = info; return core; }
+  if (await healthy(info)) { core = info; coreError = null; coreFailures = 0; return core; }
   if (process.env.ZOE_NO_SPAWN === '1') throw new Error('Zoe Core não está rodando');
+  if (Date.now() < coreRetryAt) throw new Error(coreError || 'Zoe Core indisponível');
   const coreDir = process.env.ZOE_CORE_DIR || path.join(__dirname, '..', 'core');
   const py = process.env.ZOE_PYTHON || 'python3';
+  let stderr = '', exited = false, spawnErr = null;
   // ZOE_PARENT_PID: o Core se encerra sozinho se a Zoe Desktop morrer sem avisar
-  coreProc = spawn(py, ['-m', 'zoe_core'], { cwd: coreDir, stdio: ['ignore', 'inherit', 'inherit'],
+  coreProc = spawn(py, ['-m', 'zoe_core'], { cwd: coreDir, stdio: ['ignore', 'inherit', 'pipe'],
     env: { ...process.env, ZOE_PARENT_PID: String(process.pid) } });
-  coreProc.on('exit', (code) => { coreProc = null; if (code) console.error(`[zoe] core saiu com código ${code}`); });
-  for (let i = 0; i < 50; i++) {
+  coreProc.stderr.on('data', (d) => { process.stderr.write(d); stderr = (stderr + d).slice(-4000); });
+  coreProc.on('error', (e) => { spawnErr = e; exited = true; });
+  coreProc.on('exit', (code) => { coreProc = null; exited = true; if (code) console.error(`[zoe] core saiu com código ${code}`); });
+  for (let i = 0; i < 50 && !exited; i++) {
     await new Promise((r) => setTimeout(r, 200));
     info = readRuntime();
-    if (await healthy(info)) { core = info; return core; }
+    if (await healthy(info)) { core = info; coreError = null; coreFailures = 0; return core; }
   }
-  throw new Error('Zoe Core não respondeu a tempo');
+  if (!exited && coreProc) coreProc.kill('SIGTERM');
+  await new Promise((r) => setTimeout(r, 100));   // deixa o stderr terminar de chegar
+  coreFailures++;
+  coreRetryAt = Date.now() + Math.min(60000, 5000 * 2 ** (coreFailures - 1));
+  coreError = exited ? explainCoreFailure(stderr, spawnErr) : 'Meu serviço local não respondeu a tempo.';
+  console.error('[zoe]', coreError);
+  throw new Error(coreError);
 }
 
 // ---------------- geometria da janela ----------------
