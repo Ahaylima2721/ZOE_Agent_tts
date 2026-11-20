@@ -268,7 +268,7 @@ ipcMain.handle('core:info', async () => {
 });
 
 const API_ALLOW = [
-  ['GET', /^\/api\/(state|settings|health)$/],
+  ['GET', /^\/api\/(state|settings|health|pc|pc\/diagnose)$/],
   ['GET', /^\/api\/(interactions|notifications)(\?limit=\d+)?$/],
   ['PATCH', /^\/api\/settings$/],
   ['POST', /^\/api\/(chat|focus\/start|focus\/stop|monitoring|emergency-stop|personal-data\/delete)$/],

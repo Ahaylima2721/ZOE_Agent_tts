@@ -4,10 +4,10 @@ from zoe_core.events import Event, EventType
 
 
 async def test_unknown_rule_waits_and_is_logged(core, db, sink):
-    d = await core.decision.handle(Event(EventType.CPU_OVERLOAD, {}, timestamp=1))
+    d = await core.decision.handle(Event(EventType.TASK_OVERDUE, {}, timestamp=1))
     assert d.action == "aguardar"
     row = db.query("SELECT type, decision FROM events")[0]
-    assert row["type"] == "CPU_OVERLOAD" and row["decision"].startswith("aguardar")
+    assert row["type"] == "TASK_OVERDUE" and row["decision"].startswith("aguardar")
 
 
 async def test_focus_flow(core, sink):

@@ -8,8 +8,8 @@ Uma companheira digital para o Linux: uma orbe roxa que flutua na área de traba
 
 | Pasta / arquivo | O que é |
 | --- | --- |
-| `desktop/` | **Zoe Desktop** (Electron): orbe flutuante, expressões, balões, conversa, ajustes, bandeja |
-| `core/` | **Zoe Core** (Python): API local, eventos, decisões, notificações, foco, banco SQLite |
+| `desktop/` | **Zoe Desktop** (Electron): orbe flutuante, expressões, balões, conversa, recursos do PC, ajustes, bandeja |
+| `core/` | **Zoe Core** (Python): API local, eventos, decisões, notificações, foco, monitor do PC, banco SQLite |
 | `zoe.design`, `zoe-preview.html`, `zoe-fx.js` | Design da orbe e animações (usados pela Zoe Desktop) |
 | `docs/ARQUITETURA.md` | Análise do projeto, escolhas de tecnologia, X11/Wayland, fases |
 | `docs/API.md` | API REST e WebSocket, eventos, banco de dados, permissões |
@@ -22,7 +22,7 @@ Requisitos: Python 3.10+, Node 18+ e um compositor (GNOME, KDE ou picom).
 No Ubuntu/Debian:
 
 ```bash
-sudo apt install -y python3-aiohttp
+sudo apt install -y python3-aiohttp python3-psutil
 ```
 
 Em outras distribuições: `python3 -m pip install --user -r core/requirements.txt`.
@@ -51,4 +51,4 @@ cd desktop && xvfb-run -a npm test
 
 ## Status
 
-A **Fase 1 (Zoe Desktop)** está pronta. As fases 2 a 6 (PC Companion, memória pessoal, Guardian, Ollama, evolução) estão descritas em `docs/ARQUITETURA.md`.
+Prontas: **Fase 1 (Zoe Desktop)** e **Fase 2 (PC Companion)**. As fases 3 a 6 (memória pessoal, Guardian, Ollama, evolução) estão descritas em `docs/ARQUITETURA.md`.

@@ -131,6 +131,36 @@ def _user_request(e: Event, s: dict, eng: DecisionEngine) -> Decision:
     return Decision("conversar", "respondido pelo chat")
 
 
+# ---------------- PC Companion ----------------
+# janela do dedupe de cada alerta: não repetir o mesmo assunto antes disso
+PC_DEDUPE_S = {"ram_alta": 3600, "cpu_alta": 3600, "disco_cheio": 24 * 3600,
+               "temperatura_alta": 1800, "bateria_baixa": 1800}
+PC_ACTIONS = {
+    "ram_alta": [{"id": "ver_processos", "label": "Ver processos"}, {"id": "dismiss", "label": "Agora não"}],
+    "cpu_alta": [{"id": "ver_processos", "label": "Ver processos"}, {"id": "dismiss", "label": "Agora não"}],
+    "disco_cheio": [{"id": "ver_recursos", "label": "Ver discos"}, {"id": "dismiss", "label": "Depois"}],
+    "temperatura_alta": [{"id": "ver_processos", "label": "Ver o que está pesando"}, {"id": "dismiss", "label": "Ok"}],
+    "bateria_baixa": [{"id": "dismiss", "label": "Ok"}],
+}
+
+
+def _pc_alert(e: Event, s: dict, eng: DecisionEngine) -> Decision:
+    f = e.payload
+    kind = f.get("kind", "")
+    if not s["pc_alertas"]:
+        return Decision("ignorar", "alertas do PC desligados")
+    if eng.focus_active and f.get("severity") != "critical":
+        return Decision("aguardar", "não interrompe o foco por isso")
+    critical = f.get("severity") == "critical"
+    n = Notification(
+        message=f"{f.get('message', '')} {f.get('suggestion', '')}".strip(),
+        category="pc", origin=ORIGIN_SPONTANEOUS, expression="alerta" if critical else "preocupada",
+        actions=PC_ACTIONS.get(kind, []), dedupe_key=f"pc:{kind}",
+        dedupe_window_s=PC_DEDUPE_S.get(kind, 3600), urgent=critical,
+    )
+    return Decision("notificar", f.get("title", kind), notification=n)
+
+
 DEFAULT_RULES: dict[EventType, Rule] = {
     EventType.FOCUS_SESSION_STARTED: _focus_started,
     EventType.FOCUS_SESSION_ENDED: _focus_ended,
@@ -139,4 +169,9 @@ DEFAULT_RULES: dict[EventType, Rule] = {
     EventType.EMERGENCY_STOP: _emergency,
     EventType.MONITORING_RESUMED: _resumed,
     EventType.USER_REQUEST: _user_request,
+    EventType.HIGH_MEMORY_USAGE: _pc_alert,
+    EventType.CPU_OVERLOAD: _pc_alert,
+    EventType.DISK_SPACE_LOW: _pc_alert,
+    EventType.HIGH_TEMPERATURE: _pc_alert,
+    EventType.BATTERY_LOW: _pc_alert,
 }

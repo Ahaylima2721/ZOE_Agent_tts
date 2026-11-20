@@ -45,7 +45,8 @@ Conclusões:
 │  focus.py    sessões de foco          chat.py  comandos locais          │
 │  db.py       ZOE DATABASE (SQLite, retenção, apagar dados)              │
 ├─────────────────────────────────────────────────────────────────────────┤
-│  próximas fases: pc/ (psutil, sensores) · guardian/ · companion/ · ai/  │
+│  pc/         coleta (psutil, /sys, nvidia-smi) · diagnóstico · monitor  │
+│  próximas fases: guardian/ · companion/ · ai/                           │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -87,8 +88,8 @@ Nenhum recurso exige root. Tudo fica em `~/.local/share/zoe` (dados) e `$XDG_RUN
 | Fase | Status | O que existe |
 | --- | --- | --- |
 | **1 — Zoe Desktop** | ✅ implementada e testada | Orbe flutuante com 8 expressões; arrastar; ocultar e ocultar por 30 min; balões com ações; painel (conversa, avisos, ajustes); bandeja e menu; Core com eventos, decisões, notificações, foco, banco e API; botão de emergência; apagar dados |
-| 2 — PC Companion | próxima | Módulo `pc/` com psutil e sensores; eventos `HIGH_MEMORY_USAGE` e `CPU_OVERLOAD`; aba "Recursos" |
-| 3 — Personal Companion | — | Tabelas já criadas (`interests`, `books`, `personal_projects`…); faltam rotas e interface |
+| **2 — PC Companion** | ✅ implementada e testada | CPU, RAM, swap, discos, leitura/gravação, rede, temperatura, GPU (NVIDIA/AMD), bateria e processos agrupados por app; aba "Recursos" com medidores e minilinhas ao vivo; diagnóstico assistido (botão e chat); alertas com histerese e dedupe; médias por minuto em `system_metrics`. Encerrar processos fica para o Guardian (Fase 4), sempre com autorização |
+| 3 — Personal Companion | próxima | Tabelas já criadas (`interests`, `books`, `personal_projects`…); faltam rotas e interface |
 | 4 — Guardian | — | Tabelas `application_usage` e `focus_rules` já existem; os níveis de autonomia já são aplicados nas notificações |
 | 5 — Inteligência (Ollama) | — | O `decision.py` já tem a ação `consultar_llm` reservada; o chat responde com honestidade que ainda não conversa livremente |
 | 6 — Evolução | — | Reavaliar Tauri; suporte a Windows (o Core já não depende de nada exclusivo do Linux, exceto `notify-send`) |

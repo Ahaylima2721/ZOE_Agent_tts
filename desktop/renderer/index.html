@@ -33,6 +33,7 @@
     </header>
     <nav class="tabs" role="tablist">
       <button role="tab" data-tab="conversa" aria-selected="true">Conversa</button>
+      <button role="tab" data-tab="recursos">Recursos</button>
       <button role="tab" data-tab="avisos">Avisos</button>
       <button role="tab" data-tab="ajustes">Ajustes</button>
     </nav>
@@ -44,6 +45,25 @@
         <input id="input" autocomplete="off" maxlength="2000" placeholder="Escreva para a Zoe… (ajuda)">
         <button type="submit" aria-label="Enviar">➤</button>
       </form>
+    </div>
+
+    <div class="tab rec" id="tab-recursos" hidden>
+      <div class="rec-head">
+        <p class="rec-sum" id="recSum" aria-live="polite">Lendo o computador…</p>
+        <button type="button" class="btn" id="recDiag">Diagnosticar</button>
+      </div>
+      <div class="findings" id="recFindings" hidden></div>
+      <div class="rec-body" id="recBody"></div>
+      <section class="procs" aria-labelledby="procTitle">
+        <div class="procs-head">
+          <h3 id="procTitle">Processos principais</h3>
+          <div class="seg" role="radiogroup" aria-label="Ordenar processos">
+            <button type="button" role="radio" aria-checked="true" data-sort="by_memory">Memória</button>
+            <button type="button" role="radio" aria-checked="false" data-sort="by_cpu">CPU</button>
+          </div>
+        </div>
+        <ol class="proc-list" id="procList"></ol>
+      </section>
     </div>
 
     <div class="tab" id="tab-avisos" hidden>
@@ -88,6 +108,22 @@
         </div>
       </fieldset>
       <fieldset>
+        <legend>Recursos do computador</legend>
+        <label class="check"><input type="checkbox" name="pc_alertas"> Avisar quando algo passar do limite</label>
+        <div class="row">
+          <label>Memória acima de (%) <input type="number" name="pc_limites.ram_pct" min="50" max="99"></label>
+          <label>CPU acima de (%) <input type="number" name="pc_limites.cpu_pct" min="50" max="100"></label>
+        </div>
+        <div class="row">
+          <label>Disco livre abaixo de (%) <input type="number" name="pc_limites.disco_livre_pct" min="1" max="50"></label>
+          <label>Temperatura acima de (°C) <input type="number" name="pc_limites.temp_c" min="60" max="105"></label>
+        </div>
+        <div class="row">
+          <label>Bateria abaixo de (%) <input type="number" name="pc_limites.bateria_pct" min="5" max="50"></label>
+          <label>Ler a cada (s) <input type="number" name="pc_intervalo_s" min="2" max="60"></label>
+        </div>
+      </fieldset>
+      <fieldset>
         <legend>Aparência</legend>
         <label class="check"><input type="checkbox" id="calmo"> Reduzir animações</label>
       </fieldset>
@@ -105,6 +141,7 @@
   </section>
 </div>
 <script src="../../zoe-fx.js"></script>
+<script src="recursos.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

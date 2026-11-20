@@ -78,6 +78,10 @@ DEFAULT_SETTINGS: dict = {
     "foco_minutos_padrao": 25,
     "ocioso_minutos": 5,
     "notificacoes_nativas": True,   # usa notify-send quando a orbe não está aberta
+    # PC Companion (seção 5)
+    "pc_alertas": True,             # a Zoe comenta sobre RAM, CPU, disco, temperatura e bateria
+    "pc_intervalo_s": 5,            # intervalo entre leituras
+    "pc_limites": {"ram_pct": 90, "cpu_pct": 90, "disco_livre_pct": 10, "temp_c": 90, "bateria_pct": 15},
     "retencao_dias": {
         "system_metrics": 7,
         "application_usage": 90,

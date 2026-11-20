@@ -22,6 +22,7 @@ HELP = (
     "• não perturbe 30 — silencio as conversas espontâneas por 30 min\n"
     "• pausar / retomar — monitoramento e intervenções\n"
     "• me chame de <nome>\n"
+    "• como está o pc · diagnóstico · o que está pesando\n"
     "• status · que horas são · ajuda"
 )
 
@@ -40,6 +41,15 @@ def normalize(text: str) -> str:
     t = unicodedata.normalize("NFKD", text.lower())
     t = "".join(c for c in t if not unicodedata.combining(c))
     return re.sub(r"\s+", " ", t).strip(" !?.")
+
+
+# ---------------- PC Companion ----------------
+PC_SUMMARY = {"como esta o pc", "como esta o computador", "status do pc", "status do computador", "pc", "computador",
+              "recursos", "como esta a maquina", "uso do pc"}
+PC_DIAGNOSE = {"diagnostico", "diagnosticar", "fazer diagnostico", "faz um diagnostico", "por que o pc esta lento",
+               "por que o computador esta lento", "o pc esta lento", "o computador esta lento", "pc lento", "computador lento"}
+PC_PROCESSES = {"processos", "o que esta pesando", "quem esta pesando", "o que esta usando memoria",
+                "o que esta usando a memoria", "o que esta usando cpu", "o que esta usando a cpu", "top processos"}
 
 
 class ChatHandler:
@@ -97,6 +107,10 @@ class ChatHandler:
             core.db.update_settings({"nome_usuario": novo})
             return Reply(f"Prazer, {novo}! Vou lembrar.", "feliz")
 
+        pc = await self._pc(t)
+        if pc:
+            return pc
+
         if t in ("status", "como voce esta", "tudo bem"):
             return Reply(core.status_text(), "normal")
         if t in ("que horas sao", "horas", "que horas"):
@@ -107,3 +121,30 @@ class ChatHandler:
             "Escreva \"ajuda\" para ver o que já sei fazer.",
             "curiosa", ("ajuda",),
         )
+
+    async def _pc(self, t: str) -> Reply | None:
+        if t not in PC_SUMMARY | PC_DIAGNOSE | PC_PROCESSES:
+            return None
+        core = self.core
+        if not core.pc:
+            return Reply(core.pc_error or "O monitor do computador está desligado.", "preocupada")
+        from .pc import diagnostics as dg
+        snap = await core.pc.read()
+        if t in PC_SUMMARY:
+            return Reply(dg.summary(snap), "normal", ("diagnóstico", "o que está pesando"))
+        if t in PC_PROCESSES:
+            mem = snap["processes"]["by_memory"][:4]
+            cpu = [g for g in snap["processes"]["by_cpu"][:4] if g["cpu_pct"] >= 1]
+            lines = ["Quem mais usa memória:"] + [f"• {g['app']}: {dg.fmt_bytes(g['mem_bytes'])}" for g in mem]
+            if cpu:
+                lines += ["Quem mais usa CPU agora:"] + [f"• {g['app']}: {g['cpu_pct']:.0f}%" for g in cpu]
+            else:
+                lines.append("No processador está tudo tranquilo agora.")
+            return Reply("\n".join(lines), "curiosa", ("diagnóstico",))
+        findings = dg.diagnose(snap, list(core.pc.history), core.db.get_settings().get("pc_limites"))
+        if not findings:
+            return Reply("Fiz um diagnóstico e não achei nada fora do normal. " + dg.summary(snap), "feliz",
+                         ("o que está pesando",))
+        worst = "alerta" if any(f.severity == "critical" for f in findings) else "preocupada"
+        text = "\n\n".join(f"{f.title}: {f.message} {f.suggestion}" for f in findings)
+        return Reply(text, worst, ("o que está pesando",))

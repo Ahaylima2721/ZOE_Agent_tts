@@ -28,6 +28,8 @@ Toda requisição precisa do token: `Authorization: Bearer <token>`, ou `?token=
 | POST | `/api/monitoring` | `{active: bool}` | estado; liga ou desliga monitoramento **e** intervenções |
 | POST | `/api/emergency-stop` | `{}` | estado; para tudo e avisa |
 | POST | `/api/personal-data/delete` | `{confirm: "APAGAR"}` | apaga conversas, avisos, eventos e dados pessoais |
+| GET | `/api/pc` | — | `{snapshot, history{t,cpu,ram}}`: leitura atual e o último ~minuto. 503 se faltar o psutil |
+| GET | `/api/pc/diagnose` | — | `{summary, findings[], processes}`: diagnóstico na hora (funciona mesmo com alertas desligados) |
 
 ### Configurações
 
@@ -41,6 +43,9 @@ Toda requisição precisa do token: `Authorization: Bearer <token>`, ou `?token=
 | `foco_minutos_padrao` | 1–240 | `25` |
 | `ocioso_minutos` | 1–240 | `5` |
 | `notificacoes_nativas` | bool (usa `notify-send` quando a orbe está fechada) | `true` |
+| `pc_alertas` | bool: a Zoe comenta sozinha sobre RAM, CPU, disco, temperatura e bateria | `true` |
+| `pc_intervalo_s` | 2–60 (segundos entre leituras) | `5` |
+| `pc_limites` | `{ram_pct 50–99, cpu_pct 50–100, disco_livre_pct 1–50, temp_c 60–105, bateria_pct 5–50}`; atualização parcial é mesclada | `90, 90, 10, 90, 15` |
 | `retencao_dias` | `{system_metrics, application_usage, events, notifications}` em dias | `7, 90, 30, 30` |
 | `monitoramento_ativo`, `intervencoes_ativas` | somente leitura no PATCH; mudam por `/api/monitoring` ou `/api/emergency-stop` | `true` |
 
@@ -56,8 +61,9 @@ Do servidor para o cliente:
 | `notification` | `notification {id, message, category, origin, expression, actions[{id,label}]}` | aviso aprovado pelas regras |
 | `chat.reply` | `ref`, `text`, `expression`, `quick_replies[]` | resposta a um `chat` |
 | `pong` | — | resposta a `ping` |
+| `pc` | `snapshot`, `history` | a cada leitura, só para quem pediu `pc.subscribe` (aba Recursos aberta) |
 
-Do cliente para o servidor: `{type:"chat", text, ref}`, `{type:"notification.ack", id, action}` e `{type:"ping"}`.
+Do cliente para o servidor: `{type:"chat", text, ref}`, `{type:"notification.ack", id, action}`, `{type:"pc.subscribe", on}` e `{type:"ping"}`.
 
 Expressões: `normal`, `pensando`, `curiosa`, `feliz`, `preocupada`, `foco`, `descanso`, `alerta`.
 
@@ -76,7 +82,11 @@ Todo evento passa pelo `DecisionEngine` (`core/zoe_core/decision.py`). Ele escol
 | `EMERGENCY_STOP` | menu, ajustes, API | desliga monitoramento e intervenções e avisa |
 | `MONITORING_RESUMED` | menu, ajustes, API | `feliz` passageira |
 | `USER_REQUEST` | chat | registrado; a resposta vem do chat |
-| `HIGH_MEMORY_USAGE`, `CPU_OVERLOAD` | Fase 2 | ainda sem regra: `aguardar` |
+| `HIGH_MEMORY_USAGE` | monitor do PC: RAM ≥ limite por 30 s | aviso "Memória quase cheia" com o app responsável e ação "Ver processos"; no máximo 1 por hora |
+| `CPU_OVERLOAD` | monitor do PC: média de 1 min ≥ limite | aviso com o processo que mais usa CPU; no máximo 1 por hora |
+| `DISK_SPACE_LOW` | monitor do PC: livre < limite % ou < 5 GB | aviso com ação "Ver discos"; no máximo 1 por dia |
+| `HIGH_TEMPERATURE` | monitor do PC: CPU ≥ limite °C | aviso; **urgente** (≥ 95 °C ou limite + 5) |
+| `BATTERY_LOW` | monitor do PC: ≤ limite % fora da tomada | aviso; **urgente** em ≤ 5% |
 | `APP_USAGE_LIMIT_REACHED` | Fase 4 | ainda sem regra: `aguardar` |
 | `TASK_OVERDUE`, `NEW_DISCOVERY` | Fases 3 e 5 | ainda sem regra: `aguardar` |
 
@@ -93,6 +103,10 @@ Um aviso **espontâneo** só é entregue se passar por todas estas verificaçõe
 7. respeita o intervalo mínimo desde o último aviso espontâneo.
 
 Avisos de origem **usuário** (respostas, fim de um foco que o usuário iniciou, confirmação de emergência) não passam por esses limites. Avisos bloqueados ficam gravados com `status = bloqueada`. Se nenhuma orbe estiver conectada, o aviso vai para `notify-send` (D-Bus), quando permitido.
+
+Regras comuns aos avisos do PC: durante uma sessão de foco só os críticos interrompem; com o monitoramento pausado nada é avaliado nem gravado; depois de disparar, o mesmo alerta só volta a valer quando a situação ficar normal por 2 minutos. Avisos **urgentes** passam por cima da frequência e do horário silencioso, mas nunca de "apenas observar" nem do "não perturbe".
+
+O monitor só lê: ele não encerra processos nem muda configurações do sistema.
 
 ## Banco de dados
 
@@ -114,7 +128,8 @@ Tabelas da seção 8 da especificação: `users`, `interests`, `personal_project
 | A interface não tem acesso ao sistema | `contextIsolation`, `sandbox`, sem `nodeIntegration`, CSP restrita; navegação e novas janelas bloqueadas |
 | Sem comandos arbitrários | O IPC só repassa rotas de uma lista fixa (`API_ALLOW` em `desktop/main.js`). O Core não tem rota que execute comandos. Clientes só podem publicar 3 tipos de evento |
 | Configurações validadas | Cada chave tem validador. Monitoramento e intervenções só mudam por rotas que geram o evento correspondente |
-| Sem coleta invasiva | Nada de teclas, tela ou conteúdo de outros apps. Só o tempo ocioso do sistema (número de segundos) |
+| Sem coleta invasiva | Nada de teclas, tela ou conteúdo de outros apps. Só o tempo ocioso do sistema (número de segundos) e métricas do PC (uso de CPU/RAM/disco, nomes e consumo dos processos) |
+| Monitor do PC só lê | Coleta via psutil e /sys, sem root; nenhuma rota encerra processos ou muda o sistema. `system_metrics` guarda só médias por minuto (retenção de 7 dias) |
 | Botão de emergência | Bandeja, clique direito, ajustes e API: desliga monitoramento e intervenções na hora |
 | Histórico de intervenções | Tabela `events` (com a decisão) e `notifications` (com o status) |
 | Apagar dados | `POST /api/personal-data/delete` com confirmação explícita |

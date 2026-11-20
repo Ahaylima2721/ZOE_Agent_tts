@@ -39,7 +39,7 @@ def db(clock):
 
 @pytest.fixture
 def core(db, clock):
-    return ZoeCore(db, clock=clock)
+    return ZoeCore(db, clock=clock, enable_pc=False)
 
 
 class Sink:

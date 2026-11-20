@@ -102,3 +102,38 @@ def test_runtime_file_permissions(tmp_path):
     write_runtime_file(p, 1234, "abc")
     assert json.loads(p.read_text())["port"] == 1234
     assert (p.stat().st_mode & 0o777) == 0o600
+
+
+async def test_pc_routes(aiohttp_client, db, clock):
+    from zoe_core.core import ZoeCore
+    core = ZoeCore(db, enable_pc=True)          # coletor real
+    client = await aiohttp_client(build_app(core, TOKEN))
+    r = await client.get("/api/pc", headers=H)
+    data = await r.json()
+    assert r.status == 200 and data["snapshot"]["memory"]["total"] > 0 and "cpu" in data["history"]
+    r = await client.get("/api/pc/diagnose", headers=H)
+    d = await r.json()
+    assert "summary" in d and isinstance(d["findings"], list)
+    ws = await client.ws_connect(f"/ws?token={TOKEN}")
+    assert (await ws.receive_json())["state"]["pc"]["available"] is True
+    await ws.send_json({"type": "pc.subscribe", "on": True})
+    while (m := await ws.receive_json(timeout=5))["type"] != "pc":
+        pass
+    assert m["snapshot"]["cpu"]["cores"] >= 1
+    await ws.close()
+
+
+async def test_pc_unavailable_503(client):
+    assert (await client.get("/api/pc", headers=H)).status == 503
+
+
+async def test_pc_limits_validation_and_merge(client):
+    r = await client.patch("/api/settings", json={"pc_limites": {"ram_pct": 85}}, headers=H)
+    lim = (await r.json())["pc_limites"]
+    assert lim["ram_pct"] == 85 and lim["cpu_pct"] == 90
+    r = await client.patch("/api/settings", json={"pc_limites": {"cpu_pct": 80}}, headers=H)
+    lim = (await r.json())["pc_limites"]
+    assert lim["ram_pct"] == 85 and lim["cpu_pct"] == 80       # o anterior não se perdeu
+    assert (await client.patch("/api/settings", json={"pc_limites": {"ram_pct": 10}}, headers=H)).status == 400
+    assert (await client.patch("/api/settings", json={"pc_limites": {"xyz": 10}}, headers=H)).status == 400
+    assert (await client.patch("/api/settings", json={"pc_intervalo_s": 1}, headers=H)).status == 400

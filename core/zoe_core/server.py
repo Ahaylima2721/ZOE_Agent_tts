@@ -31,6 +31,8 @@ CORE_KEY = web.AppKey("core", ZoeCore)
 TOKEN_KEY = web.AppKey("token", str)
 
 _HHMM = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
+PC_LIMIT_RANGES = {"ram_pct": (50, 99), "cpu_pct": (50, 100), "disco_livre_pct": (1, 50),
+                   "temp_c": (60, 105), "bateria_pct": (5, 50)}
 
 SETTINGS_VALIDATORS = {
     "nome_usuario": lambda v: isinstance(v, str) and len(v) <= 40,
@@ -42,6 +44,11 @@ SETTINGS_VALIDATORS = {
     "foco_minutos_padrao": lambda v: isinstance(v, int) and 1 <= v <= 240,
     "ocioso_minutos": lambda v: isinstance(v, int) and 1 <= v <= 240,
     "notificacoes_nativas": lambda v: isinstance(v, bool),
+    "pc_alertas": lambda v: isinstance(v, bool),
+    "pc_intervalo_s": lambda v: isinstance(v, int) and not isinstance(v, bool) and 2 <= v <= 60,
+    "pc_limites": lambda v: isinstance(v, dict) and all(
+        k in PC_LIMIT_RANGES and isinstance(x, (int, float)) and not isinstance(x, bool)
+        and PC_LIMIT_RANGES[k][0] <= x <= PC_LIMIT_RANGES[k][1] for k, x in v.items()),
     "retencao_dias": lambda v: isinstance(v, dict) and all(
         k in ("system_metrics", "application_usage", "events", "notifications") and isinstance(d, int) and 1 <= d <= 3650
         for k, d in v.items()),
@@ -95,6 +102,10 @@ async def patch_settings(request):
             return _bad(f"configuração desconhecida ou somente leitura: {k}")
         if not check(v):
             return _bad(f"valor inválido para {k}")
+    current = core.db.get_settings()
+    # dicionários (pc_limites, retencao_dias) são mesclados: mudar um limite não apaga os outros
+    data = {k: ({**current[k], **v} if isinstance(v, dict) and isinstance(current.get(k), dict) else v)
+            for k, v in data.items()}
     settings = core.db.update_settings(data)
     await core.broadcast_state()
     return web.json_response(settings)
@@ -129,6 +140,34 @@ async def notification_ack(request):
     except ValueError as e:
         return _bad(str(e))
     return web.json_response({"ok": True})
+
+
+def _pc_or_error(core):
+    if not core.pc:
+        raise web.HTTPServiceUnavailable(
+            text=json.dumps({"error": core.pc_error or "monitor do PC desligado"}, ensure_ascii=False),
+            content_type="application/json")
+    return core.pc
+
+
+async def pc_status(request):
+    """Leitura atual + histórico curto. Lê na hora se ainda não houver leitura recente."""
+    core = request.app[CORE_KEY]
+    pc = _pc_or_error(core)
+    if not pc.latest or core.clock() - pc.latest["timestamp"] > 15:
+        await pc.read()
+    return web.json_response(pc.payload())
+
+
+async def pc_diagnose(request):
+    """Diagnóstico assistido sob demanda (mesmo com alertas desligados)."""
+    from .pc import diagnostics
+    core = request.app[CORE_KEY]
+    pc = _pc_or_error(core)
+    snap = await pc.read()
+    findings = diagnostics.diagnose(snap, list(pc.history), core.db.get_settings().get("pc_limites"))
+    return web.json_response({"summary": diagnostics.summary(snap), "findings": [f.to_dict() for f in findings],
+                              "processes": snap["processes"]})
 
 
 async def post_event(request):
@@ -215,8 +254,17 @@ async def websocket(request):
                 await ws.send_json({"type": "chat.reply", "ref": data.get("ref"), **reply.to_dict()})
             elif kind == "notification.ack" and isinstance(data.get("id"), int):
                 await core.handle_notification_action(data["id"], data.get("action"))
+            elif kind == "pc.subscribe" and core.pc:
+                # painel de recursos aberto/fechado: só então mandamos leituras ao vivo
+                if data.get("on"):
+                    core.pc.subscribers.add(ws)
+                    core.pc.wake()
+                else:
+                    core.pc.subscribers.discard(ws)
     finally:
         core.hub.clients.discard(ws)
+        if core.pc:
+            core.pc.subscribers.discard(ws)
     return ws
 
 
@@ -233,6 +281,8 @@ def build_app(core: ZoeCore, token: str) -> web.Application:
     app.router.add_get("/api/notifications", notifications)
     app.router.add_post("/api/notifications/{id}/ack", notification_ack)
     app.router.add_post("/api/events", post_event)
+    app.router.add_get("/api/pc", pc_status)
+    app.router.add_get("/api/pc/diagnose", pc_diagnose)
     app.router.add_post("/api/focus/start", focus_start)
     app.router.add_post("/api/focus/stop", focus_stop)
     app.router.add_post("/api/monitoring", monitoring)

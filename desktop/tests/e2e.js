@@ -38,6 +38,8 @@ async function coreApi(method, p, body) {
   const step = async (name, fn) => { await fn(); results.push(name); console.log('  ✓', name); };
   try {
     const page = await app.firstWindow();
+    page.on('pageerror', (e) => console.error('[erro na página]', e.message));
+    page.on('console', (m) => { if (m.type() === 'error') console.error('[console]', m.text()); });
     const bounds = () => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].getBounds());
     const shot = async (n) => shots && page.screenshot({ path: path.join(shots, n + '.png'), omitBackground: true });
 
@@ -98,6 +100,49 @@ async function coreApi(method, p, body) {
       await until(async () => (await coreApi('GET', '/api/settings')).nome_usuario === 'Ayalan', 3000, 'nome');
     });
     await shot('3-ajustes');
+
+    await step('recursos: medidores com dados reais e processos', async () => {
+      await page.click('[data-tab="recursos"]');
+      await until(() => page.$eval('[data-key="cpu"] .m-val', (e) => /^\d+%$/.test(e.textContent)), 6000, 'CPU');
+      const ram = await page.$eval('[data-key="ram"] .m-val', (e) => e.textContent);
+      assert.match(ram, /^[\d,]+ (MB|GB) de [\d,]+ GB$/);
+      const total = (await coreApi('GET', '/api/pc')).snapshot.memory.total;
+      assert.match(ram, new RegExp((total / 2 ** 30).toFixed(1).replace('.', ',') + ' GB$'));
+      assert.ok((await page.$$('#procList li')).length >= 3, 'lista de processos');
+      await page.click('.seg [data-sort="by_cpu"]');
+      assert.match(await page.textContent('#procList li .p-val'), /%$/);
+      assert.match(await page.textContent('[data-key="gpu"] .m-sub'), /indisponível/);   // sem GPU aqui: diz, não inventa
+    });
+
+    await step('recursos: leituras ao vivo enquanto a aba está aberta', async () => {
+      await coreApi('PATCH', '/api/settings', { pc_intervalo_s: 2 });
+      const before = await page.textContent('#recSum');
+      await until(async () => (await page.textContent('#recSum')) !== before, 8000, 'nova leitura');
+      await until(() => page.$eval('[data-key="cpu"] .sp-line', (l) => (l.getAttribute('points') || '').split(' ').length >= 2), 8000, 'minilinha');
+      await page.hover('[data-key="cpu"] .spark', { position: { x: 300, y: 18 }, force: true });
+      await until(() => page.$eval('[data-key="cpu"] .sp-tip', (t) => !t.hidden && /% · \d\d:\d\d:\d\d/.test(t.textContent)), 3000, 'dica');
+    });
+    await shot('6-recursos');
+
+    await step('recursos: diagnóstico assistido', async () => {
+      await page.click('#recDiag');
+      await until(() => page.$eval('#recFindings', (e) => !e.hidden && e.textContent.length > 10), 6000, 'diagnóstico');
+    });
+
+    await step('ajustes: limite do PC grava sem apagar os outros', async () => {
+      await page.click('[data-tab="ajustes"]');
+      await page.fill('input[name="pc_limites.ram_pct"]', '85');
+      await page.press('input[name="pc_limites.ram_pct"]', 'Tab');
+      await until(async () => (await coreApi('GET', '/api/settings')).pc_limites.ram_pct === 85, 3000, 'limite');
+      assert.equal((await coreApi('GET', '/api/settings')).pc_limites.cpu_pct, 90);
+    });
+
+    await step('chat: "como está o pc" responde com números reais', async () => {
+      await page.click('[data-tab="conversa"]');
+      await page.fill('#input', 'como está o pc?');
+      await page.press('#input', 'Enter');
+      await until(() => page.$$eval('.msg.zoe', (m) => /^CPU em \d+%, memória \d+%/.test(m.at(-1).textContent)), 5000, 'resumo');
+    });
 
     await step('fechar painel e receber balão de notificação com ações', async () => {
       await page.click('#closePanel');

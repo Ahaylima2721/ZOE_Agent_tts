@@ -16,6 +16,9 @@ from .notifications import NotificationService
 
 log = logging.getLogger("zoe.core")
 
+PSUTIL_MISSING = ("Para eu acompanhar o computador, falta a biblioteca psutil. "
+                  "Instale com: sudo apt install python3-psutil")
+
 
 class ClientHub:
     """Clientes WebSocket conectados (orbe, painéis)."""
@@ -38,7 +41,7 @@ class ClientHub:
 class ZoeCore:
     RETENTION_EVERY_S = 6 * 3600
 
-    def __init__(self, db: Database, clock=time.time):
+    def __init__(self, db: Database, clock=time.time, enable_pc: bool = True, pc_collector=None):
         self.db, self.clock = db, clock
         self.started_at = clock()
         self.bus = EventBus()
@@ -48,6 +51,15 @@ class ZoeCore:
         self.decision = DecisionEngine(self.bus, db, self.notifications, self.hub.broadcast)
         self.focus = FocusManager(self.bus, clock)
         self.chat = ChatHandler(self)
+        # PC Companion: opcional, para a Zoe funcionar mesmo sem o psutil instalado
+        self.pc, self.pc_error = None, None
+        if enable_pc:
+            try:
+                from .pc.monitor import PcMonitor
+                self.pc = PcMonitor(self, pc_collector)
+            except ImportError:
+                self.pc_error = PSUTIL_MISSING
+                log.warning(PSUTIL_MISSING)
         self._bg: list[asyncio.Task] = []
         # foco pode começar pelo chat, pela bandeja, pela API ou por uma ação de balão:
         # em todos os casos a interface recebe o estado novo
@@ -59,9 +71,13 @@ class ZoeCore:
         removed = self.db.apply_retention()
         log.info("retenção aplicada: %s", removed)
         self._bg.append(asyncio.create_task(self._retention_loop()))
+        if self.pc:
+            self.pc.start()
 
     async def stop(self) -> None:
         await self.focus.stop(reason="encerramento")
+        if self.pc:
+            await self.pc.stop()
         for t in self._bg:
             t.cancel()
 
@@ -77,6 +93,7 @@ class ZoeCore:
             "settings": s,
             "expression": self.decision.base_expression,
             "focus": self.focus.status(),
+            "pc": {"available": self.pc is not None, "error": self.pc_error},
             "monitoring": s["monitoramento_ativo"],
             "interventions": s["intervencoes_ativas"],
             "do_not_disturb_until": s["nao_perturbe_ate"] if s["nao_perturbe_ate"] > self.clock() else 0,

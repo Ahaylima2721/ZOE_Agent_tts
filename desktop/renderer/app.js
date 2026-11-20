@@ -74,6 +74,7 @@
   }
   function closePanel() {
     panelOpen = false; panel.hidden = true; orb.classList.remove('chat'); syncMode();
+    window.ZoeRecursos.hide();
   }
   $('closePanel').onclick = closePanel;
   addEventListener('keydown', (e) => { if (e.key === 'Escape' && panelOpen) closePanel(); });
@@ -121,6 +122,8 @@
     ws.onmessage = (ev) => {
       let m; try { m = JSON.parse(ev.data); } catch { return; }
       if (m.type === 'hello' || m.type === 'state') applyState(m.state);
+      if (m.type === 'hello') window.ZoeRecursos.resubscribe();
+      else if (m.type === 'pc') window.ZoeRecursos.update(m);
       else if (m.type === 'expression') m.ttl_ms ? flash(m.name, m.ttl_ms) : setBase(m.name);
       else if (m.type === 'notification') notify(m.notification);
       else if (m.type === 'chat.reply' && pending.has(m.ref)) { pending.get(m.ref)(m); pending.delete(m.ref); }
@@ -131,6 +134,8 @@
   function applyState(st) {
     state = st;
     setBase(st.expression);
+    window.ZoeRecursos.setLimits(st.settings.pc_limites);
+    if (st.pc && !st.pc.available) window.ZoeRecursos.unavailable(st.pc.error || 'Monitor do computador indisponível.');
     window.zoe.reportState({ monitoring: st.monitoring });
     renderFocus();
     $('toggleMonitor').textContent = st.monitoring ? 'Pausar monitoramento' : 'Retomar monitoramento';
@@ -160,6 +165,7 @@
   function badge() { const b = $('badge'); b.hidden = !unread; b.textContent = unread > 9 ? '9+' : unread; }
   function ack(id, action) { if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: 'notification.ack', id, action })); }
 
+  const OPEN_RECURSOS = new Set(['ver_processos', 'ver_recursos']);
   function notify(n) {
     flash(n.expression, 2600);
     if (!calmo) gesto('pulo', 800);
@@ -173,6 +179,7 @@
     const close = (action) => {
       if (done) return; done = true; clearTimeout(timer);
       if (action) ack(n.id, action); else { unread++; badge(); }
+      if (OPEN_RECURSOS.has(action)) openPanel('recursos');
       el.classList.add('sai'); setTimeout(() => { el.remove(); syncMode(); }, 200);
     };
     x.onclick = (e) => { e.stopPropagation(); close('dismiss'); };
@@ -204,7 +211,11 @@
     (list && list.length ? list : SUGESTOES).forEach((label, i) => {
       const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = label;
       b.onclick = () => {
-        if (note) { ack(note.id, note.actions[i].id); setQuick(); } else send(label);
+        if (note) {
+          const id = note.actions[i].id;
+          ack(note.id, id); setQuick();
+          if (OPEN_RECURSOS.has(id)) selectTab('recursos');
+        } else send(label);
       };
       quick.append(b);
     });
@@ -245,7 +256,8 @@
   // ---------------- abas ----------------
   function selectTab(name) {
     document.querySelectorAll('.tabs button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === name)));
-    ['conversa', 'avisos', 'ajustes'].forEach((t) => { $('tab-' + t).hidden = t !== name; });
+    ['conversa', 'recursos', 'avisos', 'ajustes'].forEach((t) => { $('tab-' + t).hidden = t !== name; });
+    if (name === 'recursos') window.ZoeRecursos.show(); else window.ZoeRecursos.hide();
     if (name === 'avisos') loadNotes();
     if (name === 'ajustes') loadSettings();
   }
@@ -274,8 +286,11 @@
   }
   function fillSettings(s) {
     for (const el of form.elements) {
-      if (!el.name || !(el.name in s) || el === document.activeElement) continue;
-      if (el.type === 'checkbox') el.checked = !!s[el.name]; else el.value = s[el.name];
+      if (!el.name || el === document.activeElement) continue;
+      const [k, sub] = el.name.split('.');
+      const v = sub ? (s[k] || {})[sub] : s[k];
+      if (v === undefined) continue;
+      if (el.type === 'checkbox') el.checked = !!v; else el.value = v;
     }
   }
   let savedTimer = null;
@@ -289,7 +304,8 @@
     if (!el.name) return;
     let v = el.type === 'checkbox' ? el.checked : el.value;
     if (el.type === 'number') { v = parseInt(v, 10); if (!Number.isFinite(v)) return; }
-    const r = await window.zoe.api('PATCH', '/api/settings', { [el.name]: v });
+    const [k, sub] = el.name.split('.');
+    const r = await window.zoe.api('PATCH', '/api/settings', sub ? { [k]: { [sub]: v } } : { [k]: v });
     const out = $('saved'); clearTimeout(savedTimer);
     out.style.color = r.ok ? '' : 'var(--danger)';
     out.textContent = r.ok ? 'Salvo.' : `Não salvei: ${r.error}`;
@@ -304,6 +320,10 @@
     if (r.ok) { historyLoaded = false; log.replaceChildren(); loadSettings(); $('saved').textContent = 'Dados apagados.'; }
   };
 
+  window.ZoeRecursos.init({
+    api: window.zoe.api,
+    send: (msg) => { if (ws && ws.readyState === 1) ws.send(JSON.stringify(msg)); },
+  });
   setOnline(false);
   render();
   connect();

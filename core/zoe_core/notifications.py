@@ -35,6 +35,7 @@ class Notification:
     actions: list[dict] = field(default_factory=list)   # [{id, label}]
     dedupe_key: str | None = None
     dedupe_window_s: int = 6 * 3600
+    urgent: bool = False                 # crítico: ignora frequência e horário silencioso
     id: int | None = None
     status: str = "pendente"
 
@@ -77,11 +78,11 @@ class NotificationService:
         if AUTONOMY_LEVELS.index(s["autonomia"]) < 1:
             return "autonomia: apenas observar"
         freq = FREQUENCIES.get(s["frequencia"], FREQUENCIES["normal"])
-        if freq["max_per_hour"] == 0:
+        if freq["max_per_hour"] == 0 and not n.urgent:
             return "frequencia: silenciosa"
         if s.get("nao_perturbe_ate", 0) > now:
             return "nao perturbe"
-        if _in_quiet_hours(self.local_now(), s["silencio_inicio"], s["silencio_fim"]):
+        if not n.urgent and _in_quiet_hours(self.local_now(), s["silencio_inicio"], s["silencio_fim"]):
             return "horario silencioso"
         if n.dedupe_key:
             dup = self.db.query(
@@ -90,6 +91,8 @@ class NotificationService:
             )
             if dup:
                 return "repetida"
+        if n.urgent:
+            return None
         recent = self.db.query(
             "SELECT scheduled_at FROM notifications WHERE origin = ? AND status IN ('entregue','lida','respondida','pendente') "
             "AND scheduled_at > ? ORDER BY scheduled_at DESC",

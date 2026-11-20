@@ -11,8 +11,13 @@ AUTOSTART=1
 
 echo "Zoe em: $ZOE_DIR"
 
-if ! python3 -c 'import aiohttp' 2>/dev/null; then
+if ! python3 -c 'import aiohttp, psutil' 2>/dev/null; then
   echo "Instalando dependências do Zoe Core…"
+  if command -v apt-get >/dev/null; then
+    sudo apt-get install -y python3-aiohttp python3-psutil && DEPS_OK=1
+  fi
+fi
+if [[ "${DEPS_OK:-0}" != 1 ]] && ! python3 -c 'import aiohttp, psutil' 2>/dev/null; then
   python3 -m pip install --user -r "$ZOE_DIR/core/requirements.txt" \
     || python3 -m pip install --user --break-system-packages -r "$ZOE_DIR/core/requirements.txt"
 fi
