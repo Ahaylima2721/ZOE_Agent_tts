@@ -32,6 +32,7 @@ class EventType(str, Enum):
     USER_RETURNED = "USER_RETURNED"
     # Companion
     TASK_OVERDUE = "TASK_OVERDUE"
+    MEMORY_CHECKIN = "MEMORY_CHECKIN"
     NEW_DISCOVERY = "NEW_DISCOVERY"
     # Pedido explícito do usuário (chat, botão)
     USER_REQUEST = "USER_REQUEST"

@@ -30,6 +30,10 @@ Toda requisição precisa do token: `Authorization: Bearer <token>`, ou `?token=
 | POST | `/api/personal-data/delete` | `{confirm: "APAGAR"}` | apaga conversas, avisos, eventos e dados pessoais |
 | GET | `/api/pc` | — | `{snapshot, history{t,cpu,ram}}`: leitura atual e o último ~minuto. 503 se faltar o psutil |
 | GET | `/api/pc/diagnose` | — | `{summary, findings[], processes}`: diagnóstico na hora (funciona mesmo com alertas desligados) |
+| GET | `/api/memory` | — | `{kinds[], items{tipo: [...]}}`: tudo o que a Zoe guardou + a descrição dos campos de cada tipo |
+| POST | `/api/memory/{tipo}` | campos do tipo | `{item, created}`: 201 se criou; 200 se já existia um item com o mesmo nome (atualiza em vez de duplicar) |
+| PATCH | `/api/memory/{tipo}/{id}` | campos parciais | `{item}`; 400 para campo/valor inválido, 404 se não existir |
+| DELETE | `/api/memory/{tipo}/{id}` | — | `{ok}`; 404 se não existir |
 
 ### Configurações
 
@@ -43,6 +47,9 @@ Toda requisição precisa do token: `Authorization: Bearer <token>`, ou `?token=
 | `foco_minutos_padrao` | 1–240 | `25` |
 | `ocioso_minutos` | 1–240 | `5` |
 | `notificacoes_nativas` | bool (usa `notify-send` quando a orbe está fechada) | `true` |
+| `checkins_memoria` | bool: perguntar sobre o que você contou (livro, projeto, estudo, hobby, objetivo) | `true` |
+| `tom` | `equilibrado` · `direto` · `descontraido` | `equilibrado` |
+| `assuntos_evitar` | lista de textos (até 30): a Zoe não puxa conversa sobre itens que contenham estes termos | `[]` |
 | `pc_alertas` | bool: a Zoe comenta sozinha sobre RAM, CPU, disco, temperatura e bateria | `true` |
 | `pc_intervalo_s` | 2–60 (segundos entre leituras) | `5` |
 | `pc_limites` | `{ram_pct 50–99, cpu_pct 50–100, disco_livre_pct 1–50, temp_c 60–105, bateria_pct 5–50}`; atualização parcial é mesclada | `90, 90, 10, 90, 15` |
@@ -88,7 +95,8 @@ Todo evento passa pelo `DecisionEngine` (`core/zoe_core/decision.py`). Ele escol
 | `HIGH_TEMPERATURE` | monitor do PC: CPU ≥ limite °C | aviso; **urgente** (≥ 95 °C ou limite + 5) |
 | `BATTERY_LOW` | monitor do PC: ≤ limite % fora da tomada | aviso; **urgente** em ≤ 5% |
 | `APP_USAGE_LIMIT_REACHED` | Fase 4 | ainda sem regra: `aguardar` |
-| `TASK_OVERDUE`, `NEW_DISCOVERY` | Fases 3 e 5 | ainda sem regra: `aguardar` |
+| `MEMORY_CHECKIN` | companion: a cada 20 min, com a orbe aberta, sem foco e sem ausência | aviso espontâneo ("Você conseguiu avançar em Duna? Da última vez você estava no capítulo 5.") com "Responder" e "Agora não"; no máximo 1 a cada 4 h e o mesmo assunto a cada 3 dias |
+| `TASK_OVERDUE`, `NEW_DISCOVERY` | Fases 4 e 5 | ainda sem regra: `aguardar` |
 
 ### Quando a Zoe pode falar sozinha
 
@@ -112,12 +120,30 @@ O monitor só lê: ele não encerra processos nem muda configurações do sistem
 
 Arquivo `~/.local/share/zoe/zoe.db`, versão do esquema em `PRAGMA user_version`. As migrações ficam em `core/zoe_core/db.py` (`MIGRATIONS`).
 
-Tabelas da seção 8 da especificação: `users`, `interests`, `personal_projects`, `personal_activities`, `books`, `tasks`, `application_usage`, `focus_rules`, `system_metrics`, `interactions`, `notifications`. Também foram criadas `events` (log de eventos e decisões) e `settings` (chave/valor JSON).
+Tabelas da seção 8 da especificação: `users`, `interests`, `personal_projects`, `personal_activities`, `books`, `tasks`, `application_usage`, `focus_rules`, `system_metrics`, `interactions`, `notifications`. Também foram criadas `events` (log de eventos e decisões), `settings` (chave/valor JSON) e, na v2, `goals` (objetivos pessoais e profissionais). A v2 também adiciona `notes`, `created_at`/`last_interaction` e `books.progress` às tabelas pessoais, sem perder dados de quem já usava a v1.
 
 - As tabelas pessoais têm `user_id → users(id) ON DELETE CASCADE`, com chaves estrangeiras ativas.
 - Há índices nas colunas de tempo e status: `idx_metrics_time`, `idx_appusage_app_time`, `idx_events_type_time`, `idx_notifications_status` e outros.
 - `focus_rules.intervention_level` tem `CHECK` de 1 a 4 e é único por aplicativo.
 - **Retenção:** aplicada ao iniciar e a cada 6 h, conforme `retencao_dias`. Conversas e dados pessoais não expiram sozinhos; apagam-se por "Apagar meus dados".
+
+## Memória pessoal
+
+Tipos (`{tipo}` nas rotas) e campos:
+
+| Tipo | Tabela | Campos | Quando a Zoe pergunta sozinha |
+| --- | --- | --- | --- |
+| `livro` | `books` | `titulo`*, `autor`, `capitulo`, `progresso`, `status` (quero_ler · lendo · pausado · lido), `notas` | lendo e parado há 3+ dias |
+| `projeto` | `personal_projects` | `nome`*, `descricao`, `status` (ativo · pausado · concluido), `notas` | ativo e parado há 7+ dias |
+| `objetivo` | `goals` | `titulo`*, `categoria` (pessoal · profissional), `descricao`, `status` (ativo · pausado · alcancado), `prazo` | ativo e parado há 14+ dias |
+| `aprender` | `interests` | `nome`*, `notas`, `prioridade` (0–3) | parado há 5+ dias |
+| `hobby` | `personal_activities` | `nome`*, `frequencia`, `notas` | parado há 14+ dias |
+| `interesse`, `filme_serie`, `musica` | `interests` | `nome`*, `notas`, `prioridade` | — |
+| `adiada` | `personal_activities` | `nome`*, `notas` | — (vai servir ao Guardian) |
+
+\* obrigatório. Todo item também traz `id`, `tipo`, `criado_em` e `atualizado_em` (última vez que vocês falaram do assunto).
+
+No chat, a Zoe entende frases como "estou lendo Duna, de Frank Herbert", "estou no capítulo 7", "terminei Duna", "quero aprender Python e Rust", "meu hobby é tocar violão", "hoje toquei violão", "meu objetivo profissional é…", "novo projeto Fluxo, que é…", "vivo adiando a academia", "o que você sabe sobre mim" e "esqueça Duna" (pede confirmação). O autor só é separado do título quando vem depois de uma vírgula ("Memórias Póstumas de Brás Cubas" continua sendo só o título). **Quando falta algo, ela pergunta** (autor, capítulo, qual livro); "não sei" ou "deixa pra lá" encerram a pergunta, que também expira em 10 minutos.
 
 ## Permissões e segurança
 

@@ -135,11 +135,37 @@ MIGRATIONS: list[str] = [
         value TEXT NOT NULL
     );
     """,
+    # v2 — memória pessoal (Fase 3): datas de conversa, notas, progresso e objetivos
+    """
+    ALTER TABLE interests ADD COLUMN notes TEXT NOT NULL DEFAULT '';
+    ALTER TABLE interests ADD COLUMN created_at REAL;
+    ALTER TABLE interests ADD COLUMN last_interaction REAL;
+    ALTER TABLE books ADD COLUMN progress TEXT NOT NULL DEFAULT '';
+    ALTER TABLE books ADD COLUMN notes TEXT NOT NULL DEFAULT '';
+    ALTER TABLE personal_projects ADD COLUMN notes TEXT NOT NULL DEFAULT '';
+    ALTER TABLE personal_projects ADD COLUMN created_at REAL;
+    ALTER TABLE personal_activities ADD COLUMN notes TEXT NOT NULL DEFAULT '';
+    ALTER TABLE personal_activities ADD COLUMN created_at REAL;
+    ALTER TABLE personal_activities ADD COLUMN last_interaction REAL;
+    CREATE INDEX idx_activities_user_cat ON personal_activities(user_id, category);
+    CREATE TABLE goals (
+        id               INTEGER PRIMARY KEY,
+        user_id          INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        title            TEXT NOT NULL,
+        kind             TEXT NOT NULL DEFAULT 'pessoal' CHECK (kind IN ('pessoal', 'profissional')),
+        description      TEXT NOT NULL DEFAULT '',
+        status           TEXT NOT NULL DEFAULT 'ativo',
+        target_date      TEXT NOT NULL DEFAULT '',
+        created_at       REAL,
+        last_interaction REAL
+    );
+    CREATE INDEX idx_goals_user_status ON goals(user_id, status);
+    """,
 ]
 
 # Tabelas com dados pessoais (apagadas em "apagar meus dados").
 PERSONAL_TABLES = (
-    "interests", "personal_projects", "personal_activities", "books", "tasks",
+    "interests", "personal_projects", "personal_activities", "books", "tasks", "goals",
     "focus_rules", "interactions", "notifications", "application_usage", "events",
 )
 

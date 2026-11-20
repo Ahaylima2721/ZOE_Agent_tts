@@ -34,6 +34,7 @@
     <nav class="tabs" role="tablist">
       <button role="tab" data-tab="conversa" aria-selected="true">Conversa</button>
       <button role="tab" data-tab="recursos">Recursos</button>
+      <button role="tab" data-tab="memoria">Memória</button>
       <button role="tab" data-tab="avisos">Avisos</button>
       <button role="tab" data-tab="ajustes">Ajustes</button>
     </nav>
@@ -66,6 +67,11 @@
       </section>
     </div>
 
+    <div class="tab mem" id="tab-memoria" hidden>
+      <p class="rec-sum" id="memSum" aria-live="polite"></p>
+      <div id="memList"></div>
+    </div>
+
     <div class="tab" id="tab-avisos" hidden>
       <ul class="list" id="noteList"></ul>
     </div>
@@ -74,6 +80,15 @@
       <fieldset>
         <legend>Minha Zoe</legend>
         <label>Como devo te chamar <input name="nome_usuario" maxlength="40"></label>
+        <label>Jeito de falar
+          <select name="tom">
+            <option value="equilibrado">Equilibrado</option>
+            <option value="direto">Direto (frases curtas)</option>
+            <option value="descontraido">Descontraído</option>
+          </select>
+        </label>
+        <label class="check"><input type="checkbox" name="checkins_memoria"> Perguntar sobre o que você me contou (livros, projetos, estudos…)</label>
+        <label>Não puxar assunto sobre (separe por vírgula) <input name="assuntos_evitar" data-list maxlength="400" placeholder="ex.: trabalho, dieta"></label>
       </fieldset>
       <fieldset>
         <legend>Conversas espontâneas</legend>
@@ -142,6 +157,7 @@
 </div>
 <script src="../../zoe-fx.js"></script>
 <script src="recursos.js"></script>
+<script src="memoria.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

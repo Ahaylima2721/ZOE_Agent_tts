@@ -8,8 +8,8 @@ Uma companheira digital para o Linux: uma orbe roxa que flutua na área de traba
 
 | Pasta / arquivo | O que é |
 | --- | --- |
-| `desktop/` | **Zoe Desktop** (Electron): orbe flutuante, expressões, balões, conversa, recursos do PC, ajustes, bandeja |
-| `core/` | **Zoe Core** (Python): API local, eventos, decisões, notificações, foco, monitor do PC, banco SQLite |
+| `desktop/` | **Zoe Desktop** (Electron): orbe flutuante, expressões, balões, conversa, recursos do PC, memória pessoal, ajustes, bandeja |
+| `core/` | **Zoe Core** (Python): API local, eventos, decisões, notificações, foco, monitor do PC, memória pessoal, banco SQLite |
 | `zoe.design`, `zoe-preview.html`, `zoe-fx.js` | Design da orbe e animações (usados pela Zoe Desktop) |
 | `docs/ARQUITETURA.md` | Análise do projeto, escolhas de tecnologia, X11/Wayland, fases |
 | `docs/API.md` | API REST e WebSocket, eventos, banco de dados, permissões |
@@ -51,4 +51,4 @@ cd desktop && xvfb-run -a npm test
 
 ## Status
 
-Prontas: **Fase 1 (Zoe Desktop)** e **Fase 2 (PC Companion)**. As fases 3 a 6 (memória pessoal, Guardian, Ollama, evolução) estão descritas em `docs/ARQUITETURA.md`.
+Prontas: **Fase 1 (Zoe Desktop)**, **Fase 2 (PC Companion)** e **Fase 3 (Personal Companion)**. As fases 4 a 6 (Guardian, Ollama, evolução) estão descritas em `docs/ARQUITETURA.md`.

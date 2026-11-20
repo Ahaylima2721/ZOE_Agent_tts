@@ -273,6 +273,10 @@ const API_ALLOW = [
   ['PATCH', /^\/api\/settings$/],
   ['POST', /^\/api\/(chat|focus\/start|focus\/stop|monitoring|emergency-stop|personal-data\/delete)$/],
   ['POST', /^\/api\/notifications\/\d+\/ack$/],
+  ['GET', /^\/api\/memory$/],
+  ['POST', /^\/api\/memory\/[a-z_]+$/],
+  ['PATCH', /^\/api\/memory\/[a-z_]+\/\d+$/],
+  ['DELETE', /^\/api\/memory\/[a-z_]+\/\d+$/],
 ];
 ipcMain.handle('core:api', async (_e, method, p, body) => {
   if (!API_ALLOW.some(([m, re]) => m === method && re.test(p))) return { ok: false, error: 'rota não permitida' };

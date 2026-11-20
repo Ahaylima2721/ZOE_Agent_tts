@@ -45,6 +45,9 @@ SETTINGS_VALIDATORS = {
     "ocioso_minutos": lambda v: isinstance(v, int) and 1 <= v <= 240,
     "notificacoes_nativas": lambda v: isinstance(v, bool),
     "pc_alertas": lambda v: isinstance(v, bool),
+    "checkins_memoria": lambda v: isinstance(v, bool),
+    "tom": lambda v: v in ("equilibrado", "direto", "descontraido"),
+    "assuntos_evitar": lambda v: isinstance(v, list) and len(v) <= 30 and all(isinstance(x, str) and 0 < len(x.strip()) <= 60 for x in v),
     "pc_intervalo_s": lambda v: isinstance(v, int) and not isinstance(v, bool) and 2 <= v <= 60,
     "pc_limites": lambda v: isinstance(v, dict) and all(
         k in PC_LIMIT_RANGES and isinstance(x, (int, float)) and not isinstance(x, bool)
@@ -170,6 +173,60 @@ async def pc_diagnose(request):
                               "processes": snap["processes"]})
 
 
+# ---------------- memória pessoal (Fase 3) ----------------
+def _kind_or_404(request):
+    from .companion.memory import KINDS
+    key = request.match_info["kind"]
+    if key not in KINDS:
+        raise web.HTTPNotFound(text=json.dumps({"error": f"tipo desconhecido: {key}"}, ensure_ascii=False),
+                               content_type="application/json")
+    return key
+
+
+def _item_id(request) -> int:
+    try:
+        return int(request.match_info["id"])
+    except ValueError:
+        raise web.HTTPBadRequest(text='{"error":"id inválido"}', content_type="application/json")
+
+
+async def memory_all(request):
+    from .companion.memory import KINDS
+    core = request.app[CORE_KEY]
+    kinds = [{"key": k.key, "label": k.label, "plural": k.plural, "name_field": k.name_field,
+              "fields": {n: {"kind": f.kind, "choices": list(f.choices), "required": f.required, "max_len": f.max_len,
+                             "min": f.minimum, "max": f.maximum} for n, f in k.fields.items()}}
+             for k in KINDS.values()]
+    return web.json_response({"kinds": kinds, "items": core.memory.all()})
+
+
+async def memory_create(request):
+    core, key = request.app[CORE_KEY], _kind_or_404(request)
+    try:
+        item, created = core.memory.create(key, await _json(request))
+    except ValueError as e:
+        return _bad(str(e))
+    return web.json_response({"item": item, "created": created}, status=201 if created else 200)
+
+
+async def memory_update(request):
+    core, key = request.app[CORE_KEY], _kind_or_404(request)
+    try:
+        item = core.memory.update(key, _item_id(request), await _json(request))
+    except LookupError as e:
+        return _bad(str(e), 404)
+    except ValueError as e:
+        return _bad(str(e))
+    return web.json_response({"item": item})
+
+
+async def memory_delete(request):
+    core, key = request.app[CORE_KEY], _kind_or_404(request)
+    if not core.memory.delete(key, _item_id(request)):
+        return _bad("item não encontrado", 404)
+    return web.json_response({"ok": True})
+
+
 async def post_event(request):
     core = request.app[CORE_KEY]
     data = await _json(request)
@@ -282,6 +339,10 @@ def build_app(core: ZoeCore, token: str) -> web.Application:
     app.router.add_post("/api/notifications/{id}/ack", notification_ack)
     app.router.add_post("/api/events", post_event)
     app.router.add_get("/api/pc", pc_status)
+    app.router.add_get("/api/memory", memory_all)
+    app.router.add_post("/api/memory/{kind}", memory_create)
+    app.router.add_patch("/api/memory/{kind}/{id}", memory_update)
+    app.router.add_delete("/api/memory/{kind}/{id}", memory_delete)
     app.router.add_get("/api/pc/diagnose", pc_diagnose)
     app.router.add_post("/api/focus/start", focus_start)
     app.router.add_post("/api/focus/stop", focus_stop)

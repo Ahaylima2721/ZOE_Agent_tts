@@ -8,6 +8,8 @@ import time
 from typing import Any
 
 from .chat import ChatHandler
+from .companion import checkins
+from .companion.memory import Memory
 from .db import Database
 from .decision import DecisionEngine
 from .events import Event, EventBus, EventType
@@ -40,6 +42,8 @@ class ClientHub:
 
 class ZoeCore:
     RETENTION_EVERY_S = 6 * 3600
+    CHECKIN_EVERY_S = 20 * 60
+    CHECKIN_MIN_GAP_S = 4 * 3600     # no máximo um lembrete da memória a cada 4 h
 
     def __init__(self, db: Database, clock=time.time, enable_pc: bool = True, pc_collector=None):
         self.db, self.clock = db, clock
@@ -50,6 +54,7 @@ class ZoeCore:
         self.notifications.set_delivery(self.hub.broadcast)
         self.decision = DecisionEngine(self.bus, db, self.notifications, self.hub.broadcast)
         self.focus = FocusManager(self.bus, clock)
+        self.memory = Memory(db, clock)
         self.chat = ChatHandler(self)
         # PC Companion: opcional, para a Zoe funcionar mesmo sem o psutil instalado
         self.pc, self.pc_error = None, None
@@ -71,6 +76,7 @@ class ZoeCore:
         removed = self.db.apply_retention()
         log.info("retenção aplicada: %s", removed)
         self._bg.append(asyncio.create_task(self._retention_loop()))
+        self._bg.append(asyncio.create_task(self._checkin_loop()))
         if self.pc:
             self.pc.start()
 
@@ -85,6 +91,33 @@ class ZoeCore:
         while True:
             await asyncio.sleep(self.RETENTION_EVERY_S)
             self.db.apply_retention()
+
+    async def _checkin_loop(self) -> None:
+        await asyncio.sleep(5 * 60)          # não puxa assunto logo ao abrir
+        while True:
+            try:
+                await self.memory_checkin()
+            except Exception:
+                log.exception("falha no lembrete da memória")
+            await asyncio.sleep(self.CHECKIN_EVERY_S)
+
+    async def memory_checkin(self) -> dict | None:
+        """Escolhe um assunto parado e publica MEMORY_CHECKIN (a decisão e as regras de aviso filtram)."""
+        s = self.db.get_settings()
+        if not s.get("checkins_memoria") or not self.hub.clients:
+            return None
+        if self.decision.focus_active or self.decision.idle_since is not None:
+            return None
+        now = self.clock()
+        recent = self.db.query(
+            "SELECT dedupe_key, scheduled_at FROM notifications WHERE dedupe_key LIKE 'memoria:%' "
+            "AND status != 'bloqueada' AND scheduled_at > ?", (now - checkins.ASK_AGAIN_AFTER_S,))
+        if any(now - r["scheduled_at"] < self.CHECKIN_MIN_GAP_S for r in recent):
+            return None
+        choice = checkins.pick(self.memory, now, s, {r["dedupe_key"] for r in recent})
+        if choice:
+            await self.publish(EventType.MEMORY_CHECKIN, choice, source="companion")
+        return choice
 
     # ---------------- estado ----------------
     def state(self) -> dict:
@@ -129,3 +162,16 @@ class ZoeCore:
         self.notifications.ack(nid, action)
         if action == "foco_novamente":
             await self.focus.start(int(self.db.get_settings()["foco_minutos_padrao"]))
+        elif action and action.startswith(("mem_responder:", "mem_adiar:")):
+            verb, kind, item_id = action.split(":", 2)
+            try:
+                item = self.memory.get(kind, int(item_id))
+            except (KeyError, ValueError):
+                return
+            if not item:
+                return
+            if verb == "mem_adiar":
+                self.memory.touch(kind, item["id"])        # conta como conversado: espera o intervalo de novo
+            else:
+                # a próxima mensagem do chat responde ao lembrete
+                self.chat.memchat.ask(kind, item["id"], "capitulo" if kind == "livro" else "nota")

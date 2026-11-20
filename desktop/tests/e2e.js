@@ -144,6 +144,66 @@ async function coreApi(method, p, body) {
       await until(() => page.$$eval('.msg.zoe', (m) => /^CPU em \d+%, memória \d+%/.test(m.at(-1).textContent)), 5000, 'resumo');
     });
 
+    const lastZoe = () => page.$$eval('.msg.zoe', (m) => m.at(-1).textContent);
+    const chat = async (text, expect) => {
+      await page.fill('#input', text);
+      await page.press('#input', 'Enter');
+      await until(async () => expect.test(await lastZoe()), 5000, `resposta para "${text}"`);
+    };
+
+    await step('memória: conversa pergunta o que falta em vez de inventar', async () => {
+      await chat('Estou lendo Duna', /De quem é\?/);
+      await chat('Frank Herbert', /Em que capítulo/);
+      await chat('5', /^Anotado: Duna, capítulo 5\.$/);
+      const book = (await coreApi('GET', '/api/memory')).items.livro[0];
+      assert.deepEqual([book.titulo, book.autor, book.capitulo, book.status], ['Duna', 'Frank Herbert', '5', 'lendo']);
+    });
+
+    await step('memória: aba mostra o que foi guardado', async () => {
+      await page.click('[data-tab="memoria"]');
+      await page.waitForSelector('.mem-kind[data-kind="livro"] .mem-item');
+      assert.equal(await page.$eval('.mem-kind[data-kind="livro"]', (d) => d.open), true);
+      const meta = await page.textContent('.mem-kind[data-kind="livro"] .mem-item small');
+      assert.match(meta, /Frank Herbert · cap\. 5 · lendo · falamos hoje/);
+    });
+
+    await step('memória: adicionar, editar e apagar pela aba', async () => {
+      await page.click('.mem-kind[data-kind="hobby"] summary');
+      await page.click('.mem-kind[data-kind="hobby"] .mem-add');
+      await page.fill('.mem-kind[data-kind="hobby"] .mem-form [name="nome"]', 'Violão');
+      await page.fill('.mem-kind[data-kind="hobby"] .mem-form [name="frequencia"]', '2x por semana');
+      await page.click('.mem-kind[data-kind="hobby"] .mem-form button[type="submit"]');
+      await page.waitForSelector('.mem-kind[data-kind="hobby"] .mem-item');
+      assert.equal((await coreApi('GET', '/api/memory')).items.hobby[0].frequencia, '2x por semana');
+      // erro de validação aparece no formulário, não some em silêncio
+      await page.click('.mem-kind[data-kind="hobby"] .mem-add');
+      await page.click('.mem-kind[data-kind="hobby"] .mem-form button[type="submit"]');
+      await until(() => page.$eval('.mem-kind[data-kind="hobby"] .mem-err', (e) => /obrigat/.test(e.textContent)), 3000, 'erro');
+      await page.click('.mem-kind[data-kind="hobby"] .mem-form .btn.ghost');
+      // editar o capítulo
+      await page.click('.mem-kind[data-kind="livro"] .mem-item .icon:has-text("✎")');
+      await page.fill('.mem-kind[data-kind="livro"] .mem-form [name="capitulo"]', '6');
+      await page.click('.mem-kind[data-kind="livro"] .mem-form button[type="submit"]');
+      await until(async () => (await coreApi('GET', '/api/memory')).items.livro[0].capitulo === '6', 3000, 'edição');
+      // apagar (com confirmação)
+      page.once('dialog', (d) => d.accept());
+      await page.click('.mem-kind[data-kind="hobby"] .mem-item .icon:has-text("✕")');
+      await until(async () => (await coreApi('GET', '/api/memory')).items.hobby.length === 0, 3000, 'exclusão');
+    });
+    await shot('9-memoria');
+
+    await step('preferências de interação gravam no Core', async () => {
+      await page.click('[data-tab="ajustes"]');
+      await page.selectOption('select[name="tom"]', 'direto');
+      await page.fill('input[name="assuntos_evitar"]', 'trabalho, dieta');
+      await page.press('input[name="assuntos_evitar"]', 'Tab');
+      await until(async () => {
+        const s = await coreApi('GET', '/api/settings');
+        return s.tom === 'direto' && JSON.stringify(s.assuntos_evitar) === '["trabalho","dieta"]';
+      }, 3000, 'preferências');
+      await page.click('[data-tab="conversa"]');
+    });
+
     await step('fechar painel e receber balão de notificação com ações', async () => {
       await page.click('#closePanel');
       await until(async () => (await bounds()).width === 128, 3000, 'volta ao modo orbe');

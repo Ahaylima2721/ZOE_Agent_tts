@@ -161,6 +161,22 @@ def _pc_alert(e: Event, s: dict, eng: DecisionEngine) -> Decision:
     return Decision("notificar", f.get("title", kind), notification=n)
 
 
+# ---------------- Companion: lembrete a partir da memória ----------------
+def _memory_checkin(e: Event, s: dict, eng: DecisionEngine) -> Decision:
+    p = e.payload
+    if not s.get("checkins_memoria", True):
+        return Decision("ignorar", "lembretes da memória desligados")
+    if eng.focus_active or eng.idle_since is not None:
+        return Decision("aguardar", "usuário em foco ou ausente")
+    n = Notification(
+        message=p["message"], category="memoria", origin=ORIGIN_SPONTANEOUS, expression="curiosa",
+        actions=[{"id": f"mem_responder:{p['tipo']}:{p['id']}", "label": "Responder"},
+                 {"id": f"mem_adiar:{p['tipo']}:{p['id']}", "label": "Agora não"}],
+        dedupe_key=p["dedupe_key"], dedupe_window_s=3 * 86400,
+    )
+    return Decision("notificar", f"lembrete: {p.get('nome', '')}", notification=n)
+
+
 DEFAULT_RULES: dict[EventType, Rule] = {
     EventType.FOCUS_SESSION_STARTED: _focus_started,
     EventType.FOCUS_SESSION_ENDED: _focus_ended,
@@ -174,4 +190,5 @@ DEFAULT_RULES: dict[EventType, Rule] = {
     EventType.DISK_SPACE_LOW: _pc_alert,
     EventType.HIGH_TEMPERATURE: _pc_alert,
     EventType.BATTERY_LOW: _pc_alert,
+    EventType.MEMORY_CHECKIN: _memory_checkin,
 }

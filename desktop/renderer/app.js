@@ -180,6 +180,7 @@
       if (done) return; done = true; clearTimeout(timer);
       if (action) ack(n.id, action); else { unread++; badge(); }
       if (OPEN_RECURSOS.has(action)) openPanel('recursos');
+      else if (action && action.startsWith('mem_responder:')) openPanel('conversa');
       el.classList.add('sai'); setTimeout(() => { el.remove(); syncMode(); }, 200);
     };
     x.onclick = (e) => { e.stopPropagation(); close('dismiss'); };
@@ -215,6 +216,7 @@
           const id = note.actions[i].id;
           ack(note.id, id); setQuick();
           if (OPEN_RECURSOS.has(id)) selectTab('recursos');
+          else if (id.startsWith('mem_responder:')) input.focus();
         } else send(label);
       };
       quick.append(b);
@@ -256,7 +258,8 @@
   // ---------------- abas ----------------
   function selectTab(name) {
     document.querySelectorAll('.tabs button').forEach((b) => b.setAttribute('aria-selected', String(b.dataset.tab === name)));
-    ['conversa', 'recursos', 'avisos', 'ajustes'].forEach((t) => { $('tab-' + t).hidden = t !== name; });
+    ['conversa', 'recursos', 'memoria', 'avisos', 'ajustes'].forEach((t) => { $('tab-' + t).hidden = t !== name; });
+    if (name === 'memoria') window.ZoeMemoria.show();
     if (name === 'recursos') window.ZoeRecursos.show(); else window.ZoeRecursos.hide();
     if (name === 'avisos') loadNotes();
     if (name === 'ajustes') loadSettings();
@@ -290,7 +293,7 @@
       const [k, sub] = el.name.split('.');
       const v = sub ? (s[k] || {})[sub] : s[k];
       if (v === undefined) continue;
-      if (el.type === 'checkbox') el.checked = !!v; else el.value = v;
+      if (el.type === 'checkbox') el.checked = !!v; else el.value = Array.isArray(v) ? v.join(', ') : v;
     }
   }
   let savedTimer = null;
@@ -304,6 +307,7 @@
     if (!el.name) return;
     let v = el.type === 'checkbox' ? el.checked : el.value;
     if (el.type === 'number') { v = parseInt(v, 10); if (!Number.isFinite(v)) return; }
+    if (el.hasAttribute('data-list')) v = v.split(',').map((x) => x.trim()).filter(Boolean);
     const [k, sub] = el.name.split('.');
     const r = await window.zoe.api('PATCH', '/api/settings', sub ? { [k]: { [sub]: v } } : { [k]: v });
     const out = $('saved'); clearTimeout(savedTimer);
@@ -320,6 +324,7 @@
     if (r.ok) { historyLoaded = false; log.replaceChildren(); loadSettings(); $('saved').textContent = 'Dados apagados.'; }
   };
 
+  window.ZoeMemoria.init({ api: window.zoe.api });
   window.ZoeRecursos.init({
     api: window.zoe.api,
     send: (msg) => { if (ws && ws.readyState === 1) ws.send(JSON.stringify(msg)); },

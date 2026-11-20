@@ -78,6 +78,10 @@ DEFAULT_SETTINGS: dict = {
     "foco_minutos_padrao": 25,
     "ocioso_minutos": 5,
     "notificacoes_nativas": True,   # usa notify-send quando a orbe não está aberta
+    # Companion (seção 3): lembretes a partir da memória e preferências de interação
+    "checkins_memoria": True,       # "Você conseguiu avançar naquele livro?"
+    "tom": "equilibrado",           # equilibrado | direto | descontraido
+    "assuntos_evitar": [],          # a Zoe não puxa conversa sobre estes assuntos
     # PC Companion (seção 5)
     "pc_alertas": True,             # a Zoe comenta sobre RAM, CPU, disco, temperatura e bateria
     "pc_intervalo_s": 5,            # intervalo entre leituras
