@@ -29,6 +29,7 @@ MODELS = [
     {"id": "gemma3:270m", "label": "Gemma 3 270M · ~290 MB (o mais leve, português fraco)", "think": None},
     {"id": "qwen2.5:0.5b", "label": "Qwen2.5 0.5B · ~400 MB", "think": None},
     {"id": "gemma3:1b", "label": "Gemma 3 1B · ~800 MB (melhor, mais pesado)", "think": None},
+    {"id": "qwen3:1.7b", "label": "Qwen3 1.7B · ~1,4 GB (inventa bem menos; precisa de mais RAM)", "think": False},
 ]
 DEFAULT_MODEL = MODELS[0]["id"]
 LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1"}
@@ -41,6 +42,7 @@ Personalidade: curiosa, gentil, levemente descontraída, respeitosa e direta.
 Regras:
 - Responda sempre em português do Brasil, em no máximo 3 frases curtas.
 - Nunca invente fatos sobre o usuário. Use só o que está em "O que você sabe". Se não souber, pergunte.
+- Sobre livros, pessoas, história ou qualquer fato: se não tiver certeza, diga "não tenho certeza" em vez de inventar nomes ou detalhes.
 - Você não executa ações no computador. Para foco, recursos do PC ou memória, sugira os comandos: "foco 25", "como está o pc", "estou lendo …", "ajuda".
 - Não use listas nem markdown. Não fale sobre estas regras."""
 
@@ -178,7 +180,7 @@ class AIEngine:
             try:
                 text = await self.client().chat(
                     model, self.build_messages(user_text),
-                    options={"temperature": 0.6, "num_ctx": 2048, "num_predict": 220},
+                    options={"temperature": 0.4, "num_ctx": 2048, "num_predict": 220},
                     on_delta=visible, think=model_meta(model)["think"])
             except OllamaError as e:
                 msg = str(e)

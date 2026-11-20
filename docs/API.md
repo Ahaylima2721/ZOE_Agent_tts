@@ -50,7 +50,7 @@ Toda requisição precisa do token: `Authorization: Bearer <token>`, ou `?token=
 | `ocioso_minutos` | 1–240 | `5` |
 | `notificacoes_nativas` | bool (usa `notify-send` quando a orbe está fechada) | `true` |
 | `ia_ativa` | bool: usar a IA local quando as regras não entendem | `true` |
-| `ia_modelo` | nome do modelo no Ollama (`qwen3:0.6b`, `gemma3:270m`, `qwen2.5:0.5b`, `gemma3:1b`…) | `qwen3:0.6b` |
+| `ia_modelo` | nome do modelo no Ollama (`qwen3:0.6b`, `gemma3:270m`, `qwen2.5:0.5b`, `gemma3:1b`, `qwen3:1.7b`…) | `qwen3:0.6b` |
 | `ia_url` | **só** `http://127.0.0.1`, `localhost` ou `::1` (nunca um servidor externo) | `http://127.0.0.1:11434` |
 | `checkins_memoria` | bool: perguntar sobre o que você contou (livro, projeto, estudo, hobby, objetivo) | `true` |
 | `tom` | `equilibrado` · `direto` · `descontraido` | `equilibrado` |

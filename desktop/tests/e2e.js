@@ -235,6 +235,20 @@ async function coreApi(method, p, body) {
       fakeOllama.kill();
     });
 
+    await step('chat: balões longos não se sobrepõem (crescem e o chat rola)', async () => {
+      const r = await page.evaluate(() => {
+        const log = document.getElementById('log');
+        const long = 'Linha de resposta longa da IA, com bastante texto para quebrar em várias linhas no balão.\n'.repeat(6);
+        for (let i = 0; i < 4; i++) {
+          const z = document.createElement('div'); z.className = 'msg zoe'; z.textContent = long; log.append(z);
+        }
+        const ms = [...log.querySelectorAll('.msg')];
+        return { clipped: ms.filter((m) => m.scrollHeight > m.clientHeight + 1).length,
+          overlaps: ms.filter((m, i) => i && m.getBoundingClientRect().top < ms[i - 1].getBoundingClientRect().bottom - 1).length };
+      });
+      assert.deepEqual(r, { clipped: 0, overlaps: 0 });
+    });
+
     await step('fechar painel e receber balão de notificação com ações', async () => {
       await page.click('#closePanel');
       await until(async () => (await bounds()).width === 128, 3000, 'volta ao modo orbe');

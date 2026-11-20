@@ -55,6 +55,7 @@ async def test_prompt_has_only_stored_facts(core, fake, db):
     system = body["messages"][0]["content"]
     assert "Nome do usuário: Ayalan" in system and "Duna, de Frank Herbert (capítulo 5, lendo)" in system
     assert "Nunca invente fatos sobre o usuário" in system and "uma ou duas frases" in system
+    assert "não tenho certeza" in system and body["options"]["temperature"] == 0.4
     # histórico: a conversa anterior vai junto, a mensagem atual por último
     assert body["messages"][-1] == {"role": "user", "content": "me recomenda um livro?"}
     assert {"role": "user", "content": "estou lendo Duna, de Frank Herbert, no capítulo 5"} in body["messages"]
