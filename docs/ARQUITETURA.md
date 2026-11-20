@@ -47,7 +47,8 @@ Conclusões:
 ├─────────────────────────────────────────────────────────────────────────┤
 │  pc/         coleta (psutil, /sys, nvidia-smi) · diagnóstico · monitor  │
 │  companion/  memória pessoal · conversa por regras · lembretes          │
-│  ai/         Ollama local · contexto mínimo · streaming · download      │
+│  learning/   base aprendida (FTS5) · 👍/👎/correções · Wikipédia        │
+│  ai/         Ollama local · contexto enxuto · streaming · download      │
 │  próximas fases: guardian/                                              │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -93,7 +94,7 @@ Nenhum recurso exige root. Tudo fica em `~/.local/share/zoe` (dados) e `$XDG_RUN
 | **2 — PC Companion** | ✅ implementada e testada | CPU, RAM, swap, discos, leitura/gravação, rede, temperatura, GPU (NVIDIA/AMD), bateria e processos agrupados por app; aba "Recursos" com medidores e minilinhas ao vivo; diagnóstico assistido (botão e chat); alertas com histerese e dedupe; médias por minuto em `system_metrics`. Encerrar processos fica para o Guardian (Fase 4), sempre com autorização |
 | **3 — Personal Companion** | ✅ implementada e testada | Perfil e memória (livros, projetos, objetivos, estudos, hobbies, interesses, filmes/séries, música, atividades adiadas) em SQLite com migração v2; conversa contextual por regras que pergunta o que falta em vez de inventar; lembretes espontâneos a partir da memória ("Da última vez você estava no capítulo 5") com as mesmas regras de frequência; aba "Memória" para ver, adicionar, editar e apagar; preferências de interação (tom, assuntos a evitar) |
 | 4 — Guardian | próxima | Tabelas `application_usage` e `focus_rules` já existem; os níveis de autonomia já são aplicados nas notificações |
-| **5 — Inteligência (Ollama)** | ⚙️ em andamento | ✅ Conversa livre com modelo local leve (padrão Qwen3 0.6B, ~520 MB; opções Gemma 3 270M, Qwen2.5 0.5B, Gemma 3 1B, Qwen3 1.7B), usada só quando as regras não entendem; contexto mínimo vindo da memória; streaming; download do modelo pela interface. Falta: decisões e lembretes redigidos pela IA, Zoe Discovery |
+| **5 — Inteligência (Ollama)** | ⚙️ em andamento | ✅ Conversa livre com modelo local leve (padrão Qwen3 0.6B, ~520 MB; opções Gemma 3 270M, Qwen2.5 0.5B, Gemma 3 1B, Qwen3 1.7B), usada só quando as regras não entendem; contexto mínimo vindo da memória; streaming; download do modelo pela interface. ✅ Cascata de aprendizado (regras → memória → base aprendida → IA), base com 👍/👎/correções e busca FTS5, pesquisa opcional na Wikipédia com fonte, contexto enxuto, métrica "% sem IA". Falta: aprender jeitos novos de pedir comandos (D), guardar fatos ditos de passagem com confirmação (E), lembretes redigidos pela IA |
 | 6 — Evolução | — | Reavaliar Tauri; suporte a Windows (o Core já não depende de nada exclusivo do Linux, exceto `notify-send`) |
 
 ## 6. Como rodar
@@ -117,3 +118,8 @@ cd core && python3 -m pytest -q
 ```bash
 cd desktop && xvfb-run -a npm test
 ```
+
+## 7. Executável e telefone
+
+- **Executável Linux:** `cd desktop && npm run dist` gera `dist/Zoe-<versão>.AppImage` e `dist/zoe-desktop_<versão>_amd64.deb`. O Core Python vai dentro do pacote (`resources/core`); o `.deb` declara `python3`, `python3-aiohttp` e `python3-psutil` como dependências. `npm run pack` gera só a pasta `dist/linux-unpacked/` (para testar: `ZOE_E2E_EXE=dist/linux-unpacked/zoe xvfb-run -a node tests/e2e.js`).
+- **Telefone:** arquitetura em [`TELEFONE.md`](TELEFONE.md): o PC continua sendo o cérebro; o telefone conecta por um gateway separado, desligado por padrão, via Tailscale (recomendado) ou rede local com TLS, com pareamento por QR e escopos por aparelho.

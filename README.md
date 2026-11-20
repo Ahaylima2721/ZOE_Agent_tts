@@ -12,10 +12,31 @@ Uma companheira digital para o Linux: uma orbe roxa que flutua na área de traba
 | `core/` | **Zoe Core** (Python): API local, eventos, decisões, notificações, foco, monitor do PC, memória pessoal, banco SQLite |
 | `zoe.design`, `zoe-preview.html`, `zoe-fx.js` | Design da orbe e animações (usados pela Zoe Desktop) |
 | `docs/ARQUITETURA.md` | Análise do projeto, escolhas de tecnologia, X11/Wayland, fases |
-| `docs/API.md` | API REST e WebSocket, eventos, banco de dados, permissões |
+| `docs/API.md` | API REST e WebSocket, cascata de aprendizado, eventos, banco de dados, permissões |
+| `docs/TELEFONE.md` | Arquitetura para usar a Zoe pelo telefone (gateway, pareamento, escopos) |
 | `packaging/install-linux.sh` | Instala no menu de aplicativos e no início automático (sem root) |
 
-## Rodar
+## Instalar (executável)
+
+Gere os pacotes uma vez (precisa de Node 18+):
+
+```bash
+cd desktop && npm install && npm run dist
+```
+
+Instale o `.deb` (o `apt` instala as dependências Python sozinho):
+
+```bash
+sudo apt install ./desktop/dist/zoe-desktop_0.1.0_amd64.deb
+```
+
+Ou rode o AppImage direto (precisa de `python3-aiohttp` e `python3-psutil`):
+
+```bash
+chmod +x desktop/dist/Zoe-0.1.0.AppImage && ./desktop/dist/Zoe-0.1.0.AppImage
+```
+
+## Rodar pelo código-fonte
 
 Requisitos: Python 3.10+, Node 18+ e um compositor (GNOME, KDE ou picom).
 

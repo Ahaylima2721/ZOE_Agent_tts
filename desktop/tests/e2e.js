@@ -35,7 +35,11 @@ async function coreApi(method, p, body) {
 }
 
 (async () => {
-  const app = await electron.launch({ executablePath: require('electron'), args: [root, '--no-sandbox'], env, cwd: root });
+  // ZOE_E2E_EXE=dist/linux-unpacked/zoe testa o executável empacotado em vez do código-fonte
+  const exe = process.env.ZOE_E2E_EXE;
+  const app = await electron.launch(exe
+    ? { executablePath: path.resolve(root, exe), args: ['--no-sandbox'], env, cwd: root }
+    : { executablePath: require('electron'), args: [root, '--no-sandbox'], env, cwd: root });
   const results = [];
   const step = async (name, fn) => { await fn(); results.push(name); console.log('  ✓', name); };
   try {

@@ -98,7 +98,8 @@ async function doConnectCore() {
   if (await healthy(info)) { core = info; coreError = null; coreFailures = 0; return core; }
   if (process.env.ZOE_NO_SPAWN === '1') throw new Error('Zoe Core não está rodando');
   if (Date.now() < coreRetryAt) throw new Error(coreError || 'Zoe Core indisponível');
-  const coreDir = process.env.ZOE_CORE_DIR || path.join(__dirname, '..', 'core');
+  // no executável o Core vai em resources/core; em desenvolvimento fica ao lado (../core)
+  const coreDir = process.env.ZOE_CORE_DIR || (app.isPackaged ? path.join(process.resourcesPath, 'core') : path.join(__dirname, '..', 'core'));
   const py = process.env.ZOE_PYTHON || 'python3';
   let stderr = '', exited = false, spawnErr = null;
   // ZOE_PARENT_PID: o Core se encerra sozinho se a Zoe Desktop morrer sem avisar

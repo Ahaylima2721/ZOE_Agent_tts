@@ -2,14 +2,83 @@
   "name": "zoe-desktop",
   "version": "0.1.0",
   "private": true,
-  "description": "Zoe Desktop: a orbe flutuante da Zoe para Linux",
+  "description": "Zoe: companheira digital (orbe flutuante) para Linux",
   "main": "main.js",
   "license": "UNLICENSED",
   "scripts": {
+    "sync-fx": "node -e \"require('fs').copyFileSync('../zoe-fx.js','renderer/zoe-fx.js')\"",
+    "prestart": "npm run sync-fx",
     "start": "electron .",
-    "test": "node tests/e2e.js && node tests/e2e_sem_aiohttp.js"
+    "test": "npm run sync-fx && node tests/e2e.js && node tests/e2e_sem_aiohttp.js",
+    "pack": "npm run sync-fx && electron-builder --linux dir -c.electronDist=node_modules/electron/dist",
+    "dist": "npm run sync-fx && electron-builder --linux AppImage deb"
   },
   "devDependencies": {
-    "electron": "33.2.1"
+    "electron": "33.2.1",
+    "electron-builder": "^25.1.8"
+  },
+  "author": {
+    "name": "Ayalan Lima",
+    "email": "zoe@localhost"
+  },
+  "homepage": "https://github.com/Ahaylima2721/ZOE_Agent_tts",
+  "build": {
+    "appId": "dev.zoe.desktop",
+    "productName": "Zoe",
+    "executableName": "zoe",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**/*",
+      "assets/*.png",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../core",
+        "to": "core",
+        "filter": [
+          "zoe_core/**/*",
+          "requirements.txt",
+          "!**/__pycache__/**",
+          "!**/*.pyc"
+        ]
+      }
+    ],
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "icon": "assets/zoe.png",
+      "category": "Utility",
+      "synopsis": "Companheira digital: orbe flutuante, memória pessoal e IA local",
+      "desktop": {
+        "StartupWMClass": "zoe"
+      }
+    },
+    "deb": {
+      "depends": [
+        "libgtk-3-0",
+        "libnotify4",
+        "libnss3",
+        "libxss1",
+        "libxtst6",
+        "xdg-utils",
+        "libatspi2.0-0",
+        "libuuid1",
+        "libsecret-1-0",
+        "python3 (>= 3.10)",
+        "python3-aiohttp",
+        "python3-psutil"
+      ]
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Ahaylima2721/ZOE_Agent_tts.git"
   }
 }

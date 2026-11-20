@@ -32,6 +32,11 @@ Toda requisição precisa do token: `Authorization: Bearer <token>`, ou `?token=
 | GET | `/api/pc/diagnose` | — | `{summary, findings[], processes}`: diagnóstico na hora (funciona mesmo com alertas desligados) |
 | GET | `/api/ai` | — | `{enabled, url, model, models[], ollama, version, installed[], model_installed, pull, hint}` |
 | POST | `/api/ai/pull` | `{}` | começa a baixar o modelo configurado (só quando o usuário pede); 503 sem Ollama. Progresso pelo WebSocket (`ai.pull`) |
+| GET | `/api/learning` | — | `{stats{total, local, sem_ia_pct, by_layer, knowledge}, items[]}`: o que a Zoe aprendeu e quanto responde sem IA (30 dias) |
+| POST | `/api/learning/feedback` | `{interaction_id, vote: up\|down}` | `{message}`: 👍 promove a resposta da IA; 👎 rejeita (respostas da IA e da base) |
+| PATCH | `/api/learning/{id}` | `{status: validada\|rejeitada}` | confirma ou rejeita um item |
+| DELETE | `/api/learning/{id}` | — | esquece um item |
+| POST | `/api/learning/research` | `{}` | pesquisa agora (409 com a pesquisa desligada) |
 | GET | `/api/memory` | — | `{kinds[], items{tipo: [...]}}`: tudo o que a Zoe guardou + a descrição dos campos de cada tipo |
 | POST | `/api/memory/{tipo}` | campos do tipo | `{item, created}`: 201 se criou; 200 se já existia um item com o mesmo nome (atualiza em vez de duplicar) |
 | PATCH | `/api/memory/{tipo}/{id}` | campos parciais | `{item}`; 400 para campo/valor inválido, 404 se não existir |
@@ -49,6 +54,8 @@ Toda requisição precisa do token: `Authorization: Bearer <token>`, ou `?token=
 | `foco_minutos_padrao` | 1–240 | `25` |
 | `ocioso_minutos` | 1–240 | `5` |
 | `notificacoes_nativas` | bool (usa `notify-send` quando a orbe está fechada) | `true` |
+| `pesquisa_web` | bool: depois da conversa, conferir na Wikipédia o que só a IA respondeu | `false` |
+| `pesquisa_web_url` | só `https://*.wikipedia.org` (ou servidor local de teste) | `https://pt.wikipedia.org` |
 | `ia_ativa` | bool: usar a IA local quando as regras não entendem | `true` |
 | `ia_modelo` | nome do modelo no Ollama (`qwen3:0.6b`, `gemma3:270m`, `qwen2.5:0.5b`, `gemma3:1b`, `qwen3:1.7b`…) | `qwen3:0.6b` |
 | `ia_url` | **só** `http://127.0.0.1`, `localhost` ou `::1` (nunca um servidor externo) | `http://127.0.0.1:11434` |
@@ -133,6 +140,30 @@ Tabelas da seção 8 da especificação: `users`, `interests`, `personal_project
 - Há índices nas colunas de tempo e status: `idx_metrics_time`, `idx_appusage_app_time`, `idx_events_type_time`, `idx_notifications_status` e outros.
 - `focus_rules.intervention_level` tem `CHECK` de 1 a 4 e é único por aplicativo.
 - **Retenção:** aplicada ao iniciar e a cada 6 h, conforme `retencao_dias`. Conversas e dados pessoais não expiram sozinhos; apagam-se por "Apagar meus dados".
+
+## Aprendizado (cascata)
+
+Cada mensagem desce os níveis até alguém responder; o nível fica gravado em `interactions.layer`:
+
+| Nível | `layer` | Quem responde |
+| --- | --- | --- |
+| 0 | `regras` | comandos (foco, PC, pausar, horas…) |
+| 1 | `memoria` | memória pessoal (livros, projetos, "o que você sabe sobre mim") |
+| — | `aprendizado` | correção de uma resposta anterior ("na verdade, …", até 10 min depois) |
+| 2 | `base` | base aprendida: respostas com 👍, correções e resumos com fonte |
+| 4 | `ia` | IA local, com contexto enxuto |
+| — | `sem_resposta` | nada entendeu (sem IA disponível) |
+
+**Base de conhecimento** (`knowledge`, busca FTS5/BM25 sem acentos + semelhança de palavras ≥ 0,6 na pergunta):
+
+- toda resposta da IA entra como `candidata` e **não** responde sozinha;
+- 👍 → `validada`; correção → `validada` (fonte `correcao`, vence as outras); Wikipédia → `fonte` (com título e link); 👎 → `rejeitada`;
+- perguntas pessoais ("eu", "meu"…) ou que mudam (hoje, agora, horas, PC…) **nunca** são guardadas;
+- a resposta reaproveitada diz de onde veio: "Lembrei da nossa conversa de 12/11", "Você me ensinou em 12/11" ou "Fonte: Wikipédia · Título" (com link).
+
+**Pesquisa pós-conversa** (opcional, desligada por padrão): 2 min depois da última mensagem, até 5 assuntos por vez (30 por dia), primeiro os que levaram 👎. Só o assunto sai do computador; o resumo guardado tem no máximo 3 frases. Cada descoberta vira um evento `NEW_DISCOVERY`.
+
+**Contexto enxuto da IA:** só itens da memória que têm palavras em comum com a pergunta (até 6) ou, sem nenhum, um retrato mínimo (o que está lendo/fazendo); mais até 3 itens confirmados da base sobre o assunto.
 
 ## Inteligência artificial (Ollama)
 
