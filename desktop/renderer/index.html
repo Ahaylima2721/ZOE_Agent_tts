@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src ws://127.0.0.1:*; img-src 'self' data:">
+<title>Zoe</title>
+<link rel="stylesheet" href="orb.css">
+<link rel="stylesheet" href="expressions.css">
+<link rel="stylesheet" href="ui.css">
+</head>
+<body>
+<div class="stage" id="stage" data-corner="br" data-mode="orb">
+
+  <div class="orb-box" id="orbBox">
+    <button class="orb" id="zoe" aria-label="Zoe — clique para conversar, arraste para mover">
+      <span class="orb-rings"><i></i><i></i><i></i></span>
+      <span class="orb-liquid"><i></i><i></i></span>
+      <span class="orb-face" id="face"><i></i><i></i></span>
+      <span class="orb-sparkle"></span>
+    </button>
+    <span class="zzz" id="zzz" aria-hidden="true">z<small>z</small></span>
+    <span class="badge" id="badge" hidden></span>
+  </div>
+
+  <div class="bubbles" id="bubbles" aria-live="polite"></div>
+
+  <section class="panel" id="panel" hidden aria-label="Painel da Zoe">
+    <header class="panel-head">
+      <div class="title"><b>Zoe</b> <span class="dot" id="connDot" title="conexão com o Zoe Core"></span></div>
+      <button class="chip focus-chip" id="focusChip" hidden></button>
+      <button class="icon" id="openMain" aria-label="Abrir a Zoe" title="Abrir a Zoe">⤢</button>
+      <button class="icon" id="closePanel" aria-label="Fechar painel">✕</button>
+    </header>
+    <nav class="tabs" role="tablist">
+      <button role="tab" data-tab="conversa" aria-selected="true">Conversa</button>
+      <button role="tab" data-tab="recursos">Recursos</button>
+      <button role="tab" data-tab="memoria">Memória</button>
+      <button role="tab" data-tab="avisos">Avisos</button>
+      <button role="tab" data-tab="ajustes">Ajustes</button>
+    </nav>
+
+    <div class="tab" id="tab-conversa">
+      <div class="log" id="log"></div>
+      <div class="quick" id="quick"></div>
+      <form class="composer" id="composer">
+        <input id="input" autocomplete="off" maxlength="2000" placeholder="Escreva para a Zoe… (ajuda)">
+        <button type="submit" aria-label="Enviar">➤</button>
+      </form>
+    </div>
+
+    <div class="tab rec" id="tab-recursos" hidden>
+      <div class="rec-head">
+        <p class="rec-sum" id="recSum" aria-live="polite">Lendo o computador…</p>
+        <button type="button" class="btn" id="recDiag">Diagnosticar</button>
+      </div>
+      <div class="findings" id="recFindings" hidden></div>
+      <div class="rec-body" id="recBody"></div>
+      <section class="procs" aria-labelledby="procTitle">
+        <div class="procs-head">
+          <h3 id="procTitle">Processos principais</h3>
+          <div class="seg" role="radiogroup" aria-label="Ordenar processos">
+            <button type="button" role="radio" aria-checked="true" data-sort="by_memory">Memória</button>
+            <button type="button" role="radio" aria-checked="false" data-sort="by_cpu">CPU</button>
+          </div>
+        </div>
+        <ol class="proc-list" id="procList"></ol>
+      </section>
+    </div>
+
+    <div class="tab mem" id="tab-memoria" hidden>
+      <div id="learnBox" class="learn"></div>
+      <p class="rec-sum" id="memSum" aria-live="polite"></p>
+      <div id="memList"></div>
+    </div>
+
+    <div class="tab" id="tab-avisos" hidden>
+      <ul class="list" id="noteList"></ul>
+    </div>
+
+    <form class="tab settings" id="tab-ajustes" hidden>
+      <fieldset>
+        <legend>Minha Zoe</legend>
+        <label>Como devo te chamar <input name="nome_usuario" maxlength="40"></label>
+        <label>Jeito de falar
+          <select name="tom">
+            <option value="equilibrado">Equilibrado</option>
+            <option value="direto">Direto (frases curtas)</option>
+            <option value="descontraido">Descontraído</option>
+          </select>
+        </label>
+        <label class="check"><input type="checkbox" name="checkins_memoria"> Perguntar sobre o que você me contou (livros, projetos, estudos…)</label>
+        <label>Não puxar assunto sobre (separe por vírgula) <input name="assuntos_evitar" data-list maxlength="400" placeholder="ex.: trabalho, dieta"></label>
+      </fieldset>
+      <fieldset>
+        <legend>Conversas espontâneas</legend>
+        <label>Autonomia
+          <select name="autonomia">
+            <option value="observar">Apenas observar</option>
+            <option value="conversar">Observar e conversar</option>
+            <option value="recomendar">Conversar e recomendar</option>
+            <option value="intervir_com_autorizacao">Intervir com autorização</option>
+            <option value="intervir_automatico">Intervir automaticamente (regras)</option>
+          </select>
+        </label>
+        <label>Frequência
+          <select name="frequencia">
+            <option value="silenciosa">Silenciosa</option>
+            <option value="baixa">Baixa (até 2 por hora)</option>
+            <option value="normal">Normal (até 4 por hora)</option>
+            <option value="alta">Alta (até 10 por hora)</option>
+          </select>
+        </label>
+        <div class="row">
+          <label>Silêncio das <input type="time" name="silencio_inicio"></label>
+          <label>até <input type="time" name="silencio_fim"></label>
+        </div>
+        <label class="check"><input type="checkbox" name="notificacoes_nativas"> Usar notificação do sistema quando a orbe estiver fechada</label>
+      </fieldset>
+      <fieldset>
+        <legend>Produtividade</legend>
+        <div class="row">
+          <label>Foco (min) <input type="number" name="foco_minutos_padrao" min="1" max="240"></label>
+          <label>Ausente após (min) <input type="number" name="ocioso_minutos" min="1" max="240"></label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Inteligência artificial</legend>
+        <label class="check"><input type="checkbox" id="iaAtiva"> Conversa livre com um modelo local (Ollama)</label>
+        <label>Modelo <select id="iaModelo"></select></label>
+        <p class="hint ia-status" id="iaStatus" aria-live="polite">Verificando…</p>
+        <div class="ia-hint" id="iaHint" hidden>
+          <p class="hint">Instale o Ollama (uma vez) num terminal:</p>
+          <code>curl -fsSL https://ollama.com/install.sh | sh</code>
+          <p class="hint">Depois volte aqui para baixar o modelo.</p>
+        </div>
+        <button type="button" class="btn primary" id="iaPull" hidden>Baixar modelo</button>
+        <div class="ia-pull" id="iaPullBox" hidden>
+          <div class="meter" id="iaPullMeter" role="meter" aria-label="Download do modelo" aria-valuemin="0" aria-valuemax="100"><i id="iaPullFill"></i></div>
+          <p class="hint" id="iaPullText"></p>
+        </div>
+        <label class="check"><input type="checkbox" name="pesquisa_web"> Depois da conversa, conferir na Wikipédia o que só a IA respondeu (envia só o assunto, nunca a conversa)</label>
+        <p class="hint">A IA só é usada quando os comandos da Zoe não entendem a mensagem. Ela recebe só o que está na memória e as últimas mensagens, e não executa nada no computador.</p>
+      </fieldset>
+      <fieldset>
+        <legend>Recursos do computador</legend>
+        <label class="check"><input type="checkbox" name="pc_alertas"> Avisar quando algo passar do limite</label>
+        <div class="row">
+          <label>Memória acima de (%) <input type="number" name="pc_limites.ram_pct" min="50" max="99"></label>
+          <label>CPU acima de (%) <input type="number" name="pc_limites.cpu_pct" min="50" max="100"></label>
+        </div>
+        <div class="row">
+          <label>Disco livre abaixo de (%) <input type="number" name="pc_limites.disco_livre_pct" min="1" max="50"></label>
+          <label>Temperatura acima de (°C) <input type="number" name="pc_limites.temp_c" min="60" max="105"></label>
+        </div>
+        <div class="row">
+          <label>Bateria abaixo de (%) <input type="number" name="pc_limites.bateria_pct" min="5" max="50"></label>
+          <label>Ler a cada (s) <input type="number" name="pc_intervalo_s" min="2" max="60"></label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Aparência</legend>
+        <label class="check"><input type="checkbox" id="calmo"> Reduzir animações</label>
+      </fieldset>
+      <fieldset>
+        <legend>Privacidade</legend>
+        <p class="hint" id="monitorHint"></p>
+        <div class="row">
+          <button type="button" class="btn" id="toggleMonitor">Pausar monitoramento</button>
+          <button type="button" class="btn danger" id="emergency">Parar tudo</button>
+        </div>
+        <button type="button" class="btn ghost danger" id="wipe">Apagar meus dados…</button>
+      </fieldset>
+      <p class="saved" id="saved" aria-live="polite"></p>
+    </form>
+  </section>
+</div>
+<script src="zoe-fx.js"></script>
+<script src="recursos.js"></script>
+<script src="memoria.js"></script>
+<script src="ia.js"></script>
+<script src="aprendizado.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

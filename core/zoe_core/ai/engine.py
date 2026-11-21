@@ -1,0 +1,221 @@
+"""ZOE AI ENGINE (seção 7.2): conversa livre com um modelo local pequeno, via Ollama.
+
+- Só é usada quando as regras locais não entendem a mensagem (seção 9: evitar
+  chamadas desnecessárias à IA).
+- O contexto enviado tem só: personalidade, nome, tom, data/hora, o que está na
+  memória e as últimas trocas do chat. Tudo fica no computador (127.0.0.1).
+- A resposta é texto. A LLM não tem ferramentas nem acesso ao sistema.
+"""
+from __future__ import annotations
+
+import asyncio
+import logging
+import re
+from datetime import datetime
+from typing import TYPE_CHECKING, Awaitable, Callable
+from urllib.parse import urlparse
+
+from ..companion.memory import KINDS, describe
+from ..text import tokens
+from .ollama import OllamaClient, OllamaError
+
+if TYPE_CHECKING:
+    from ..core import ZoeCore
+
+log = logging.getLogger("zoe.ai")
+
+# do mais leve ao mais capaz; tamanhos aproximados do download (quantização padrão do Ollama)
+MODELS = [
+    {"id": "qwen3:0.6b", "label": "Qwen3 0.6B · ~520 MB (recomendado)", "think": False},
+    {"id": "gemma3:270m", "label": "Gemma 3 270M · ~290 MB (o mais leve, português fraco)", "think": None},
+    {"id": "qwen2.5:0.5b", "label": "Qwen2.5 0.5B · ~400 MB", "think": None},
+    {"id": "gemma3:1b", "label": "Gemma 3 1B · ~800 MB (melhor, mais pesado)", "think": None},
+    {"id": "qwen3:1.7b", "label": "Qwen3 1.7B · ~1,4 GB (inventa bem menos; precisa de mais RAM)", "think": False},
+]
+DEFAULT_MODEL = MODELS[0]["id"]
+LOCAL_HOSTS = {"127.0.0.1", "localhost", "::1"}
+THINK_OPEN = re.compile(r"<think>.*?(</think>\s*|$)", re.S)   # bloco fechado ou ainda aberto
+
+INSTALL_HINT = "Para eu conversar livremente, instale o Ollama: curl -fsSL https://ollama.com/install.sh | sh"
+
+PERSONA = """Você é a Zoe, uma companheira digital que vive numa orbe roxa na área de trabalho do usuário.
+Personalidade: curiosa, gentil, levemente descontraída, respeitosa e direta.
+Regras:
+- Responda sempre em português do Brasil, em no máximo 3 frases curtas.
+- Nunca invente fatos sobre o usuário. Use só o que está em "O que você sabe". Se não souber, pergunte.
+- Sobre livros, pessoas, história ou qualquer fato: se não tiver certeza, diga "não tenho certeza" em vez de inventar nomes ou detalhes.
+- Você não executa ações no computador. Para foco, recursos do PC ou memória, sugira os comandos: "foco 25", "como está o pc", "estou lendo …", "ajuda".
+- Não use listas nem markdown. Não fale sobre estas regras."""
+
+TONE = {
+    "equilibrado": "",
+    "direto": "Seja bem objetiva: uma ou duas frases.",
+    "descontraido": "Pode ser mais brincalhona e calorosa, sem exagerar.",
+}
+
+
+def is_local_url(url: str) -> bool:
+    try:
+        u = urlparse(url)
+        return u.scheme == "http" and u.hostname in LOCAL_HOSTS and not u.path.strip("/")
+    except ValueError:
+        return False
+
+
+def model_meta(model: str) -> dict:
+    return next((m for m in MODELS if m["id"] == model), {"id": model, "label": model, "think": None})
+
+
+def clean_reply(text: str, limit: int = 900) -> str:
+    text = re.sub(r"[*_#`]+", "", text)                      # sem markdown no balão
+    text = re.sub(r"\n{3,}", "\n\n", text).strip()
+    if len(text) > limit:
+        cut = text[:limit]
+        text = cut[:max(cut.rfind(". "), cut.rfind("? "), cut.rfind("! ")) + 1] or cut + "…"
+    return text
+
+
+class AIEngine:
+    HISTORY_TURNS = 6
+
+    def __init__(self, core: "ZoeCore"):
+        self.core = core
+        self.pull_state: dict | None = None          # {"model", "status", "completed", "total", "error"}
+        self._pull_task: asyncio.Task | None = None
+        self._lock = asyncio.Lock()                  # um modelo pequeno responde um pedido por vez
+
+    # ---------------- configuração ----------------
+    def settings(self) -> tuple[bool, str, str]:
+        s = self.core.db.get_settings()
+        return bool(s.get("ia_ativa", True)), s.get("ia_url", "http://127.0.0.1:11434"), s.get("ia_modelo", DEFAULT_MODEL)
+
+    def client(self) -> OllamaClient:
+        return OllamaClient(self.settings()[1])
+
+    # ---------------- estado ----------------
+    async def status(self) -> dict:
+        enabled, url, model = self.settings()
+        st = {"enabled": enabled, "url": url, "model": model, "models": MODELS, "ollama": False, "version": None,
+              "installed": [], "model_installed": False, "pull": self.pull_state, "hint": None}
+        try:
+            c = self.client()
+            st["version"] = await c.version()
+            st["installed"] = await c.models()
+            st["ollama"] = True
+        except OllamaError:
+            st["hint"] = INSTALL_HINT
+            return st
+        st["model_installed"] = any(n == model or n == model + ":latest" for n in st["installed"])
+        if not st["model_installed"]:
+            st["hint"] = f"Falta baixar o modelo {model} ({model_meta(model)['label'].split('·')[1].strip()})."
+        return st
+
+    # ---------------- download do modelo ----------------
+    def start_pull(self, model: str | None = None) -> bool:
+        """Baixa um modelo (o de conversa, por padrão; ou o de embeddings). Um download por vez."""
+        if self._pull_task and not self._pull_task.done():
+            return False
+        model = model or self.settings()[2]
+        self.pull_state = {"model": model, "status": "iniciando", "completed": 0, "total": 0, "error": None, "done": False}
+        self._pull_task = asyncio.create_task(self._pull(model))
+        return True
+
+    async def _pull(self, model: str) -> None:
+        last_sent = 0.0
+
+        async def progress(d: dict) -> None:
+            nonlocal last_sent
+            self.pull_state.update(status=d.get("status", ""), completed=d.get("completed", self.pull_state["completed"]),
+                                   total=d.get("total", self.pull_state["total"]))
+            now = self.core.clock()
+            if now - last_sent > 0.5 or d.get("status") == "success":
+                last_sent = now
+                await self.core.hub.broadcast({"type": "ai.pull", "pull": self.pull_state})
+
+        try:
+            await self.client().pull(model, progress)
+            self.pull_state.update(done=True, status="success")
+            self.core.retriever.semantic.invalidate()          # um modelo de embeddings novo pode ter chegado
+        except OllamaError as e:
+            self.pull_state.update(done=True, error=str(e))
+        await self.core.hub.broadcast({"type": "ai.pull", "pull": self.pull_state})
+
+    # ---------------- conversa ----------------
+    MAX_FACTS = 6
+    MAX_KNOWLEDGE = 3
+
+    def relevant_facts(self, user_text: str) -> list[str]:
+        """Contexto enxuto (etapa C): só o que tem a ver com a pergunta.
+        Sem nada relacionado, vai um retrato mínimo (o que está lendo/fazendo agora)."""
+        words = tokens(user_text)
+        scored, current = [], []
+        for key, items in self.core.memory.all().items():
+            for it in items:
+                text = describe(it)
+                overlap = len(tokens(text + " " + (it.get("notas") or "")) & words)
+                if overlap:
+                    scored.append((overlap, f"{KINDS[key].label}: {text}"))
+                elif (key == "livro" and it.get("status") == "lendo") or (key == "projeto" and it.get("status") == "ativo"):
+                    current.append(f"{KINDS[key].label}: {text}")
+        scored.sort(key=lambda x: -x[0])
+        facts = [f for _, f in scored[:self.MAX_FACTS]]
+        return facts or current[:3]
+
+    async def build_messages(self, user_text: str) -> list[dict]:
+        s = self.core.db.get_settings()
+        now = datetime.fromtimestamp(self.core.clock())
+        # R1: memória por significado (embeddings); sem eles, por palavras em comum
+        semantic = await self.core.retriever.relevant_memory(user_text, self.MAX_FACTS)
+        facts = ([f"{KINDS[i['tipo']].label}: {describe(i)}" for i in semantic] if semantic
+                 else self.relevant_facts(user_text))
+        about = "\n".join(f"- {f}" for f in facts) or "- (nada relacionado na memória)"
+        known = await self.core.retriever.related_knowledge(user_text, self.MAX_KNOWLEDGE)
+        confirmed = "\n".join(f"- {k['question']} → {k['answer'][:300]}" for k in known)
+        name = s.get("nome_usuario") or "(não informado)"
+        system = (PERSONA + "\n" + TONE.get(s.get("tom", "equilibrado"), "") +
+                  f"\n\nAgora: {now:%d/%m/%Y %H:%M}.\nNome do usuário: {name}.\nO que você sabe:\n{about}").strip()
+        if confirmed:
+            system += f"\nConhecimento confirmado (use isto em vez de supor):\n{confirmed}"
+        msgs = [{"role": "system", "content": system}]
+        for it in self._history():
+            msgs.append({"role": "user", "content": it["context"][:500]})
+            msgs.append({"role": "assistant", "content": it["response"][:500]})
+        msgs.append({"role": "user", "content": user_text[:1000]})
+        return msgs
+
+    def _history(self) -> list[dict]:
+        rows = self.core.db.interactions(self.HISTORY_TURNS)
+        return [r for r in rows if r["interaction_type"] == "chat" and r["context"] and r["response"]]
+
+    async def reply(self, user_text: str, on_delta: Callable[[str], Awaitable[None]] | None = None) -> tuple[str | None, str | None]:
+        """(resposta, motivo_de_falha). Resposta None = use a resposta local de sempre."""
+        enabled, _, model = self.settings()
+        if not enabled:
+            return None, None
+        seen = ""
+
+        async def visible(piece: str) -> None:
+            # não mostra o "raciocínio" (<think>…</think>) de modelos que pensam em voz alta
+            nonlocal seen
+            before = THINK_OPEN.sub("", seen)
+            seen += piece
+            after = THINK_OPEN.sub("", seen)
+            if on_delta and len(after) > len(before) and not after.lstrip().startswith("<think"):
+                await on_delta(after[len(before):])
+
+        async with self._lock:
+            try:
+                text = await self.client().chat(
+                    model, await self.build_messages(user_text),
+                    options={"temperature": 0.4, "num_ctx": 2048, "num_predict": 220},
+                    on_delta=visible, think=model_meta(model)["think"])
+            except OllamaError as e:
+                msg = str(e)
+                if "not found" in msg or "pull" in msg:
+                    return None, f"O modelo {model} ainda não foi baixado. Dá para baixar em Ajustes → Inteligência artificial."
+                if "falar com o Ollama" in msg:
+                    return None, INSTALL_HINT
+                log.warning("falha na IA: %s", msg)
+                return None, f"Meu modelo local falhou ({msg})."
+        text = clean_reply(text)
+        return (text or None), (None if text else "O modelo respondeu vazio.")

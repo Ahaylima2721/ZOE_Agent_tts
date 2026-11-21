@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Zoe — como funciona (técnico)</title>
+<link rel="stylesheet" href="../../desktop/renderer/orb.css">
+<style>
+  :root { --bg: #f7f5fc; --card: #ffffff; --line: #e6e0f5; --fg: #1d1630; --muted: #6b6485; --accent: #7c3aed; --accent2: #a78bfa;
+          --soft: #f1ebff; --code: #f4f0fc; --ok: #15803d; --no: #be123c; --warn: #b45309; --mono: "DejaVu Sans Mono", ui-monospace, monospace; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #ddd; font-family: Inter, system-ui, sans-serif; color: var(--fg); }
+  .slide { position: relative; width: 1080px; height: 1350px; overflow: hidden; padding: 70px 64px 56px; display: flex; flex-direction: column; gap: 22px;
+    background: radial-gradient(700px 500px at 100% 0%, rgba(167, 139, 250, .16), transparent 60%), var(--bg); }
+  .top { display: flex; justify-content: space-between; font: 600 19px/1 var(--mono); color: var(--accent); letter-spacing: .08em; text-transform: uppercase; }
+  .top span:last-child { color: var(--muted); }
+  h2 { margin: 6px 0 0; font: 800 64px/1.05 "Inter Display", Inter; letter-spacing: -.015em; }
+  h2 em { font-style: normal; color: var(--accent); }
+  .lead { margin: 0; font-size: 25px; line-height: 1.4; color: var(--muted); }
+  .card { background: var(--card); border: 1.5px solid var(--line); border-radius: 22px; padding: 22px 24px; box-shadow: 0 10px 30px -22px rgba(76, 29, 149, .35); }
+  code, .code { font-family: var(--mono); }
+  .code { background: var(--code); border-radius: 12px; padding: 12px 14px; font-size: 17px; line-height: 1.5; color: #3b2a66; white-space: pre; overflow: hidden; }
+  .code .k { color: #7c3aed; font-weight: 700; } .code .s { color: #15803d; } .code .c { color: #8b84a6; } .code .n { color: #b45309; }
+  .file { font: 600 15px var(--mono); color: var(--accent); letter-spacing: .04em; margin-bottom: 8px; text-transform: uppercase; }
+  .foot { margin-top: auto; display: flex; align-items: center; gap: 12px; font: 500 18px var(--mono); color: var(--muted); }
+  .pill { display: inline-block; padding: 4px 12px; border-radius: 999px; background: var(--soft); color: var(--accent); font: 700 15px var(--mono); }
+  .mini { width: 52px; height: 52px; flex: none; border-radius: 50%; display: inline-flex; gap: 7px; align-items: center; justify-content: center;
+    background: radial-gradient(circle at 32% 26%, #fff 0 6%, transparent 26%), radial-gradient(circle, #c9a7ff, #8b5cf6 40%, #5b21b6 75%, #2a0e5e);
+    box-shadow: 0 0 18px rgba(139, 92, 246, .45); }
+  .mini i { width: 7px; height: 12px; border-radius: 4px; background: #f7f3ff; }
+  .tag { font: 700 14px var(--mono); padding: 3px 10px; border-radius: 999px; letter-spacing: .04em; }
+  .tag.ok { background: #dcfce7; color: var(--ok); } .tag.no { background: #ffe4e6; color: var(--no); } .tag.w { background: #fef3c7; color: var(--warn); }
+
+  .evs { display: flex; flex-wrap: wrap; gap: 8px; }
+  .evs code { font-size: 14.5px; padding: 6px 10px; border-radius: 8px; background: var(--code); color: #3b2a66; }
+  .stack code { font-size: 17px; padding: 8px 12px; }
+  .map { padding: 16px 20px 6px; }
+  #t2 { gap: 34px; } #t5 { gap: 34px; } #t6 { gap: 38px; } #t5 .sm + .sm { margin-top: 14px !important; }
+  /* 1 · pipeline */
+  .ask { display: flex; align-items: center; gap: 18px; }
+  .ask .q { font-size: 26px; font-weight: 700; }
+  .ask small { display: block; font: 600 14px var(--mono); color: var(--muted); letter-spacing: .08em; }
+  .steps { display: grid; gap: 12px; }
+  .st { display: grid; grid-template-columns: 46px 1fr 390px; gap: 16px; align-items: center; padding: 16px 20px; }
+  .st .n { width: 42px; height: 42px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font: 800 20px Inter; }
+  .st b { font-size: 24px; display: block; } .st span { font-size: 18px; color: var(--muted); }
+  .st .code { font-size: 15px; padding: 10px 12px; }
+  .st.hit { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(124, 58, 237, .12); }
+  .st.skip { opacity: .55; }
+  .outcomes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .outcomes .card { font-size: 18px; color: var(--muted); padding: 16px 18px; }
+  .outcomes b { color: var(--fg); display: block; font-size: 20px; margin-bottom: 4px; }
+
+  /* 2 · arquitetura */
+  .arch { display: grid; gap: 12px; }
+  .layer { display: grid; grid-template-columns: 190px 1fr; gap: 16px; align-items: start; padding: 16px 20px; }
+  .layer .lbl { font: 700 15px var(--mono); color: var(--accent); text-transform: uppercase; letter-spacing: .06em; }
+  .layer .lbl b { display: block; font: 800 24px Inter; color: var(--fg); text-transform: none; letter-spacing: 0; margin-top: 4px; }
+  .layer ul { margin: 0; padding-left: 20px; font-size: 18px; line-height: 1.5; color: var(--muted); }
+  .layer code { font-size: 15px; color: var(--accent); }
+  .wire { text-align: center; font: 600 16px var(--mono); color: var(--muted); }
+  .nums { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .nums .card { text-align: center; padding: 16px 10px; }
+  .nums b { display: block; font: 800 38px "Inter Display", Inter; color: var(--accent); }
+  .nums span { font-size: 16px; color: var(--muted); }
+
+  /* 3 · rede neural */
+  .nn { padding: 18px 18px 10px; }
+  .nn svg text { font-family: var(--mono); }
+  .formula { display: flex; gap: 14px; align-items: center; }
+  .formula .big { font: 700 30px var(--mono); color: var(--fg); }
+  .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+  /* 4 · calibração */
+  .pairs { width: 100%; border-collapse: separate; border-spacing: 0 6px; font-size: 18px; }
+  .pairs td { padding: 9px 12px; background: #faf8ff; }
+  .pairs td:first-child { border-radius: 10px 0 0 10px; } .pairs td:last-child { border-radius: 0 10px 10px 0; text-align: right; white-space: nowrap; }
+  .rule { font-size: 21px; line-height: 1.45; }
+  .rule b { color: var(--accent); }
+
+  /* 5 · aprendizado */
+  .sm { display: grid; grid-template-columns: 1fr 70px 1fr; align-items: center; gap: 6px; }
+  .state { text-align: center; padding: 14px 10px; border-radius: 16px; border: 2px solid var(--line); background: #fff; font-weight: 700; font-size: 21px; }
+  .state small { display: block; font: 500 15px var(--mono); color: var(--muted); margin-top: 4px; }
+  .state.v { border-color: #86efac; background: #f0fdf4; } .state.r { border-color: #fda4af; background: #fff1f2; } .state.f { border-color: #c4b5fd; background: #f5f3ff; }
+  .arr { text-align: center; font: 700 28px var(--mono); color: var(--accent); line-height: 1.1; }
+  .arr small { display: block; font: 600 14px var(--mono); color: var(--muted); }
+
+  /* 6 · comparação */
+  .cmp { width: 100%; border-collapse: collapse; font-size: 20px; }
+  .cmp th { text-align: left; font: 700 15px var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .06em; padding: 0 12px 10px; }
+  .cmp td { padding: 12px; border-top: 1.5px solid var(--line); vertical-align: top; }
+  .cmp td:first-child { font-weight: 700; width: 260px; }
+  .cmp td:nth-child(2) { color: var(--muted); }
+  .cmp td:nth-child(3) { color: var(--fg); }
+  .road { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .road .card { padding: 16px 18px; font-size: 18px; color: var(--muted); }
+  .road b { display: block; color: var(--fg); font-size: 20px; margin: 6px 0 4px; }
+</style>
+</head>
+<body>
+
+<!-- 1 · como responde -->
+<section class="slide" id="t1">
+  <div class="top"><span>Zoe · como funciona</span><span>1/6</span></div>
+  <h2>Como a Zoe <em>responde</em></h2>
+  <p class="lead">Cada mensagem desce uma cascata, do caminho mais barato ao mais caro. Tudo roda no seu computador.</p>
+  <div class="card ask"><span class="mini"><i></i><i></i></span><div><small>VOCÊ PERGUNTA</small><span class="q">"Quem é o autor de O Fantasma da Ópera?"</span></div></div>
+  <div class="steps">
+    <div class="card st skip"><div class="n">0</div><div><b>Comandos</b><span>expressões regulares: foco, tarefas, PC</span></div>
+      <div class="code">foco 25  → FocusManager.start(25)</div></div>
+    <div class="card st skip"><div class="n">1</div><div><b>Memória pessoal</b><span>o que você contou sobre você</span></div>
+      <div class="code">"estou lendo Duna" → books(…)</div></div>
+    <div class="card st skip"><div class="n">2</div><div><b>Correção</b><span>"na verdade…" vale mais que tudo</span></div>
+      <div class="code">knowledge.correct(pergunta, texto)</div></div>
+    <div class="card st hit"><div class="n">3</div><div><b>Base aprendida</b><span>palavras (BM25) + significado (embeddings)</span></div>
+      <div class="code">cosseno 0,93 ≥ limiar 0,82 ✓
+nomes próprios iguais ✓</div></div>
+    <div class="card st skip"><div class="n">4</div><div><b>IA local (LLM)</b><span>só se nada acima resolveu</span></div>
+      <div class="code">qwen3:0.6b · contexto 2048 · RAG</div></div>
+  </div>
+  <div class="outcomes">
+    <div class="card"><b>✓ Responde sem IA, em milissegundos</b>"Foi Gaston Leroux." · parecida com "Quem escreveu O Fantasma da Ópera?"</div>
+    <div class="card"><b>Mostra de onde veio</b>Lembrei da conversa de 21/11 · ou · Fonte: Wikipédia (link)</div>
+  </div>
+  <div class="card"><div class="file">ai/engine.py · o que a IA recebe (só no nível 4)</div><div class="code" style="font-size:15.5px">Você é a Zoe, uma companheira digital que vive numa orbe roxa…
+Regras:
+- Responda sempre em português do Brasil, em no máximo 3 frases curtas.
+- Nunca invente fatos sobre o usuário. Use só o que está em "O que você sabe".
+- Sobre livros, pessoas, história…: se não tiver certeza, diga "não tenho certeza".
+<span class="c"># + só os trechos da memória e da base parecidos com a pergunta (RAG)</span></div></div>
+  <div class="foot">valores de cosseno e limiar ilustrativos: o limiar real é calibrado em cada computador</div>
+</section>
+
+<!-- 2 · arquitetura -->
+<section class="slide" id="t2">
+  <div class="top"><span>Zoe · como funciona</span><span>2/6</span></div>
+  <h2>A <em>arquitetura</em></h2>
+  <p class="lead">Dois processos conversando só dentro do seu computador. Nenhum servidor na nuvem.</p>
+  <div class="arch">
+    <div class="card layer"><div class="lbl">Electron<b>Zoe Desktop</b></div>
+      <ul><li>orbe flutuante (janela transparente) + app com 8 telas</li><li>lançador decide o sandbox antes de iniciar · <code>zoe --diagnostico</code></li><li>interface isolada: só fala com o Core por uma lista fixa de rotas</li></ul></div>
+    <div class="wire">↕ WebSocket + REST · 127.0.0.1 · token por execução</div>
+    <div class="card layer"><div class="lbl">Python · asyncio<b>Zoe Core</b></div>
+      <ul><li><code>EventBus</code> → <code>DecisionEngine</code>: cada evento vira ignorar, aguardar, expressão, aviso ou IA</li>
+        <li>avisos com autonomia, frequência, horário silencioso e anti-repetição</li>
+        <li>monitor do PC (psutil) · foco · tarefas · memória · aprendizado</li></ul></div>
+    <div class="wire">↕ SQL                                    ↕ HTTP local</div>
+    <div class="twocol">
+      <div class="card layer" style="grid-template-columns:1fr"><div class="lbl">SQLite<b>17 tabelas</b></div>
+        <ul><li>migrações versionadas (v1→v5)</li><li>FTS5 (busca BM25) + vetores</li><li>retenção e "apagar meus dados"</li></ul></div>
+      <div class="card layer" style="grid-template-columns:1fr"><div class="lbl">Ollama<b>IA local</b></div>
+        <ul><li>LLM pequeno (Qwen3 0.6B)</li><li>modelo de embeddings</li><li>opcional: sem ele, tudo funciona</li></ul></div>
+    </div>
+  </div>
+  <div class="card"><div class="file">events.py · 16 tipos de evento → camada de decisão</div>
+    <div class="evs"><code>FOCUS_SESSION_STARTED</code><code>FOCUS_SESSION_ENDED</code><code>USER_IDLE</code><code>USER_RETURNED</code><code>MEMORY_CHECKIN</code><code>NEW_DISCOVERY</code><code>HIGH_MEMORY_USAGE</code><code>CPU_OVERLOAD</code><code>DISK_SPACE_LOW</code><code>HIGH_TEMPERATURE</code><code>BATTERY_LOW</code><code>USER_REQUEST</code><code>EMERGENCY_STOP</code><code>MONITORING_RESUMED</code><code>TASK_OVERDUE</code><code>APP_USAGE_LIMIT_REACHED</code></div></div>
+  <div class="nums">
+    <div class="card"><b>4,6 mil</b><span>linhas de Python</span></div>
+    <div class="card"><b>3,9 mil</b><span>linhas de interface</span></div>
+    <div class="card"><b>138</b><span>testes automáticos</span></div>
+    <div class="card"><b>41</b><span>verificações de ponta a ponta</span></div>
+  </div>
+</section>
+
+<!-- 3 · rede neural -->
+<section class="slide" id="t3">
+  <div class="top"><span>Zoe · como funciona</span><span>3/6</span></div>
+  <h2>A <em>rede neural</em> que lê o sentido</h2>
+  <p class="lead">Um modelo de embeddings (um transformer) transforma cada frase num vetor de centenas de números. Frases com o mesmo sentido viram vetores que apontam para o mesmo lado.</p>
+  <div class="card nn">
+    <svg viewBox="0 0 940 440" width="100%" aria-label="Esquema de um modelo de embeddings">
+      <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#a78bfa"/></marker></defs>
+      <text x="0" y="22" font-size="14" fill="#7c3aed" font-weight="700">TOKENS</text>
+      <g font-size="15" fill="#1d1630">
+        <rect x="0" y="40" width="120" height="34" rx="8" fill="#f1ebff"/><text x="12" y="62">quem</text>
+        <rect x="0" y="86" width="120" height="34" rx="8" fill="#f1ebff"/><text x="12" y="108">é o</text>
+        <rect x="0" y="132" width="120" height="34" rx="8" fill="#f1ebff"/><text x="12" y="154">autor</text>
+        <rect x="0" y="178" width="120" height="34" rx="8" fill="#f1ebff"/><text x="12" y="200">de</text>
+        <rect x="0" y="224" width="120" height="34" rx="8" fill="#f1ebff"/><text x="12" y="246">Fantasma</text>
+        <rect x="0" y="270" width="120" height="34" rx="8" fill="#f1ebff"/><text x="12" y="292">da Ópera</text>
+      </g>
+      <text x="170" y="22" font-size="14" fill="#7c3aed" font-weight="700">CAMADAS (ATENÇÃO)</text>
+      <g id="net" stroke="#c4b5fd" stroke-width="1" opacity=".75"></g>
+      <g id="nodes"></g>
+      <text x="565" y="22" font-size="14" fill="#7c3aed" font-weight="700">MÉDIA</text>
+      <text x="680" y="22" font-size="14" fill="#7c3aed" font-weight="700">VETOR (normalizado)</text>
+      <g id="vec"></g>
+      <text x="0" y="350" font-size="15" fill="#6b6485">cada palavra "olha" para as outras: "autor" ganha o contexto de "Fantasma da Ópera"</text>
+      <text x="0" y="378" font-size="15" fill="#6b6485">a média das saídas vira um único vetor por frase; o tamanho depende do modelo</text>
+      <text x="0" y="420" font-size="13" fill="#a19ab8">esquema ilustrativo · os pesos reais (centenas de milhões) vêm prontos no modelo</text>
+    </svg>
+  </div>
+  <div class="card map"><div class="file">espaço de significado · ilustração em 2D</div>
+    <svg viewBox="0 0 940 230" width="100%">
+      <g font-family="DejaVu Sans Mono" font-size="14">
+        <circle cx="150" cy="70" r="9" fill="#7c3aed"/><circle cx="178" cy="92" r="9" fill="#7c3aed"/><circle cx="135" cy="104" r="9" fill="#7c3aed"/>
+        <text x="200" y="66" fill="#1d1630">"Quem escreveu O Fantasma…"</text><text x="200" y="98" fill="#1d1630">"Quem é o autor de O Fantasma…"</text>
+        <text x="186" y="146" fill="#7c3aed">← sua pergunta cai aqui → mesma resposta</text>
+        <polygon points="160,120 164,131 176,131 166,138 170,150 160,143 150,150 154,138 144,131 156,131" fill="#f59e0b"/>
+        <circle cx="560" cy="60" r="9" fill="#15803d"/><circle cx="590" cy="82" r="9" fill="#15803d"/>
+        <text x="612" y="64" fill="#1d1630">"capital da França?"</text><text x="612" y="90" fill="#1d1630">"capital da Alemanha?"</text>
+        <text x="560" y="122" fill="#6b6485">perto no vetor, nomes diferentes → guarda</text>
+        <circle cx="430" cy="185" r="9" fill="#d95926"/><circle cx="462" cy="200" r="9" fill="#d95926"/>
+        <text x="484" y="190" fill="#1d1630">"guitarra para iniciantes" ≈ "violão barato"</text>
+        <text x="484" y="214" fill="#6b6485">sem palavras em comum → vai como contexto para a IA</text>
+      </g>
+    </svg></div>
+  <div class="twocol">
+    <div class="card formula"><div><div class="file">semelhança</div><div class="big">cos(a,b) = a·b</div><span style="font-size:17px;color:var(--muted)">com os dois vetores normalizados (tamanho 1): 1 = mesmo sentido</span></div></div>
+    <div class="card"><div class="file">learning/semantic.py</div><div class="code"><span class="k">def</span> cosine_many(q, mats):
+    m = np.frombuffer(…)
+      .reshape(len(mats), -1)
+    <span class="k">return</span> (m @ q).tolist()</div></div>
+  </div>
+</section>
+
+<!-- 4 · calibração -->
+<section class="slide" id="t4">
+  <div class="top"><span>Zoe · como funciona</span><span>4/6</span></div>
+  <h2>Quando é <em>a mesma</em> pergunta?</h2>
+  <p class="lead">"Parecido" muda de modelo para modelo. Então a Zoe se calibra no seu computador com 32 pares em português, e os mais difíceis são do mesmo assunto.</p>
+  <div class="card">
+    <table class="pairs">
+      <tr><td>Quem escreveu O Fantasma da Ópera?</td><td>Quem é o autor de O Fantasma da Ópera?</td><td><span class="tag ok">MESMA</span></td></tr>
+      <tr><td>Como afinar um violão?</td><td>Como faço para afinar o violão?</td><td><span class="tag ok">MESMA</span></td></tr>
+      <tr><td>Como instalar o Python no Ubuntu?</td><td>Como desinstalar o Python no Ubuntu?</td><td><span class="tag no">OUTRA</span></td></tr>
+      <tr><td>Quem pintou a Mona Lisa?</td><td>Onde está exposta a Mona Lisa?</td><td><span class="tag no">OUTRA</span></td></tr>
+      <tr><td>Qual a capital da França?</td><td>Qual a capital da Alemanha?</td><td><span class="tag w">GUARDA</span></td></tr>
+    </table>
+  </div>
+  <div class="card rule">Regra: o limiar fica <b>acima da "outra" mais parecida</b> (+0,02, nunca abaixo de 0,75). Resultado: <b>zero confusões</b> no teste, e ela mostra quantas reformulações reconhece.</div>
+  <div class="twocol">
+    <div class="card"><div class="file">calibrate()</div><div class="code">worst_neg = max(neg)
+direct = min(<span class="n">0.99</span>, round(
+  max(worst_neg + <span class="n">0.02</span>,
+      MIN_DIRECT), <span class="n">3</span>))</div></div>
+    <div class="card"><div class="file">guarda de nomes próprios</div><div class="code"><span class="k">def</span> same_entities(a, b):
+    ea, eb = entities(a), entities(b)
+    <span class="k">return not</span> (ea <span class="k">and</span> eb
+               <span class="k">and</span> ea != eb)</div></div>
+  </div>
+  <div class="card"><div class="file">por que não um número fixo?</div>
+    <svg viewBox="0 0 940 150" width="100%" font-family="DejaVu Sans Mono" font-size="14">
+      <line x1="20" y1="110" x2="920" y2="110" stroke="#cfc6e6"/>
+      <text x="20" y="135" fill="#6b6485">0</text><text x="890" y="135" fill="#6b6485">1</text>
+      <g fill="#fda4af"><rect x="250" y="80" width="40" height="30" rx="4"/><rect x="300" y="60" width="40" height="50" rx="4"/><rect x="350" y="45" width="40" height="65" rx="4"/><rect x="400" y="70" width="40" height="40" rx="4"/><rect x="450" y="88" width="40" height="22" rx="4"/></g>
+      <g fill="#86efac"><rect x="620" y="92" width="40" height="18" rx="4"/><rect x="670" y="66" width="40" height="44" rx="4"/><rect x="720" y="40" width="40" height="70" rx="4"/><rect x="770" y="30" width="40" height="80" rx="4"/><rect x="820" y="62" width="40" height="48" rx="4"/></g>
+      <line x1="560" y1="15" x2="560" y2="112" stroke="#7c3aed" stroke-width="3" stroke-dasharray="6 5"/>
+      <text x="574" y="24" fill="#7c3aed" font-weight="700">limiar</text>
+      <text x="250" y="24" fill="#be123c">"outra pergunta"</text><text x="700" y="22" fill="#15803d">"a mesma"</text>
+    </svg>
+    <p class="lead" style="font-size:18px">Cada modelo espalha os cossenos de um jeito. A calibração acha a linha entre os dois grupos <b style="color:#1d1630">no modelo instalado</b>. (ilustração)</p></div>
+  <p class="lead" style="font-size:21px">França × Alemanha: vetores muito próximos, mas nomes diferentes. A guarda impede a resposta trocada, e a pergunta vai para a IA com contexto.</p>
+</section>
+
+<!-- 5 · aprendizado -->
+<section class="slide" id="t5">
+  <div class="top"><span>Zoe · como funciona</span><span>5/6</span></div>
+  <h2>Como ela <em>aprende</em></h2>
+  <p class="lead">A IA erra, e um modelo de 0,6B inventa fatos com confiança. Por isso nada do que ela diz vira verdade sem passar por você ou por uma fonte.</p>
+  <div class="card">
+    <div class="sm">
+      <div class="state">resposta da IA<small>status = candidata</small></div><div class="arr">→<small>👍</small></div><div class="state v">validada<small>responde sozinha</small></div>
+    </div>
+    <div class="sm" style="margin-top:10px">
+      <div class="state f">Wikipédia<small>depois da conversa</small></div><div class="arr">→<small>link</small></div><div class="state f">fonte<small>cita título e link</small></div>
+    </div>
+    <div class="sm" style="margin-top:10px">
+      <div class="state">"na verdade, …"<small>sua correção</small></div><div class="arr">→</div><div class="state v">validada<small>vence as outras</small></div>
+    </div>
+    <div class="sm" style="margin-top:10px">
+      <div class="state">resposta errada<small>👎</small></div><div class="arr">→</div><div class="state r">rejeitada<small>nunca mais usada</small></div>
+    </div>
+  </div>
+  <div class="twocol">
+    <div class="card"><div class="file">busca por palavras · SQLite FTS5</div><div class="code"><span class="k">SELECT</span> k.* <span class="k">FROM</span> knowledge_fts f
+<span class="k">JOIN</span> knowledge k <span class="k">ON</span> k.id = f.rowid
+<span class="k">WHERE</span> knowledge_fts <span class="k">MATCH</span> ?
+  <span class="k">AND</span> k.status <span class="k">IN</span> (<span class="s">'validada'</span>,
+                   <span class="s">'fonte'</span>)
+<span class="k">ORDER BY</span> bm25(knowledge_fts)</div></div>
+    <div class="card"><div class="file">nunca guarda</div><div class="code"><span class="c"># pessoal → vem da memória</span>
+PERSONAL = <span class="s">r"\b(eu|meu|minha…)\b"</span>
+<span class="c"># muda o tempo todo</span>
+VOLATILE = <span class="s">r"\b(hoje|agora|</span>
+<span class="s">  horas|pc|cotacao…)\b"</span></div></div>
+  </div>
+  <div class="card"><div class="file">chat.py · cada resposta registra quem respondeu</div><div class="code">LAYERS = (<span class="s">"regras"</span>, <span class="s">"memoria"</span>, <span class="s">"aprendizado"</span>, <span class="s">"base"</span>, <span class="s">"ia"</span>, <span class="s">"sem_resposta"</span>)
+<span class="c"># % sem IA = (regras + memoria + aprendizado + base) / total · últimos 30 dias</span></div></div>
+  <div class="foot">a tela "O que aprendi" mostra esse número subindo conforme você usa</div>
+</section>
+
+<!-- 6 · não é só um chatbot -->
+<section class="slide" id="t6">
+  <div class="top"><span>Zoe · como funciona</span><span>6/6</span></div>
+  <h2>Não é <em>só um chatbot</em></h2>
+  <table class="cmp">
+    <tr><th></th><th>chatbot comum</th><th>Zoe</th></tr>
+    <tr><td>Memória</td><td>esquece ao fechar</td><td>SQLite: livros, projetos, objetivos, tarefas</td></tr>
+    <tr><td>Quando usa IA</td><td>sempre</td><td>só quando a cascata não resolve</td></tr>
+    <tr><td>Aprende?</td><td>não</td><td>👍, correções e fontes viram conhecimento</td></tr>
+    <tr><td>Fonte</td><td>nem sempre</td><td>diz de onde veio cada resposta</td></tr>
+    <tr><td>Iniciativa</td><td>só responde</td><td>eventos: foco, ausência, PC, lembretes</td></tr>
+    <tr><td>Onde roda</td><td>na nuvem</td><td>no seu computador</td></tr>
+  </table>
+  <p class="lead" style="font-size:22px;margin-top:6px"><b style="color:var(--fg)">Próximos passos:</b> o mesmo cérebro em mais telas e com mais conhecimento.</p>
+  <div class="road">
+    <div class="card"><span class="pill">R2</span><b>Seus documentos</b>lê arquivos e repositórios e cita o trecho</div>
+    <div class="card"><span class="pill">R3 · R4</span><b>Aprende seu jeito</b>classificador treinado com o que você confirma</div>
+    <div class="card"><span class="pill">em breve</span><b>Celular</b>pareamento por QR, sem nuvem no meio</div>
+  </div>
+  <div class="card"><div class="file">por dentro</div><div class="evs stack"><code>Python 3 · asyncio</code><code>aiohttp (REST + WebSocket)</code><code>SQLite · FTS5 · BM25</code><code>embeddings (transformer)</code><code>Ollama · Qwen3</code><code>Electron</code><code>psutil</code><code>Playwright (testes de ponta a ponta)</code><code>pytest · 138 testes</code></div>
+    <p class="lead" style="font-size:19px;margin-top:12px">Cada parte é testada sozinha e com a Zoe inteira rodando, inclusive no instalador <code>.deb</code>.</p></div>
+  <div class="foot"><span class="mini" style="width:34px;height:34px"><i style="width:5px;height:8px"></i><i style="width:5px;height:8px"></i></span>Zoe · agente pessoal no desktop, no celular, aprendendo com o seu uso</div>
+</section>
+
+<script>
+  // rede neural (esquema): 6 tokens → 3 camadas de 6 nós → média → vetor
+  const ns = 'http://www.w3.org/2000/svg';
+  const net = document.getElementById('net'), nodes = document.getElementById('nodes'), vec = document.getElementById('vec');
+  const ys = [57, 103, 149, 195, 241, 287], xs = [200, 300, 400];
+  const add = (p, tag, attrs) => { const e = document.createElementNS(ns, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); p.append(e); return e; };
+  ys.forEach((y) => add(net, 'line', { x1: 122, y1: y, x2: xs[0] - 12, y2: y }));
+  for (let l = 0; l < xs.length - 1; l++) ys.forEach((a) => ys.forEach((b) => add(net, 'line', { x1: xs[l] + 12, y1: a, x2: xs[l + 1] - 12, y2: b })));
+  ys.forEach((y) => add(net, 'line', { x1: xs[2] + 12, y1: y, x2: 575, y2: 172 }));
+  xs.forEach((x) => ys.forEach((y) => add(nodes, 'circle', { cx: x, cy: y, r: 12, fill: '#fff', stroke: '#7c3aed', 'stroke-width': 2.5 })));
+  add(nodes, 'circle', { cx: 590, cy: 172, r: 18, fill: '#7c3aed' });
+  add(nodes, 'line', { x1: 610, y1: 172, x2: 672, y2: 172, stroke: '#a78bfa', 'stroke-width': 2, 'marker-end': 'url(#ar)' });
+  const vals = [0.12, -0.07, 0.31, 0.02, -0.18, 0.24, -0.05, 0.09, 0.27, -0.13];
+  vals.forEach((v, i) => {
+    const y = 48 + i * 25;
+    add(vec, 'rect', { x: 800, y: y - 9, width: Math.abs(v) * 260, height: 16, rx: 4, fill: v >= 0 ? '#a78bfa' : '#f0abfc', transform: v < 0 ? `translate(${-Math.abs(v) * 260} 0)` : '' });
+    const t = add(vec, 'text', { x: 690, y: y + 5, 'font-size': 14, fill: '#1d1630' }); t.textContent = (v >= 0 ? ' ' : '') + v.toFixed(2);
+  });
+  const dots = add(vec, 'text', { x: 690, y: 312, 'font-size': 14, fill: '#6b6485' }); dots.textContent = '… centenas de valores';
+</script>
+</body>
+</html>

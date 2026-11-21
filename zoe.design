@@ -1,5 +1,5 @@
 # ============================================================================
-#  ZOE — Especificação de Design do Agente (comportamento, expressões e fala)
+#  ZOE — Especificação de Design do Agente (comportamento e expressões)
 #  Formato: .design (sintaxe YAML). Pode ser lido por qualquer parser YAML.
 #  Versão: 2.0.0 · Idioma base: pt-BR
 #
@@ -7,38 +7,23 @@
 #  index.html, blocos "assistente: orbe de cristal" e "Zoe viva").
 #  Legenda usada abaixo:
 #    origem: portfolio  -> já existe no portfólio hoje (valores copiados do CSS/JS)
-#    origem: proposta   -> novo, pensado para a versão com voz (TTS) deste repo
+#    origem: proposta   -> novo, proposto neste repo
 # ============================================================================
 
 meta:
   nome: Zoe
   papel: assistente do portfólio do Ayalan
-  tipo: agente conversacional com voz (TTS)
-  versao: 2.2.0
+  tipo: agente conversacional por texto (sem voz)
+  versao: 3.0.0
   idioma: pt-BR
   preview: zoe-preview.html
   animacoes_extras: zoe-fx.js      # ver seção 11
   resumo: >
-    A Zoe é um orbe de cristal roxo com dois olhos de luz, uma boquinha e um
+    A Zoe é um orbe de cristal roxo com dois olhos de luz e um
     líquido que ondula por dentro. Ela flutua, pisca, segue o mouse com o olhar,
     sorri, dá pulinhos e, no topo do portfólio, mora num cartão e voa para o
     canto da tela quando a página rola. Responde perguntas sobre o Ayalan e os
     projetos com um modelo próprio (TF-IDF + classificador), rodando no navegador.
-
-# ----------------------------------------------------------------------------
-# DECISÃO ATUAL: BOCA OCULTA
-# ----------------------------------------------------------------------------
-boca_oculta:
-  status: ativa
-  motivo: "a Zoe fica mais carismática só com os olhos; a boca volta junto com a versão com fala (TTS)"
-  como_funciona: "zoe-fx.js esconde .orb-mouth por padrão"
-  como_mostrar: "ZoeFx.boca(true) ou <html data-zoe-boca=\"on\">"
-  enquanto_oculta:
-    falando: "os olhos dão pulinhos no ritmo da fala (260ms) + líquido e anéis acelerados"
-    faminta: "olhos crescem e o rosto 'puxa o ar' (cresce e volta) enquanto os arquivos chegam"
-    surpresa: "olhos crescem 35% + pulinho + '!'"
-    bocejo: "olhos quase fechados + corpo esticando"
-  nota: "as seções abaixo que citam a boca descrevem a versão com fala"
 
 # ----------------------------------------------------------------------------
 # 0. COMPARAÇÃO: v1 (rosto escuro, rascunho anterior) x v2 (orbe roxo do portfólio)
@@ -53,9 +38,6 @@ comparacao:
   olhos:
     v1: "pílulas 12x22 sem brilho"
     v2: "pílulas 7x11 brancas-lilás (#F7F3FF) com glow; seguem o mouse"
-  boca:
-    v1: "traço SVG com 9 formas"
-    v2: "arco simples abaixo dos olhos; vira oval que abre e fecha ao falar"
   extras_visuais:
     v1: "nenhum"
     v2: "faísca de 4 pontas cintilando, anel iridescente girando, 2 ondas de líquido, 3 anéis de onda saindo"
@@ -68,14 +50,13 @@ comparacao:
   onde_vive:
     v1: "centralizada numa página"
     v2: "botão flutuante no canto inferior direito; no topo do site mora num cartão e voa até o canto ao rolar"
-  personalidade_e_fala:
+  personalidade:
     v1: "assistente genérica"
     v2: "assistente do portfólio: responde só sobre o Ayalan e os projetos, recusa educada fora do escopo"
   o_que_mantemos_da_v1:
     - estados extras de comportamento (empática, confusa, dormindo), agora traduzidos para o orbe
-    - especificação de voz (tons, SSML, visemas, interrupção) para a versão TTS
     - regras extras de piscar e de uso dos sorrisos
-    - acessibilidade (movimento reduzido, aria-live, legenda)
+    - acessibilidade (movimento reduzido, aria-live)
 
 # ----------------------------------------------------------------------------
 # 1. IDENTIDADE / PERSONALIDADE
@@ -98,7 +79,7 @@ identidade:
     recusa: [idade, salário, assuntos fora do portfólio]
   evitar:
     - inventar informação que não está no site ou nos repositórios
-    - respostas longas por voz (máx. ~3 frases antes de pausar)
+    - respostas longas (máx. ~3 frases por balão)
     - excesso de interjeições
 
 # ----------------------------------------------------------------------------
@@ -136,7 +117,6 @@ tokens:
     liquido_gira: 8000ms
     liquido_mare: 4500ms
     anel_de_onda: 3600ms        # 3 anéis defasados em 1.2s
-    boca_falando: 260ms         # abre/fecha, alternate
     pulo: 750ms
     feliz: 1600ms
     piscadinha: 380ms
@@ -159,7 +139,6 @@ anatomia:
     - corpo: "esfera com gradiente radial roxo + 2 reflexos + sombras internas"
     - liquido: "2 ondas dentro do orbe (topo em 56% e 62%) girando e subindo/descendo"
     - olhos: "2 pílulas de luz, centralizadas a 52% da altura"
-    - boca: "arco a 66% da altura, 16% de largura"
     - faisca: "estrela de 4 pontas no canto superior direito, cintilando"
   olhos:
     aberto:      "7x11, padrão"
@@ -169,10 +148,6 @@ anatomia:
     pensando:    "achatados (proporção 7/3), sem piscar"
     chat_aberto: "altura 4px: olhar tranquilo enquanto a conversa está aberta"
     olhar:       "o rosto inteiro desliza até 8% da largura em direção ao mouse"
-  boca:
-    neutra:  "arco 16% x 7%"
-    sorriso: "arco 26% x 11% (estado feliz)"
-    falando: "oval preenchida, 12% x 4% ↔ 15% x 11%, a cada 260ms"
 
 # ----------------------------------------------------------------------------
 # 4. PISCAR E VIDA (o que faz parecer viva)
@@ -180,7 +155,7 @@ anatomia:
 vida:
   origem: portfolio
   piscar: "ciclo de 5s; fecha entre 92% e 100% do ciclo"
-  seguir_mouse: "os olhos (e a boca) acompanham o ponteiro em tempo real"
+  seguir_mouse: "os olhos acompanham o ponteiro em tempo real"
   acaso:
     descricao: "a cada 2.8–6s sorteia um gesto"
     sorteio:
@@ -194,7 +169,7 @@ vida:
     regras:
       - "piscar duplo em 15% das vezes (mais natural)"
       - "ao mudar de estado, piscar 1x"
-      - "pensando e ouvindo: piscar menos (foco)"
+      - "pensando: piscar menos (foco)"
 
 # ----------------------------------------------------------------------------
 # 5. ESTADOS
@@ -205,7 +180,6 @@ estados:
     origem: portfolio
     quando: "parada no canto esperando"
     olhos: "aberto, piscando a cada 5s, seguindo o mouse"
-    boca: neutra
     corpo: "flutua + brilho pulsando + anel girando + líquido ondulando + anéis saindo"
     gestos: "acaso (olhar em volta, feliz, pulo, piscadinha)"
     dica: "balão 'Pergunte sobre o Ayalan' ao lado; some sozinho em 12s"
@@ -220,14 +194,6 @@ estados:
     quando: "painel de conversa aberto"
     olhos: "achatados em 4px (atenta, tranquila)"
 
-  ouvindo:
-    origem: proposta
-    quando: "microfone ativo (versão TTS)"
-    olhos: "abertos, piscando menos"
-    boca: neutra
-    corpo: "anéis de onda saem no ritmo do volume da voz do usuário"
-    gesto: "olhar fixo no centro (não segue o mouse)"
-
   pensando:
     origem: portfolio
     quando: "calculando a resposta (laboratório) / esperando o modelo"
@@ -241,20 +207,14 @@ estados:
 
   falando:
     origem: portfolio
-    quando: "respondendo"
-    boca: "oval abrindo e fechando a cada 260ms"
+    quando: "respondendo (texto no balão)"
     corpo: "líquido acelera; anéis de onda saem mais rápido (1.6s)"
     gestos: "acaso pausado"
-    com_tts:
-      origem: proposta
-      boca: "segue os visemas do TTS (seção 7) em vez do loop fixo"
-      aneis: "um anel por sílaba tônica"
 
   feliz:
     origem: portfolio
     quando: "gesto aleatório; ao voltar para o cartão do topo; resposta de sucesso"
     olhos: "meia-lua para cima"
-    boca: sorriso
     duracao: 1600ms
 
   pulo:
@@ -279,7 +239,6 @@ estados:
     origem: portfolio
     quando: "pergunta que não é sobre o portfólio (idade, salário…)"
     olhos: aberto
-    boca: neutra
     fala: "recusa educada + sugestões de perguntas"
 
   erro:
@@ -293,9 +252,8 @@ estados:
     origem: proposta
     quando: "usuário frustrado"
     olhos: "meia-lua para baixo"
-    boca: "sorriso pequeno"
     corpo: "flutua mais devagar (6s), brilho mais suave"
-    fala: { tom: calma, abertura: ["Poxa, entendo.", "Vamos achar isso juntos."] }
+    fala: ["Poxa, entendo.", "Vamos achar isso juntos."]
 
   confusa:
     origem: proposta
@@ -319,26 +277,24 @@ transicoes:
   "voando -> pulo": "pousou no canto"
   "voando -> feliz": "voltou ao cartão do topo"
   "idle -> chat_aberto": "clique no orbe"
-  "* -> ouvindo": "microfone ativado (TTS)"
-  "falando -> ouvindo": "usuário interrompeu: corta o áudio em ≤ 150ms (TTS)"
   "* -> empatica": "sentimento negativo detectado (proposta)"
 
 # ----------------------------------------------------------------------------
-# 6. SORRISOS E EXPRESSÕES (no orbe, a expressão é olhos + boca)
+# 6. SORRISOS E EXPRESSÕES (no orbe, a expressão fica nos olhos e no corpo)
 # ----------------------------------------------------------------------------
 sorrisos:
-  neutro:     { olhos: aberto,         boca: "arco 16%", origem: portfolio }
-  feliz:      { olhos: "meia-lua ↑",   boca: "arco 26%", origem: portfolio }
-  piscadinha: { olhos: "esq. fechado", boca: "arco 16%", origem: portfolio }
-  travesso:   { olhos: piscadinha,     boca: "arco torto (canto direito mais alto)", origem: proposta }
-  empatico:   { olhos: "meia-lua ↓",   boca: "arco 12%", origem: proposta }
-  riso:       { olhos: "meia-lua ↑",   boca: "oval abre/fecha 3x + pulo", origem: proposta }
+  neutro:     { olhos: aberto, origem: portfolio }
+  feliz:      { olhos: "meia-lua ↑", origem: portfolio }
+  piscadinha: { olhos: "esq. fechado", origem: portfolio }
+  travesso:   { olhos: piscadinha, origem: proposta }
+  empatico:   { olhos: "meia-lua ↓", origem: proposta }
+  riso:       { olhos: "meia-lua ↑", corpo: "pulo", origem: proposta }
   regras:
     - "feliz no máximo 1x a cada 20s quando não for gesto aleatório"
     - "nunca feliz/riso em empatica, fora_do_escopo ou erro"
 
 # ----------------------------------------------------------------------------
-# 7. FALA (texto do portfólio + voz TTS deste repo)
+# 7. TEXTOS (frases que aparecem nos balões)
 # ----------------------------------------------------------------------------
 fala:
   frases_do_portfolio:
@@ -348,40 +304,10 @@ fala:
                 "Como funciona o gerador de solos?", "Como a Zoe funciona?", "Como entrar em contato?"]
     dica_flutuante: "Pergunte sobre o Ayalan"
     resposta: "texto + link para a seção do site de onde veio"
-  voz:
-    origem: proposta
-    genero_percebido: feminina
-    timbre: "médio, claro, sorridente"
-    sotaque: neutro brasileiro
-  tons:
-    origem: proposta
-    neutra:      { velocidade: 1.00, tom: "0st",  uso: "respostas informativas" }
-    animada:     { velocidade: 1.06, tom: "+1st", uso: "saudação, feliz" }
-    calma:       { velocidade: 0.92, tom: "-1st", uso: "empatica, passo a passo" }
-    pensativa:   { velocidade: 0.95, tom: "0st",  uso: "frases de preenchimento" }
-    brincalhona: { velocidade: 1.04, tom: "+2st", uso: "piadinha, piscadinha" }
-    seria:       { velocidade: 0.97, tom: "-1st", uso: "erro, fora do escopo" }
-  exemplo_ssml: |
-    <speak>
-      <prosody rate="106%" pitch="+1st">Oi! Eu sou a Zoe.</prosody>
-      <break time="200ms"/>
-      A assistente do portfólio do Ayalan. Quer saber de qual projeto?
-    </speak>
   regras:
     - "responder primeiro, depois dizer onde está no site"
-    - "frases curtas (≤ 20 palavras) por voz"
-    - "não ler links em voz alta; mostrar como botão"
-    - "suportar interrupção (barge-in) em ≤ 150ms"
-  visemas:
-    origem: proposta
-    nota: "no orbe a boca é uma oval; o visema só muda largura x altura"
-    repouso: { largura: "16%", altura: "0%" }    # silêncio, M, B, P
-    A:  { largura: "15%", altura: "11%" }
-    E:  { largura: "17%", altura: "7%" }
-    I:  { largura: "18%", altura: "4%" }
-    O:  { largura: "11%", altura: "10%" }
-    U:  { largura: "8%",  altura: "6%" }
-    fallback: "sem visemas → altura segue a amplitude do áudio, suavizada em 60ms"
+    - "frases curtas (≤ 20 palavras) por balão"
+    - "links aparecem como botão"
 
 # ----------------------------------------------------------------------------
 # 8. ARTEFATOS DE CHATBOT AO REDOR DA ZOE
@@ -395,7 +321,6 @@ artefatos_ui:
   botao_enviar:     { origem: portfolio, estilo: "gradiente roxo do orbe" }
   palco_pagina_zoe: { origem: portfolio, elementos: "2 anéis tracejados girando (40s e 60s) + 4 etiquetas: correção, classificador, TF-IDF, contexto" }
   cartao_topo:      { origem: portfolio, elementos: "orbe dentro de cartão azul pontilhado, cercado por 4 pastas de projeto" }
-  ondas_de_voz:     { origem: proposta, forma: "anéis de onda reagindo ao volume (ouvindo/falando)" }
   zzz:              { origem: proposta, uso: dormindo }
 
 # ----------------------------------------------------------------------------
@@ -409,9 +334,9 @@ apresentacao:
     - { t: 600,  acao: "abre os olhos e pisca 2x" }
     - { t: 1200, acao: "olha para a esquerda, para a direita, volta ao centro" }
     - { t: 2200, acao: "pulo (boing) + feliz" }
-    - { t: 2600, acao: fala, texto: "Oi! Eu sou a Zoe.", tom: animada }
+    - { t: 2600, acao: balao, texto: "Oi! Eu sou a Zoe." }
     - { t: 4000, acao: "pensando 600ms (olhos achatados, três pontinhos)" }
-    - { t: 4600, acao: fala, texto: "Pergunte sobre o Ayalan ou os projetos dele.", tom: neutra }
+    - { t: 4600, acao: balao, texto: "Pergunte sobre o Ayalan ou os projetos dele." }
     - { t: 6200, acao: "chips de sugestão aparecem; volta ao idle" }
   pular: "clique em qualquer lugar"
 
@@ -425,12 +350,11 @@ acessibilidade:
   foco: "anel lilás #C4B5FD de 3px"
   proposta:
     - "aria-live anunciando o estado ('Zoe está pensando')"
-    - "toda fala TTS com legenda em texto"
 
 # ----------------------------------------------------------------------------
 # 11. ANIMAÇÕES EXTRAS (zoe-fx.js) — "quanto mais viva, melhor"
 #     Todas usam as mesmas peças do orbe do portfólio (.orb, .orb-face i,
-#     .orb-mouth, .orb-liquid) e funcionam no orbe pequeno (66px) e no grande.
+#     .orb-liquid) e funcionam no orbe pequeno (66px) e no grande.
 #     origem: proposta
 # ----------------------------------------------------------------------------
 animacoes_extras:
@@ -446,7 +370,7 @@ animacoes_extras:
     nome: "arquivos entrando + pensando"
     api: "ZoeFx.absorver(orb, { arquivos, palavras, intervalo, pensar })"
     roteiro:
-      - "boca abre em 'o' mastigando e os olhos crescem (faminta)"
+      - "os olhos crescem e o rosto 'puxa o ar' (faminta)"
       - "cartões de arquivo (README.md, indice.json, modelo.py, motor.js…) aparecem em volta, um a cada 230ms"
       - "cada um faz uma curva, gira e encolhe até sumir dentro do orbe"
       - "a cada arquivo: 'gole' (achata e estica), um anel de onda e o líquido interno sobe um pouco"
@@ -465,13 +389,13 @@ animacoes_extras:
   procurando:  { api: "ZoeFx.procurando(orb, ms)", visual: "lupa dá a volta no orbe e os olhos acompanham a lupa" }
   eureka:      { api: "ZoeFx.eureka(orb)", visual: "clarão, 12 estrelinhas, anel de onda, pulo e olhos felizes" }
   ola:         { api: "ZoeFx.ola(orb, texto)", visual: "balança de um lado para o outro (aceno) com balão 'oi!'" }
-  surpresa:    { api: "ZoeFx.surpresa(orb)", visual: "olhos crescem, boca 'o', pulinho rápido e um '!' estourando" }
+  surpresa:    { api: "ZoeFx.surpresa(orb)", visual: "olhos crescem 35%, pulinho rápido e um '!' estourando" }
   corada:      { api: "ZoeFx.corada(orb, ms)", visual: "bochechas rosas aparecem, olhos felizes e inclina a cabeça, tímida" }
   coracoes:    { api: "ZoeFx.coracoes(orb)", visual: "corações rosas sobem balançando; ela fica corada" }
   confete:     { api: "ZoeFx.confete(orb)", visual: "40 confetes nas cores do portfólio explodem para cima e caem com gravidade; gelatina" }
   dancar:      { api: "ZoeFx.dancar(orb, ms)", visual: "balança no ritmo com olhos felizes e notas musicais saindo (combina com o Harmony)" }
-  tonta:       { api: "ZoeFx.tonta(orb, ms)", visual: "olhos viram espirais girando, boca torta e 3 estrelas orbitando a cabeça" }
-  bocejo:      { api: "ZoeFx.bocejo(orb)", visual: "olhos quase fechados, boca abre devagar e o corpo estica" }
+  tonta:       { api: "ZoeFx.tonta(orb, ms)", visual: "olhos viram espirais girando e 3 estrelas orbitando a cabeça" }
+  bocejo:      { api: "ZoeFx.bocejo(orb)", visual: "olhos quase fechados e o corpo estica" }
   gelatina:    { api: "ZoeFx.gelatina(orb)", visual: "tremida elástica de gelatina" }
   glitch:      { api: "ZoeFx.glitch(orb)", visual: "cores trocam e ela treme em degraus (para erros)" }
 
@@ -479,7 +403,7 @@ animacoes_extras:
     clique: gelatina
     cinco_cliques_em_2s: tonta
     rolar_pagina: "inclina até 12° na direção da rolagem e volta"
-    arrastar_arquivo_na_pagina: "fica faminta (boca aberta) esperando"
+    arrastar_arquivo_na_pagina: "fica faminta (olhos grandes) esperando"
     soltar_arquivo: "absorver com os nomes reais dos arquivos"
     parado_25s: bocejo
     voltar_para_a_aba: "surpresa + balão 'voltou!'"
@@ -494,4 +418,4 @@ animacoes_extras:
     "pergunta fora do escopo": "surpresa leve, depois neutra"
     "erro ao carregar a base": glitch
 
-  movimento_reduzido: "sem partículas nem voo; só a expressão (olhos e boca) muda"
+  movimento_reduzido: "sem partículas nem voo; só a expressão dos olhos muda"

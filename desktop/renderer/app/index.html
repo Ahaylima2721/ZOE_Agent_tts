@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src ws://127.0.0.1:*; img-src 'self' data:">
+<title>Zoe</title>
+<link rel="stylesheet" href="../orb.css">
+<link rel="stylesheet" href="../expressions.css">
+<link rel="stylesheet" href="../ui.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body class="app">
+<div class="shell">
+  <!-- ================= barra lateral ================= -->
+  <aside class="side">
+    <div class="brand">
+      <span class="mini-orb" aria-hidden="true"><i></i><i></i></span>
+      <b>Zoe</b>
+    </div>
+    <nav class="nav" aria-label="Seções">
+      <button data-page="inicio" aria-current="page"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Início</button>
+      <button data-page="assistente"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H8l-4 4z"/><path d="M8 9.5h8M8 12.5h5"/></svg>Assistente</button>
+      <button data-page="tarefas"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8 12 3 3 5-6"/></svg>Tarefas</button>
+      <button data-page="foco"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 3h6"/></svg>Foco</button>
+      <button data-page="relatorios"><svg viewBox="0 0 24 24"><path d="M4 20h16M7 17V9M12 17V5M17 17v-6"/></svg>Relatórios</button>
+      <button data-page="memoria"><svg viewBox="0 0 24 24"><path d="M12 4a6 6 0 0 0-6 6c0 2.2 1.2 3.6 2.5 4.7.8.7 1.5 1.6 1.5 2.8V19h4v-1.5c0-1.2.7-2.1 1.5-2.8C16.8 13.6 18 12.2 18 10a6 6 0 0 0-6-6zM10 21h4"/></svg>Memória</button>
+      <button data-page="computador"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>Computador</button>
+      <button data-page="configuracoes"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg>Configurações</button>
+    </nav>
+    <div class="online" id="online">
+      <i class="dot" id="onlineDot"></i>
+      <div><b id="onlineTxt">Conectando…</b><small id="onlineSub">Sempre por perto!</small></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- ================= Início ================= -->
+    <section class="page home" data-page="inicio">
+      <div class="card hero">
+        <div class="hero-stage">
+          <span class="hero-ring r1"></span><span class="hero-ring r2"></span>
+          <div class="orb xl" id="heroOrb" role="img" aria-label="Zoe">
+            <span class="orb-rings"><i></i><i></i><i></i></span>
+            <span class="orb-liquid"><i></i><i></i></span>
+            <span class="orb-face" id="heroFace"><i></i><i></i></span>
+            <span class="orb-sparkle"></span>
+          </div>
+          <div class="speech" id="speech" aria-live="polite"><b id="hello">Olá!</b><span id="summary"></span></div>
+          <span class="pill" id="statusPill"><i></i><span id="statusTxt">…</span></span>
+        </div>
+      </div>
+
+      <div class="card today-card">
+        <header class="card-head"><h2><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></svg>Hoje</h2>
+          <button class="link" data-goto="tarefas">Ver tudo →</button></header>
+        <ul class="checklist" id="todayList"></ul>
+        <form class="quick-add" id="quickAdd"><input id="quickAddInput" maxlength="160" placeholder="+ Nova tarefa para hoje" aria-label="Nova tarefa para hoje"></form>
+      </div>
+
+      <div class="card focus-card">
+        <header class="card-head"><h2><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>Foco</h2></header>
+        <div class="focus-body">
+          <div><small class="muted" id="focusLabel">Pronta para começar</small><div class="big-time" id="focusTime">25:00</div>
+            <div class="focus-actions" id="focusActions"></div></div>
+          <svg class="ring" viewBox="0 0 100 100" aria-hidden="true"><circle class="ring-bg" cx="50" cy="50" r="42"/><circle class="ring-fg" id="focusRing" cx="50" cy="50" r="42"/></svg>
+        </div>
+      </div>
+
+      <div class="card prod">
+        <header class="card-head"><h2>Sua produtividade</h2><span class="delta" id="prodDelta" hidden></span></header>
+        <small class="muted">minutos de foco por dia, últimos 7 dias</small>
+        <div class="bars" id="prodBars"></div>
+      </div>
+
+      <div class="card cats">
+        <header class="card-head"><h2>Tempo por categoria</h2></header>
+        <div class="cats-body" id="catsBody"></div>
+      </div>
+    </section>
+
+    <!-- ================= Assistente ================= -->
+    <section class="page chat-page" data-page="assistente" hidden>
+      <div class="card chat-card">
+        <header class="card-head"><h2>Assistente</h2><span class="muted" id="chatHint">Comandos, memória e IA local</span></header>
+        <div class="log" id="log"></div>
+        <div class="quick" id="quick"></div>
+        <form class="composer" id="composer">
+          <input id="input" autocomplete="off" maxlength="2000" placeholder="Escreva para a Zoe… (ajuda)">
+          <button type="submit" aria-label="Enviar">➤</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ================= Tarefas ================= -->
+    <section class="page" data-page="tarefas" hidden>
+      <div class="card">
+        <header class="card-head"><h2>Tarefas</h2>
+          <div class="seg" role="radiogroup" aria-label="Filtro" id="taskFilter">
+            <button type="button" role="radio" aria-checked="true" data-scope="hoje">Hoje</button>
+            <button type="button" role="radio" aria-checked="false" data-scope="todas">Todas</button>
+          </div></header>
+        <form class="task-form" id="taskForm">
+          <input name="titulo" maxlength="160" placeholder="O que você precisa fazer?" required aria-label="Título">
+          <select name="categoria" aria-label="Categoria"><option value="geral">Geral</option><option value="estudo">Estudo</option><option value="trabalho">Trabalho</option><option value="lazer">Lazer</option></select>
+          <input name="para" type="date" aria-label="Para quando">
+          <button class="btn primary" type="submit">Adicionar</button>
+        </form>
+        <p class="form-err" id="taskErr"></p>
+        <ul class="checklist big" id="taskList"></ul>
+      </div>
+    </section>
+
+    <!-- ================= Foco ================= -->
+    <section class="page" data-page="foco" hidden>
+      <div class="card focus-page">
+        <svg class="ring huge" viewBox="0 0 100 100" aria-hidden="true"><circle class="ring-bg" cx="50" cy="50" r="42"/><circle class="ring-fg" id="focusRingBig" cx="50" cy="50" r="42"/></svg>
+        <div class="focus-center"><small class="muted" id="focusLabelBig">Sessão de foco</small><div class="huge-time" id="focusTimeBig">25:00</div></div>
+        <div class="focus-setup" id="focusSetup">
+          <div class="chips" role="radiogroup" aria-label="Duração" id="focusMins">
+            <button type="button" role="radio" data-min="15" aria-checked="false">15 min</button>
+            <button type="button" role="radio" data-min="25" aria-checked="true">25 min</button>
+            <button type="button" role="radio" data-min="50" aria-checked="false">50 min</button>
+          </div>
+          <div class="chips" role="radiogroup" aria-label="Categoria" id="focusCat">
+            <button type="button" role="radio" data-cat="estudo" aria-checked="true">Estudo</button>
+            <button type="button" role="radio" data-cat="trabalho" aria-checked="false">Trabalho</button>
+            <button type="button" role="radio" data-cat="lazer" aria-checked="false">Lazer</button>
+            <button type="button" role="radio" data-cat="geral" aria-checked="false">Geral</button>
+          </div>
+        </div>
+        <div class="focus-actions center" id="focusActionsBig"></div>
+        <p class="muted" id="focusToday"></p>
+      </div>
+    </section>
+
+    <!-- ================= Relatórios ================= -->
+    <section class="page reports" data-page="relatorios" hidden>
+      <div class="card"><header class="card-head"><h2>Foco na semana</h2><span class="delta" id="repDelta" hidden></span></header>
+        <small class="muted">minutos realmente focados (sem pausas)</small><div class="bars" id="repFocus"></div></div>
+      <div class="card"><header class="card-head"><h2>Tarefas concluídas</h2></header>
+        <small class="muted">por dia, últimos 7 dias</small><div class="bars" id="repTasks"></div></div>
+      <div class="card"><header class="card-head"><h2>Tempo por categoria</h2></header><div class="cats-body" id="repCats"></div></div>
+      <div class="card"><header class="card-head"><h2>Inteligência</h2></header>
+        <div class="stat"><b id="repNoAi">—</b><span>das mensagens respondidas sem IA (7 dias)</span></div>
+        <p class="muted" id="repLayers"></p></div>
+    </section>
+
+    <!-- ================= Memória (reaproveita memoria.js e aprendizado.js) ================= -->
+    <section class="page" data-page="memoria" hidden>
+      <div class="card mem"><header class="card-head"><h2>Memória</h2><span class="muted">Só o que você me contou</span></header>
+        <div id="learnBox" class="learn"></div>
+        <p class="rec-sum" id="memSum" aria-live="polite"></p>
+        <div id="memList"></div>
+      </div>
+    </section>
+
+    <!-- ================= Computador (reaproveita recursos.js) ================= -->
+    <section class="page" data-page="computador" hidden>
+      <div class="card rec" id="tab-recursos">
+        <header class="card-head"><h2>Computador</h2></header>
+        <div class="rec-head">
+          <p class="rec-sum" id="recSum" aria-live="polite">Lendo o computador…</p>
+          <button type="button" class="btn" id="recDiag">Diagnosticar</button>
+        </div>
+        <div class="findings" id="recFindings" hidden></div>
+        <div class="rec-body two" id="recBody"></div>
+        <section class="procs" aria-labelledby="procTitle">
+          <div class="procs-head">
+            <h3 id="procTitle">Processos principais</h3>
+            <div class="seg" role="radiogroup" aria-label="Ordenar processos">
+              <button type="button" role="radio" aria-checked="true" data-sort="by_memory">Memória</button>
+              <button type="button" role="radio" aria-checked="false" data-sort="by_cpu">CPU</button>
+            </div>
+          </div>
+          <ol class="proc-list" id="procList"></ol>
+        </section>
+      </div>
+    </section>
+
+    <!-- ================= Configurações ================= -->
+    <section class="page" data-page="configuracoes" hidden>
+      <form class="card settings cols" id="settingsForm">
+        <header class="card-head wide"><h2>Configurações</h2><p class="saved" id="saved" aria-live="polite"></p></header>
+        <fieldset>
+          <legend>Minha Zoe</legend>
+          <label>Como devo te chamar <input name="nome_usuario" maxlength="40"></label>
+          <label>Jeito de falar
+            <select name="tom"><option value="equilibrado">Equilibrado</option><option value="direto">Direto (frases curtas)</option><option value="descontraido">Descontraído</option></select></label>
+          <label class="check"><input type="checkbox" name="checkins_memoria"> Perguntar sobre o que você me contou</label>
+          <label>Não puxar assunto sobre (separe por vírgula) <input name="assuntos_evitar" data-list maxlength="400"></label>
+        </fieldset>
+        <fieldset>
+          <legend>Conversas espontâneas</legend>
+          <label>Autonomia
+            <select name="autonomia"><option value="observar">Apenas observar</option><option value="conversar">Observar e conversar</option><option value="recomendar">Conversar e recomendar</option><option value="intervir_com_autorizacao">Intervir com autorização</option><option value="intervir_automatico">Intervir automaticamente (regras)</option></select></label>
+          <label>Frequência
+            <select name="frequencia"><option value="silenciosa">Silenciosa</option><option value="baixa">Baixa (até 2 por hora)</option><option value="normal">Normal (até 4 por hora)</option><option value="alta">Alta (até 10 por hora)</option></select></label>
+          <div class="row"><label>Silêncio das <input type="time" name="silencio_inicio"></label><label>até <input type="time" name="silencio_fim"></label></div>
+          <label class="check"><input type="checkbox" name="notificacoes_nativas"> Notificação do sistema quando a orbe estiver fechada</label>
+        </fieldset>
+        <fieldset>
+          <legend>Inteligência artificial</legend>
+          <label class="check"><input type="checkbox" id="iaAtiva"> Conversa livre com um modelo local (Ollama)</label>
+          <label>Modelo <select id="iaModelo"></select></label>
+          <p class="hint ia-status" id="iaStatus" aria-live="polite">Verificando…</p>
+          <div class="ia-hint" id="iaHint" hidden><p class="hint">Instale o Ollama (uma vez) num terminal:</p><code>curl -fsSL https://ollama.com/install.sh | sh</code></div>
+          <button type="button" class="btn primary" id="iaPull" hidden>Baixar modelo</button>
+          <div class="ia-pull" id="iaPullBox" hidden>
+            <div class="meter" id="iaPullMeter" role="meter" aria-label="Download do modelo" aria-valuemin="0" aria-valuemax="100"><i id="iaPullFill"></i></div>
+            <p class="hint" id="iaPullText"></p>
+          </div>
+          <div class="sem" id="semBox">
+            <h4>Busca por significado</h4>
+            <label class="check"><input type="checkbox" name="emb_ativo"> Reconhecer perguntas com o mesmo sentido (embeddings)</label>
+            <label>Modelo de embeddings <select name="emb_modelo" id="semModelo"></select></label>
+            <p class="hint ia-status" id="semStatus" aria-live="polite">Verificando…</p>
+            <div class="row"><button type="button" class="btn primary" id="semPull" hidden>Baixar</button>
+              <button type="button" class="btn" id="semCal" hidden>Calibrar agora</button></div>
+            <div class="ia-pull" id="semPullBox" hidden>
+              <div class="meter" role="meter" aria-label="Download do modelo de embeddings" aria-valuemin="0" aria-valuemax="100"><i id="semPullFill"></i></div>
+              <p class="hint" id="semPullText"></p>
+            </div>
+          </div>
+          <label class="check"><input type="checkbox" name="pesquisa_web"> Depois da conversa, conferir na Wikipédia o que só a IA respondeu (envia só o assunto)</label>
+        </fieldset>
+        <fieldset>
+          <legend>Produtividade e computador</legend>
+          <div class="row"><label>Foco (min) <input type="number" name="foco_minutos_padrao" min="1" max="240"></label>
+            <label>Ausente após (min) <input type="number" name="ocioso_minutos" min="1" max="240"></label></div>
+          <label class="check"><input type="checkbox" name="pc_alertas"> Avisar quando o computador passar do limite</label>
+          <div class="row"><label>Memória acima de (%) <input type="number" name="pc_limites.ram_pct" min="50" max="99"></label>
+            <label>CPU acima de (%) <input type="number" name="pc_limites.cpu_pct" min="50" max="100"></label></div>
+          <div class="row"><label>Temperatura acima de (°C) <input type="number" name="pc_limites.temp_c" min="60" max="105"></label>
+            <label>Bateria abaixo de (%) <input type="number" name="pc_limites.bateria_pct" min="5" max="50"></label></div>
+        </fieldset>
+        <fieldset>
+          <legend>Privacidade</legend>
+          <p class="hint" id="monitorHint"></p>
+          <div class="row"><button type="button" class="btn" id="toggleMonitor">Pausar monitoramento</button>
+            <button type="button" class="btn danger" id="emergency">Parar tudo</button></div>
+          <button type="button" class="btn ghost danger" id="wipe">Apagar meus dados…</button>
+        </fieldset>
+      </form>
+    </section>
+  </main>
+</div>
+<script src="../recursos.js"></script>
+<script src="../memoria.js"></script>
+<script src="../ia.js"></script>
+<script src="../aprendizado.js"></script>
+<script src="../busca.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
