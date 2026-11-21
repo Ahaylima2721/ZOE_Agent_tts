@@ -1,6 +1,6 @@
 {
   "name": "zoe-desktop",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Zoe: companheira digital (orbe flutuante) para Linux",
   "main": "main.js",
@@ -83,5 +83,6 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/Ahaylima2721/ZOE_Agent_tts.git"
-  }
+  },
+  "productName": "Zoe"
 }

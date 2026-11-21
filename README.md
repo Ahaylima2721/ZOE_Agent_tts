@@ -21,7 +21,7 @@ Uma companheira digital para o Linux: uma orbe roxa que flutua na área de traba
 **Ubuntu/Debian (.deb, recomendado):** o `apt` instala as dependências Python sozinho e cria o atalho "Zoe" no menu.
 
 ```bash
-sudo apt install ./zoe-desktop_0.1.0_amd64.deb
+sudo apt install ./zoe-desktop_0.2.0_amd64.deb
 ```
 
 **AppImage:** precisa do `libfuse2` e das bibliotecas Python.
@@ -31,7 +31,7 @@ sudo apt install -y libfuse2t64 python3-aiohttp python3-psutil
 ```
 
 ```bash
-chmod +x Zoe-0.1.0.AppImage && ./Zoe-0.1.0.AppImage
+chmod +x Zoe-0.2.0.AppImage && ./Zoe-0.2.0.AppImage
 ```
 
 No Ubuntu 22.04 o pacote se chama `libfuse2` (sem `t64`).
@@ -44,7 +44,7 @@ No Ubuntu 22.04 o pacote se chama `libfuse2` (sem `t64`).
 zoe --diagnostico
 ```
 
-(No AppImage: `./Zoe-0.1.0.AppImage --diagnostico`.) Ele confere Python, bibliotecas, o Zoe Core, o Ollama, o sandbox e o FUSE, e imprime o comando para corrigir o que faltar. Tudo o que der errado também fica em `~/.config/Zoe/zoe.log`.
+(No AppImage: `./Zoe-0.2.0.AppImage --diagnostico`.) Ele confere Python, bibliotecas, o Zoe Core, o Ollama, o sandbox e o FUSE, e imprime o comando para corrigir o que faltar. Tudo o que der errado também fica em `~/.config/Zoe/zoe.log`.
 
 ## Rodar pelo código-fonte
 

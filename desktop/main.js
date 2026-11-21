@@ -381,7 +381,9 @@ ipcMain.on('drag:end', (_e, orbCenter) => {
 
 // ---------------- ciclo de vida ----------------
 if (process.argv.includes('--diagnostico')) {
-  // zoe --diagnostico: relatório no terminal (e no zoe.log), sem abrir janelas
+  // zoe --diagnostico: relatório no terminal (e no zoe.log), sem abrir janelas; nunca passa de 45 s
+  console.log(`Zoe ${app.getVersion()}: verificando… (leva até 30 segundos)`);
+  setTimeout(() => { console.log('Tempo esgotado no diagnóstico. Veja o registro: ' + LOG_FILE); app.exit(3); }, 45000).unref();
   require('./diagnostico').check({ coreDir: coreDirPath(), py: pythonCmd(), runtimeFile: runtimeFile(), packaged: app.isPackaged,
     logFile: LOG_FILE, version: app.getVersion() })
     .then((r) => { console.log(r.text); logLine('diagnóstico:\n' + r.text); app.exit(r.ok ? 0 : 1); })
