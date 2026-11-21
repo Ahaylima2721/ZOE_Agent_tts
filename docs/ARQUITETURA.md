@@ -123,3 +123,11 @@ cd desktop && xvfb-run -a npm test
 
 - **Executável Linux:** `cd desktop && npm run dist` gera `dist/Zoe-<versão>.AppImage` e `dist/zoe-desktop_<versão>_amd64.deb`. O Core Python vai dentro do pacote (`resources/core`); o `.deb` declara `python3`, `python3-aiohttp` e `python3-psutil` como dependências. `npm run pack` gera só a pasta `dist/linux-unpacked/` (para testar: `ZOE_E2E_EXE=dist/linux-unpacked/zoe xvfb-run -a node tests/e2e.js`).
 - **Telefone:** arquitetura em [`TELEFONE.md`](TELEFONE.md): o PC continua sendo o cérebro; o telefone conecta por um gateway separado, desligado por padrão, via Tailscale (recomendado) ou rede local com TLS, com pareamento por QR e escopos por aparelho.
+
+## 8. App desktop (janela principal)
+
+Segue o mockup do projeto: barra lateral (Início, Assistente, Tarefas, Foco, Relatórios, Memória, Computador, Configurações), orbe grande com balão de fala e status, cartões "Hoje" e "Foco", "Sua produtividade" (minutos de foco por dia, 7 dias, com variação contra a semana anterior) e "Tempo por categoria" (anel). Tudo vem do banco (`/api/dashboard`): sem dados, os cartões dizem isso em vez de mostrar números de exemplo. O "Energia: Alta" do mockup virou um status real (Disponível, Em foco, Não perturbe, Pausada).
+
+- Abre pelo menu de aplicativos; fechar só esconde (a orbe continua). No início automático (`--oculto`) só a orbe aparece.
+- Cores das categorias validadas para daltonismo e contraste em ordem de anel: Estudo `#9085e9` → Trabalho `#199e70` → Geral `#3987e5` → Lazer `#d95926`; legenda sempre com nome e porcentagem.
+- `zoe --diagnostico` e `~/.config/Zoe/zoe.log` para descobrir por que algo não abre. O executável `zoe` é um lançador que decide o sandbox do Electron antes de ele iniciar (sandbox completo no `.deb`; `--no-sandbox` no AppImage, onde o SUID não existe).

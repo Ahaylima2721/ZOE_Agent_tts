@@ -24,6 +24,23 @@ if (process.platform === 'linux') {
   app.commandLine.appendSwitch('enable-transparent-visuals');
 }
 if (process.env.ZOE_DISABLE_GPU === '1') app.disableHardwareAcceleration();
+// Sandbox no Linux: decidido pelo lançador "zoe" (build/afterPack.js) ANTES do Electron iniciar;
+// daqui de dentro já seria tarde (a checagem do sandbox acontece antes deste código).
+
+// ---------------- registro (zoe.log): tudo o que der errado fica anotado ----------------
+const LOG_FILE = path.join(app.getPath('userData'), 'zoe.log');
+function logLine(...args) {
+  const line = `[${new Date().toISOString()}] ${args.map((a) => (a instanceof Error ? a.stack : String(a))).join(' ')}\n`;
+  try {
+    fs.mkdirSync(path.dirname(LOG_FILE), { recursive: true });
+    if (fs.existsSync(LOG_FILE) && fs.statSync(LOG_FILE).size > 1024 * 1024) fs.renameSync(LOG_FILE, LOG_FILE + '.1');
+    fs.appendFileSync(LOG_FILE, line);
+  } catch { /* sem disco: segue sem registro */ }
+}
+process.on('uncaughtException', (e) => { logLine('erro não tratado:', e); console.error(e); });
+process.on('unhandledRejection', (e) => { logLine('promessa rejeitada:', e); });
+logLine(`iniciando Zoe ${app.getVersion()} (${app.isPackaged ? 'empacotada' : 'código-fonte'}) sessão=${process.env.XDG_SESSION_TYPE || '?'} args=${process.argv.slice(1).join(' ')}`);
+const START_HIDDEN = process.argv.includes('--oculto');      // início automático: só a orbe, sem a janela
 app.commandLine.appendSwitch('lang', process.env.ZOE_LANG || 'pt-BR');   // horários 24h, textos do sistema em pt-BR
 
 const ORB_BOX = 128;                       // área da orbe (orbe + brilho + flutuação)
@@ -69,6 +86,12 @@ async function healthy(info) {
   } catch { return false; }
 }
 
+// no executável o Core vai em resources/core; em desenvolvimento fica ao lado (../core)
+function coreDirPath() {
+  return process.env.ZOE_CORE_DIR || (app.isPackaged ? path.join(process.resourcesPath, 'core') : path.join(__dirname, '..', 'core'));
+}
+function pythonCmd() { return process.env.ZOE_PYTHON || 'python3'; }
+
 // uma conexão por vez: a janela e a inicialização pedem o Core ao mesmo tempo
 let connecting = null;
 function connectCore() {
@@ -99,13 +122,14 @@ async function doConnectCore() {
   if (process.env.ZOE_NO_SPAWN === '1') throw new Error('Zoe Core não está rodando');
   if (Date.now() < coreRetryAt) throw new Error(coreError || 'Zoe Core indisponível');
   // no executável o Core vai em resources/core; em desenvolvimento fica ao lado (../core)
-  const coreDir = process.env.ZOE_CORE_DIR || (app.isPackaged ? path.join(process.resourcesPath, 'core') : path.join(__dirname, '..', 'core'));
-  const py = process.env.ZOE_PYTHON || 'python3';
+  const coreDir = coreDirPath();
+  const py = pythonCmd();
   let stderr = '', exited = false, spawnErr = null;
   // ZOE_PARENT_PID: o Core se encerra sozinho se a Zoe Desktop morrer sem avisar
   coreProc = spawn(py, ['-m', 'zoe_core'], { cwd: coreDir, stdio: ['ignore', 'inherit', 'pipe'],
-    env: { ...process.env, ZOE_PARENT_PID: String(process.pid) } });
-  coreProc.stderr.on('data', (d) => { process.stderr.write(d); stderr = (stderr + d).slice(-4000); });
+    // PYTHONDONTWRITEBYTECODE: não gravar cache em /opt (somente leitura para o usuário; o .deb removeria incompleto)
+    env: { ...process.env, ZOE_PARENT_PID: String(process.pid), PYTHONDONTWRITEBYTECODE: '1' } });
+  coreProc.stderr.on('data', (d) => { process.stderr.write(d); stderr = (stderr + d).slice(-4000); logLine('[core]', String(d).trimEnd()); });
   coreProc.on('error', (e) => { spawnErr = e; exited = true; });
   coreProc.on('exit', (code) => { coreProc = null; exited = true; if (code) console.error(`[zoe] core saiu com código ${code}`); });
   for (let i = 0; i < 50 && !exited; i++) {
@@ -119,6 +143,7 @@ async function doConnectCore() {
   coreRetryAt = Date.now() + Math.min(60000, 5000 * 2 ** (coreFailures - 1));
   coreError = exited ? explainCoreFailure(stderr, spawnErr) : 'Meu serviço local não respondeu a tempo.';
   console.error('[zoe]', coreError);
+  logLine('core não iniciou:', coreError);
   throw new Error(coreError);
 }
 
@@ -183,6 +208,30 @@ function createWindow() {
   startCursorFollow();
 }
 
+// ---------------- janela principal (o app do mockup) ----------------
+let mainWin = null, quitting = false;
+function showMain(page) {
+  if (!mainWin) {
+    mainWin = new BrowserWindow({
+      width: 1240, height: 800, minWidth: 900, minHeight: 620, show: false, title: 'Zoe',
+      backgroundColor: '#120c22', autoHideMenuBar: true, icon: path.join(__dirname, 'assets', 'zoe.png'),
+      webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, nodeIntegration: false, sandbox: true },
+    });
+    mainWin.removeMenu();
+    mainWin.loadFile(path.join(__dirname, 'renderer', 'app', 'index.html'));
+    mainWin.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+    mainWin.webContents.on('will-navigate', (e) => e.preventDefault());
+    mainWin.webContents.on('render-process-gone', (_e, d) => logLine('janela principal caiu:', d.reason));
+    mainWin.once('ready-to-show', () => mainWin.show());
+    // fechar só esconde: a Zoe continua na orbe (sair pelo menu)
+    mainWin.on('close', (e) => { if (!quitting) { e.preventDefault(); mainWin.hide(); } });
+    mainWin.on('closed', () => { mainWin = null; });
+  } else {
+    mainWin.show(); mainWin.focus();
+  }
+  if (page) mainWin.webContents.send('open-page', page);
+}
+
 function setHidden(minutes) {
   if (!win) return;
   clearTimeout(hideTimer);
@@ -227,7 +276,9 @@ function startIdleWatch() {
 function menuTemplate() {
   const visible = win && win.isVisible();
   return [
-    { label: visible ? 'Ocultar a Zoe' : 'Mostrar a Zoe', click: () => setHidden(visible ? -1 : 0) },
+    { label: 'Abrir a Zoe', click: () => showMain() },
+    { type: 'separator' },
+    { label: visible ? 'Ocultar a orbe' : 'Mostrar a orbe', click: () => setHidden(visible ? -1 : 0) },
     { label: 'Ocultar por 30 minutos', enabled: !!visible, click: () => setHidden(30) },
     { type: 'separator' },
     { label: 'Iniciar foco (padrão)', click: () => api('POST', '/api/focus/start', {}).catch(() => {}) },
@@ -239,7 +290,7 @@ function menuTemplate() {
       : { label: 'Retomar monitoramento', click: () => api('POST', '/api/monitoring', { active: true }).catch(() => {}) },
     { label: '⏻ Parar tudo (emergência)', click: () => api('POST', '/api/emergency-stop', {}).catch(() => {}) },
     { type: 'separator' },
-    { label: 'Sair', click: () => app.quit() },
+    { label: 'Sair', click: () => { quitting = true; app.quit(); } },
   ];
 }
 
@@ -275,6 +326,10 @@ const API_ALLOW = [
   ['POST', /^\/api\/(chat|focus\/start|focus\/stop|monitoring|emergency-stop|personal-data\/delete)$/],
   ['POST', /^\/api\/notifications\/\d+\/ack$/],
   ['GET', /^\/api\/memory$/],
+  ['GET', /^\/api\/(dashboard|tasks(\?escopo=(hoje|todas))?)$/],
+  ['POST', /^\/api\/(tasks|focus\/pause|focus\/resume)$/],
+  ['PATCH', /^\/api\/tasks\/\d+$/],
+  ['DELETE', /^\/api\/tasks\/\d+$/],
   ['GET', /^\/api\/ai$/],
   ['GET', /^\/api\/learning$/],
   ['POST', /^\/api\/learning\/(feedback|research)$/],
@@ -290,6 +345,7 @@ ipcMain.handle('core:api', async (_e, method, p, body) => {
   try { return { ok: true, data: await api(method, p, body) }; } catch (e) { return { ok: false, error: e.message }; }
 });
 
+ipcMain.on('ui:open-main', (_e, page) => showMain(typeof page === 'string' ? page : undefined));
 ipcMain.on('ui:mode', (_e, m) => { if (SIZES[m] && m !== mode) { mode = m; applyLayout(); } });
 ipcMain.on('ui:state', (_e, st) => {
   if (typeof st.monitoring === 'boolean' && st.monitoring !== monitoringActive) {
@@ -324,20 +380,28 @@ ipcMain.on('drag:end', (_e, orbCenter) => {
 });
 
 // ---------------- ciclo de vida ----------------
-if (!app.requestSingleInstanceLock()) {
+if (process.argv.includes('--diagnostico')) {
+  // zoe --diagnostico: relatório no terminal (e no zoe.log), sem abrir janelas
+  require('./diagnostico').check({ coreDir: coreDirPath(), py: pythonCmd(), runtimeFile: runtimeFile(), packaged: app.isPackaged,
+    logFile: LOG_FILE, version: app.getVersion() })
+    .then((r) => { console.log(r.text); logLine('diagnóstico:\n' + r.text); app.exit(r.ok ? 0 : 1); })
+    .catch((e) => { console.error(e); app.exit(2); });
+} else if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  app.on('second-instance', () => setHidden(0));
+  app.on('second-instance', () => { setHidden(0); showMain(); });
   app.whenReady().then(async () => {
     // pequeno atraso: em alguns compositores Linux a transparência falha se a janela nascer cedo demais
     await new Promise((r) => setTimeout(r, process.platform === 'linux' ? 300 : 0));
     createWindow();
     createTray();
+    if (!START_HIDDEN) showMain();
     connectCore().then(startIdleWatch).catch((e) => console.error('[zoe]', e.message));
     screen.on('display-metrics-changed', applyLayout);
   });
   app.on('window-all-closed', () => app.quit());
   app.on('before-quit', () => {
+    quitting = true;
     clearInterval(idleTimer); clearInterval(cursorTimer);
     if (coreProc) coreProc.kill('SIGTERM');   // só encerra o Core se foi a Zoe que o iniciou
   });

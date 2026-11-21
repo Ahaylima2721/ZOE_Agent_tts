@@ -9,7 +9,7 @@
     "sync-fx": "node -e \"require('fs').copyFileSync('../zoe-fx.js','renderer/zoe-fx.js')\"",
     "prestart": "npm run sync-fx",
     "start": "electron .",
-    "test": "npm run sync-fx && node tests/e2e.js && node tests/e2e_sem_aiohttp.js",
+    "test": "npm run sync-fx && node tests/e2e.js && node tests/e2e_app.js && node tests/e2e_sem_aiohttp.js",
     "pack": "npm run sync-fx && electron-builder --linux dir -c.electronDist=node_modules/electron/dist",
     "dist": "npm run sync-fx && electron-builder --linux AppImage deb"
   },
@@ -32,6 +32,7 @@
     "files": [
       "main.js",
       "preload.js",
+      "diagnostico.js",
       "renderer/**/*",
       "assets/*.png",
       "package.json"
@@ -74,8 +75,10 @@
         "python3 (>= 3.10)",
         "python3-aiohttp",
         "python3-psutil"
-      ]
-    }
+      ],
+      "afterInstall": "build/deb-after-install.sh"
+    },
+    "afterPack": "./build/afterPack.js"
   },
   "repository": {
     "type": "git",

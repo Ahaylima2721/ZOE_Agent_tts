@@ -23,7 +23,7 @@ Toda requisição precisa do token: `Authorization: Bearer <token>`, ou `?token=
 | GET | `/api/notifications?limit=50` | — | avisos (mais recente primeiro), com `status` |
 | POST | `/api/notifications/{id}/ack` | `{action}` | `dismiss` marca como lida; outra ação marca como respondida e é executada (ex.: `foco_novamente`) |
 | POST | `/api/events` | `{type, payload}` | só `USER_IDLE`, `USER_RETURNED` e `USER_REQUEST` (403 para os outros) |
-| POST | `/api/focus/start` | `{minutes?}` | sessão iniciada (1 a 240 min) |
+| POST | `/api/focus/start` | `{minutes?, categoria?}` | sessão iniciada (1 a 240 min; categoria estudo · trabalho · lazer · geral) |
 | POST | `/api/focus/stop` | `{}` | `{stopped}` |
 | POST | `/api/monitoring` | `{active: bool}` | estado; liga ou desliga monitoramento **e** intervenções |
 | POST | `/api/emergency-stop` | `{}` | estado; para tudo e avisa |
@@ -37,6 +37,12 @@ Toda requisição precisa do token: `Authorization: Bearer <token>`, ou `?token=
 | PATCH | `/api/learning/{id}` | `{status: validada\|rejeitada}` | confirma ou rejeita um item |
 | DELETE | `/api/learning/{id}` | — | esquece um item |
 | POST | `/api/learning/research` | `{}` | pesquisa agora (409 com a pesquisa desligada) |
+| GET | `/api/dashboard` | — | painel "Início": `{saudacao, resumo, status, hoje[], foco, produtividade{dias[7], foco_min_semana, variacao_pct}, categorias[], numeros, proximo}`, tudo calculado do banco |
+| GET | `/api/tasks?escopo=hoje\|todas` | — | tarefas `{id, titulo, categoria, para, concluida, concluida_em}`; "hoje" = pendentes até hoje + concluídas hoje |
+| POST | `/api/tasks` | `{titulo, categoria?, para?}` | 201 com a tarefa (sem `para`: é para hoje) |
+| PATCH | `/api/tasks/{id}` | `{titulo?, categoria?, para?, concluida?}` | tarefa atualizada |
+| DELETE | `/api/tasks/{id}` | — | `{ok}` |
+| POST | `/api/focus/pause` · `/api/focus/resume` | `{}` | pausa/retoma o foco (pausas não contam como tempo focado) |
 | GET | `/api/memory` | — | `{kinds[], items{tipo: [...]}}`: tudo o que a Zoe guardou + a descrição dos campos de cada tipo |
 | POST | `/api/memory/{tipo}` | campos do tipo | `{item, created}`: 201 se criou; 200 se já existia um item com o mesmo nome (atualiza em vez de duplicar) |
 | PATCH | `/api/memory/{tipo}/{id}` | campos parciais | `{item}`; 400 para campo/valor inválido, 404 se não existir |

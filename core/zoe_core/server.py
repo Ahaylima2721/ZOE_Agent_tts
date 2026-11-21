@@ -297,6 +297,68 @@ async def learning_research(request):
     return web.json_response({"learned": await core.research.run()})
 
 
+async def focus_pause(request):
+    core = request.app[CORE_KEY]
+    ok = await core.focus.pause()
+    await core.broadcast_state()
+    return web.json_response({"ok": ok, "focus": core.focus.status()})
+
+
+async def focus_resume(request):
+    core = request.app[CORE_KEY]
+    ok = await core.focus.resume()
+    await core.broadcast_state()
+    return web.json_response({"ok": ok, "focus": core.focus.status()})
+
+
+# ---------------- tarefas e painel ----------------
+def _tid(request) -> int:
+    try:
+        return int(request.match_info["id"])
+    except ValueError:
+        raise web.HTTPBadRequest(text='{"error":"id inválido"}', content_type="application/json")
+
+
+async def tasks_list(request):
+    scope = request.query.get("escopo", "todas")
+    return web.json_response(request.app[CORE_KEY].tasks.list("hoje" if scope == "hoje" else "todas"))
+
+
+async def tasks_create(request):
+    core = request.app[CORE_KEY]
+    try:
+        task = core.tasks.create(await _json(request))
+    except ValueError as e:
+        return _bad(str(e))
+    await core.changed("tasks")
+    return web.json_response(task, status=201)
+
+
+async def tasks_update(request):
+    core = request.app[CORE_KEY]
+    try:
+        task = core.tasks.update(_tid(request), await _json(request))
+    except LookupError as e:
+        return _bad(str(e), 404)
+    except ValueError as e:
+        return _bad(str(e))
+    await core.changed("tasks")
+    return web.json_response(task)
+
+
+async def tasks_delete(request):
+    core = request.app[CORE_KEY]
+    if not core.tasks.delete(_tid(request)):
+        return _bad("tarefa não encontrada", 404)
+    await core.changed("tasks")
+    return web.json_response({"ok": True})
+
+
+async def dashboard(request):
+    from .dashboard import build
+    return web.json_response(build(request.app[CORE_KEY]))
+
+
 async def post_event(request):
     core = request.app[CORE_KEY]
     data = await _json(request)
@@ -317,10 +379,10 @@ async def focus_start(request):
     core = request.app[CORE_KEY]
     data = await _json(request)
     mins = data.get("minutes", core.db.get_settings()["foco_minutos_padrao"])
-    if not isinstance(mins, (int, float)):
+    if not isinstance(mins, (int, float)) or isinstance(mins, bool):
         return _bad("minutes deve ser número")
     try:
-        await core.focus.start(mins)
+        await core.focus.start(mins, data.get("categoria", "geral"))
     except ValueError as e:
         return _bad(str(e))
     return web.json_response(core.focus.status())
@@ -441,6 +503,13 @@ def build_app(core: ZoeCore, token: str) -> web.Application:
     app.router.add_get("/api/pc/diagnose", pc_diagnose)
     app.router.add_post("/api/focus/start", focus_start)
     app.router.add_post("/api/focus/stop", focus_stop)
+    app.router.add_post("/api/focus/pause", focus_pause)
+    app.router.add_post("/api/focus/resume", focus_resume)
+    app.router.add_get("/api/tasks", tasks_list)
+    app.router.add_post("/api/tasks", tasks_create)
+    app.router.add_patch("/api/tasks/{id}", tasks_update)
+    app.router.add_delete("/api/tasks/{id}", tasks_delete)
+    app.router.add_get("/api/dashboard", dashboard)
     app.router.add_post("/api/monitoring", monitoring)
     app.router.add_post("/api/emergency-stop", emergency_stop)
     app.router.add_post("/api/personal-data/delete", delete_personal_data)

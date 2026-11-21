@@ -17,6 +17,7 @@ from .db import Database
 from .decision import DecisionEngine
 from .events import Event, EventBus, EventType
 from .focus import FocusManager
+from .tasks import TaskStore
 from .notifications import NotificationService
 
 log = logging.getLogger("zoe.core")
@@ -56,7 +57,8 @@ class ZoeCore:
         self.notifications = NotificationService(db, clock)
         self.notifications.set_delivery(self.hub.broadcast)
         self.decision = DecisionEngine(self.bus, db, self.notifications, self.hub.broadcast)
-        self.focus = FocusManager(self.bus, clock)
+        self.focus = FocusManager(self.bus, clock, db)
+        self.tasks = TaskStore(db, clock)
         self.memory = Memory(db, clock)
         self.knowledge = KnowledgeBase(db, clock)
         self.research = Researcher(self)
@@ -171,6 +173,10 @@ class ZoeCore:
             "uptime_s": round(self.clock() - self.started_at),
             "clients": len(self.hub.clients),
         }
+
+    async def changed(self, what: str) -> None:
+        """Avisa as telas abertas que algo mudou (tarefas, memória…) para recarregarem."""
+        await self.hub.broadcast({"type": "changed", "what": what})
 
     async def broadcast_state(self) -> None:
         await self.hub.broadcast({"type": "state", "state": self.state()})

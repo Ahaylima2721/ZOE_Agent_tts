@@ -8,7 +8,7 @@ Uma companheira digital para o Linux: uma orbe roxa que flutua na área de traba
 
 | Pasta / arquivo | O que é |
 | --- | --- |
-| `desktop/` | **Zoe Desktop** (Electron): orbe flutuante, expressões, balões, conversa, recursos do PC, memória pessoal, ajustes, bandeja |
+| `desktop/` | **Zoe Desktop** (Electron): janela principal (Início, Assistente, Tarefas, Foco, Relatórios, Memória, Computador, Configurações) + a orbe flutuante, balões e bandeja |
 | `core/` | **Zoe Core** (Python): API local, eventos, decisões, notificações, foco, monitor do PC, memória pessoal, banco SQLite |
 | `zoe.design`, `zoe-preview.html`, `zoe-fx.js` | Design da orbe e animações (usados pela Zoe Desktop) |
 | `docs/ARQUITETURA.md` | Análise do projeto, escolhas de tecnologia, X11/Wayland, fases |
@@ -18,23 +18,33 @@ Uma companheira digital para o Linux: uma orbe roxa que flutua na área de traba
 
 ## Instalar (executável)
 
-Gere os pacotes uma vez (precisa de Node 18+):
+**Ubuntu/Debian (.deb, recomendado):** o `apt` instala as dependências Python sozinho e cria o atalho "Zoe" no menu.
 
 ```bash
-cd desktop && npm install && npm run dist
+sudo apt install ./zoe-desktop_0.1.0_amd64.deb
 ```
 
-Instale o `.deb` (o `apt` instala as dependências Python sozinho):
+**AppImage:** precisa do `libfuse2` e das bibliotecas Python.
 
 ```bash
-sudo apt install ./desktop/dist/zoe-desktop_0.1.0_amd64.deb
+sudo apt install -y libfuse2t64 python3-aiohttp python3-psutil
 ```
-
-Ou rode o AppImage direto (precisa de `python3-aiohttp` e `python3-psutil`):
 
 ```bash
-chmod +x desktop/dist/Zoe-0.1.0.AppImage && ./desktop/dist/Zoe-0.1.0.AppImage
+chmod +x Zoe-0.1.0.AppImage && ./Zoe-0.1.0.AppImage
 ```
+
+No Ubuntu 22.04 o pacote se chama `libfuse2` (sem `t64`).
+
+**Gerar os pacotes** (precisa de Node 18+): `cd desktop && npm install && npm run dist` → `desktop/dist/`.
+
+## Não abriu? Diagnóstico
+
+```bash
+zoe --diagnostico
+```
+
+(No AppImage: `./Zoe-0.1.0.AppImage --diagnostico`.) Ele confere Python, bibliotecas, o Zoe Core, o Ollama, o sandbox e o FUSE, e imprime o comando para corrigir o que faltar. Tudo o que der errado também fica em `~/.config/Zoe/zoe.log`.
 
 ## Rodar pelo código-fonte
 

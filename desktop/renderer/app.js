@@ -77,6 +77,7 @@
     window.ZoeRecursos.hide();
   }
   $('closePanel').onclick = closePanel;
+  $('openMain').onclick = () => window.zoe.openMain();
   addEventListener('keydown', (e) => { if (e.key === 'Escape' && panelOpen) closePanel(); });
 
   // ---------------- arrastar x clicar ----------------

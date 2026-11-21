@@ -185,11 +185,30 @@ MIGRATIONS: list[str] = [
     CREATE INDEX idx_knowledge_status ON knowledge(status, created_at);
     CREATE INDEX idx_knowledge_interaction ON knowledge(interaction_id);
     """,
+    # v4 — app desktop: tarefas com categoria/prazo/conclusão e histórico das sessões de foco
+    """
+    ALTER TABLE tasks ADD COLUMN category TEXT NOT NULL DEFAULT 'geral';
+    ALTER TABLE tasks ADD COLUMN due_date TEXT;
+    ALTER TABLE tasks ADD COLUMN created_at REAL;
+    ALTER TABLE tasks ADD COLUMN completed_at REAL;
+    CREATE INDEX idx_tasks_completed ON tasks(completed_at);
+    CREATE TABLE focus_sessions (
+        id          INTEGER PRIMARY KEY,
+        user_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        category    TEXT NOT NULL DEFAULT 'geral',
+        planned_min REAL NOT NULL,
+        focused_s   REAL NOT NULL DEFAULT 0,
+        started_at  REAL NOT NULL,
+        ended_at    REAL,
+        completed   INTEGER NOT NULL DEFAULT 0
+    );
+    CREATE INDEX idx_focus_sessions_time ON focus_sessions(started_at);
+    """,
 ]
 
 # Tabelas com dados pessoais (apagadas em "apagar meus dados").
 PERSONAL_TABLES = (
-    "interests", "personal_projects", "personal_activities", "books", "tasks", "goals", "knowledge",
+    "interests", "personal_projects", "personal_activities", "books", "tasks", "goals", "knowledge", "focus_sessions",
     "focus_rules", "interactions", "notifications", "application_usage", "events",
 )
 

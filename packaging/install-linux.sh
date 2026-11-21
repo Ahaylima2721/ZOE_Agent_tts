@@ -47,7 +47,8 @@ echo "Atalho criado: $DESKTOP_FILE"
 if [[ $AUTOSTART == 1 ]]; then
   AUTO="${XDG_CONFIG_HOME:-$HOME/.config}/autostart"
   mkdir -p "$AUTO"
-  cp "$DESKTOP_FILE" "$AUTO/zoe.desktop"
+  # ao entrar no sistema: só a orbe (--oculto); a janela abre pelo menu ou pela orbe
+  sed 's|^Exec=\(.*\)$|Exec=\1 --oculto|' "$DESKTOP_FILE" > "$AUTO/zoe.desktop"
   echo "Início automático: $AUTO/zoe.desktop"
 fi
 

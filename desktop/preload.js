@@ -9,11 +9,12 @@ contextBridge.exposeInMainWorld('zoe', {
   reportState: (st) => ipcRenderer.send('ui:state', st),
   contextMenu: () => ipcRenderer.send('ui:context-menu'),
   openExternal: (url) => ipcRenderer.send('ui:open-external', url),
+  openMain: (page) => ipcRenderer.send('ui:open-main', page),
   dragStart: (p) => ipcRenderer.send('drag:start', p),
   dragMove: (p) => ipcRenderer.send('drag:move', p),
   dragEnd: (orbCenter) => ipcRenderer.send('drag:end', orbCenter),
   on: (channel, fn) => {
-    if (!['layout', 'cursor', 'open-panel'].includes(channel)) return;
+    if (!['layout', 'cursor', 'open-panel', 'open-page'].includes(channel)) return;
     ipcRenderer.on(channel, (_e, data) => fn(data));
   },
 });

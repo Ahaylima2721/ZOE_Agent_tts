@@ -19,7 +19,7 @@ const env = { ...process.env, ZOE_DATA_DIR: path.join(tmp, 'data'), ZOE_RUNTIME_
 delete env.XDG_SESSION_TYPE;
 
 (async () => {
-  const app = await electron.launch({ executablePath: require('electron'), args: [root, '--no-sandbox'], env, cwd: root });
+  const app = await electron.launch({ executablePath: require('electron'), args: [root, '--no-sandbox', '--oculto'], env, cwd: root });
   let starts = 0;
   app.process().stderr.on('data', (d) => { starts += (String(d).match(/core saiu com código/g) || []).length; });
   try {

@@ -99,14 +99,42 @@ class ChatHandler:
         if re.fullmatch(r"(oi|ola|e ai|bom dia|boa tarde|boa noite|hey)( zoe)?", t):
             return Reply(f"Oi{', ' + nome if nome else ''}! Como posso ajudar?", "feliz", ("ajuda", "foco 25"))
 
-        m = re.fullmatch(r"(?:iniciar |comecar )?(?:sessao de )?foco(?: de)?(?: (\d{1,3}))?(?: ?min(?:utos)?)?", t)
+        m = re.fullmatch(r"(?:iniciar |comecar )?(?:sessao de )?foco(?: de)?(?: (\d{1,3}))?(?: ?min(?:utos)?)?"
+                         r"(?: (?:de |em |para )?(estudo|trabalho|lazer|geral))?", t)
         if m:
             mins = int(m.group(1)) if m.group(1) else int(s["foco_minutos_padrao"])
             try:
-                await core.focus.start(mins)
+                await core.focus.start(mins, m.group(2) or "geral")
             except ValueError as e:
                 return Reply(f"Não consegui: {e}.", "preocupada")
             return Reply(f"Combinado: {mins} minutos de foco. Eu fico quietinha e te aviso no final.", "foco", ("parar foco",))
+        if t in ("pausar foco", "pausa no foco"):
+            if await core.focus.pause():
+                await core.broadcast_state()
+                return Reply("Foco pausado. Diga \"continuar foco\" quando voltar.", "descanso", ("continuar foco",))
+            return Reply("Não tem foco rodando para pausar.", "curiosa")
+        if t in ("continuar foco", "retomar foco", "voltar ao foco"):
+            if await core.focus.resume():
+                await core.broadcast_state()
+                return Reply("Bora! Foco retomado.", "foco", ("pausar foco",))
+            return Reply("Não tem foco pausado agora.", "curiosa")
+
+        m = re.match(r"^(?:nova tarefa|adicionar tarefa|adiciona tarefa|anota tarefa|tarefa)[:\s]+(?P<x>.+)$", raw.strip(" !."), re.I)
+        if m and t.startswith(("nova tarefa", "adicionar tarefa", "adiciona tarefa", "anota tarefa", "tarefa")):
+            task = core.tasks.create({"titulo": m.group("x").strip()[:160]})
+            await core.changed("tasks")
+            return Reply(f"Anotei para hoje: {task['titulo']}.", "feliz", ("minhas tarefas",))
+        if t in ("minhas tarefas", "tarefas", "tarefas de hoje", "o que tenho pra hoje", "o que tenho para hoje"):
+            today = core.tasks.list("hoje")
+            pend = [x["titulo"] for x in today if not x["concluida"]]
+            done = [x["titulo"] for x in today if x["concluida"]]
+            if not today:
+                return Reply("Nenhuma tarefa para hoje. Quer anotar? Diga \"nova tarefa …\".", "curiosa")
+            msg = ("Para hoje: " + "; ".join(pend) + "." if pend else "Tudo feito por hoje! 🎉")
+            if done:
+                msg += f" Já concluídas: {len(done)}."
+            return Reply(msg, "feliz" if not pend else "normal")
+
         if t in ("parar foco", "cancelar foco", "encerrar foco", "parar"):
             if await core.focus.stop():
                 return Reply("Foco encerrado. Sem problema, recomeçamos quando quiser.", "normal", ("foco 25",))
