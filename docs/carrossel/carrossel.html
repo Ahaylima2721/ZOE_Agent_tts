@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Zoe — carrossel</title>
+<link rel="stylesheet" href="../../desktop/renderer/orb.css">
+<link rel="stylesheet" href="../../desktop/renderer/expressions.css">
+<style>
+  :root { --bg: #110b20; --card: rgba(34, 24, 62, .72); --line: rgba(167, 139, 250, .22); --fg: #f3efff; --muted: #b4a9d6;
+          --accent: #8b5cf6; --accent2: #c4b5fd; --ok: #4ade80; --warn: #fbbf24; --no: #fb7185; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #000; font-family: Inter, system-ui, sans-serif; color: var(--fg); }
+  .slide { position: relative; width: 1080px; height: 1350px; overflow: hidden; padding: 96px 84px 84px;
+    display: flex; flex-direction: column; gap: 36px;
+    background: radial-gradient(900px 700px at 20% -10%, rgba(124, 58, 237, .45), transparent 60%),
+                radial-gradient(800px 600px at 110% 105%, rgba(91, 33, 182, .45), transparent 60%), var(--bg); }
+  .slide::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+    background-image: radial-gradient(rgba(255,255,255,.5) 1px, transparent 1px); background-size: 140px 140px; opacity: .06; }
+  .num { position: absolute; top: 44px; right: 60px; font: 600 26px/1 "Inter Display", Inter; color: var(--muted); letter-spacing: .04em; }
+  .brand { position: absolute; top: 40px; left: 60px; display: flex; align-items: center; gap: 12px; font: 700 28px/1 "Inter Display", Inter; }
+  .mini { width: 34px; height: 34px; border-radius: 50%; display: inline-flex; gap: 5px; align-items: center; justify-content: center;
+    background: radial-gradient(circle at 32% 26%, #fff 0 6%, transparent 26%), radial-gradient(circle, #c9a7ff, #8b5cf6 40%, #5b21b6 75%, #2a0e5e);
+    box-shadow: 0 0 22px rgba(167, 139, 250, .6); }
+  .mini i { width: 5px; height: 8px; border-radius: 3px; background: #f7f3ff; }
+  h1 { margin: 0; font: 800 92px/1.02 "Inter Display", Inter; letter-spacing: -.02em; }
+  h2 { margin: 0; font: 800 70px/1.05 "Inter Display", Inter; letter-spacing: -.015em; }
+  .hl { color: var(--accent2); }
+  p.lead { margin: 0; font-size: 34px; line-height: 1.38; color: var(--muted); max-width: 900px; }
+  .card { background: var(--card); border: 1.5px solid var(--line); border-radius: 30px; padding: 30px 34px; }
+  .foot { margin-top: auto; display: flex; align-items: center; gap: 14px; font-size: 26px; color: var(--muted); }
+  .foot b { color: var(--fg); }
+  .arrow-next { margin-left: auto; font: 600 26px Inter; color: var(--accent2); }
+  svg.i { width: 44px; height: 44px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* ---------- capa ---------- */
+  .cover { justify-content: center; align-items: center; text-align: center; gap: 44px; }
+  .stage { position: relative; width: 560px; height: 560px; display: grid; place-items: center; }
+  .ring { position: absolute; border-radius: 50%; border: 2px dashed rgba(196, 181, 253, .35); }
+  .ring.a { width: 470px; height: 470px; } .ring.b { width: 620px; height: 230px; transform: rotate(-14deg); border-style: solid; border-color: rgba(196,181,253,.2); }
+  .orb.big { width: 330px; height: 330px; animation: none; }
+  .orb.big::before, .orb.big::after, .orb.big * { animation-play-state: paused; }
+  .orb.big .orb-face { gap: 44px; } .orb.big .orb-face i { width: 28px; height: auto; aspect-ratio: 7/11; border-radius: 999px; }
+  .orb.big .orb-sparkle { top: 13%; right: 18%; width: 9%; height: 9%; }
+  .chips { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .chip { padding: 14px 24px; border-radius: 999px; border: 1.5px solid var(--line); background: var(--card); font-size: 26px; font-weight: 600; }
+
+  /* ---------- cascata ---------- */
+  .cascade { display: grid; gap: 16px; }
+  .lvl { display: grid; grid-template-columns: 70px 1fr auto; align-items: center; gap: 22px; padding: 24px 28px; border-radius: 24px;
+    background: var(--card); border: 1.5px solid var(--line); }
+  .lvl .n { width: 62px; height: 62px; border-radius: 18px; display: grid; place-items: center; font: 800 30px "Inter Display"; background: rgba(139,92,246,.22); color: var(--accent2); }
+  .lvl b { display: block; font-size: 34px; margin-bottom: 4px; }
+  .lvl span { font-size: 25px; color: var(--muted); }
+  .lvl .t { font: 700 24px Inter; color: var(--ok); white-space: nowrap; }
+  .lvl.ai { border-color: rgba(251, 191, 36, .5); background: rgba(251, 191, 36, .07); }
+  .lvl.ai .n { background: rgba(251, 191, 36, .2); color: var(--warn); } .lvl.ai .t { color: var(--warn); }
+  .down { text-align: center; color: var(--muted); font-size: 24px; margin: -6px 0; }
+
+  /* ---------- ciclo ---------- */
+  .loop { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .step { display: flex; gap: 20px; align-items: flex-start; }
+  .step .ic { width: 74px; height: 74px; border-radius: 22px; display: grid; place-items: center; background: rgba(139,92,246,.22); color: var(--accent2); flex: none; }
+  .step b { display: block; font-size: 31px; margin-bottom: 6px; } .step span { font-size: 24px; color: var(--muted); line-height: 1.35; }
+  .bubble { padding: 18px 24px; border-radius: 22px 22px 22px 6px; background: rgba(255,255,255,.07); font-size: 27px; line-height: 1.35; }
+  .bubble.me { border-radius: 22px 22px 6px 22px; background: var(--accent); align-self: flex-end; }
+  .src { margin-top: 10px; font-size: 21px; color: var(--accent2); }
+  .chat { display: flex; flex-direction: column; gap: 14px; }
+
+  /* ---------- significado ---------- */
+  .pair { display: grid; grid-template-columns: 1fr 80px 1fr; align-items: center; gap: 10px; }
+  .q { padding: 20px 24px; border-radius: 22px; background: rgba(255,255,255,.07); font-size: 27px; line-height: 1.3; }
+  #s4 { gap: 28px; } #s4 .card { padding: 26px 30px; }
+  .eq { text-align: center; font: 800 46px "Inter Display"; }
+  .eq.ok { color: var(--ok); } .eq.no { color: var(--no); }
+  .verdict { margin-top: 14px; font-size: 25px; color: var(--muted); }
+  .verdict b { color: var(--fg); }
+
+  /* ---------- onde vive ---------- */
+  .devices { display: grid; grid-template-columns: 1.4fr 1fr; gap: 22px; align-items: stretch; }
+  .dev { display: flex; flex-direction: column; gap: 14px; }
+  .dev h3 { margin: 0; display: flex; align-items: center; gap: 14px; font-size: 34px; }
+  .tag { margin-left: auto; font-size: 20px; font-weight: 700; padding: 6px 14px; border-radius: 999px; white-space: nowrap; }
+  .tag.now { background: rgba(74, 222, 128, .15); color: var(--ok); } .tag.soon { background: rgba(251,191,36,.15); color: var(--warn); }
+  .dev ul { margin: 0; padding-left: 26px; font-size: 25px; line-height: 1.5; color: var(--muted); }
+  .brain { display: flex; gap: 24px; align-items: center; }
+  .brain .orb { width: 120px; height: 120px; flex: none; animation: none; }
+  .brain .orb-face { gap: 16px; } .brain .orb-face i { width: 11px; height: auto; aspect-ratio: 7/11; border-radius: 999px; }
+  .flow { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 24px; font-weight: 600; }
+  .flow span { padding: 10px 16px; border-radius: 14px; background: rgba(139,92,246,.2); }
+  .flow i { font-style: normal; color: var(--accent2); }
+  .priv { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .priv div { padding: 20px; border-radius: 20px; background: rgba(255,255,255,.05); font-size: 23px; color: var(--muted); }
+  .priv b { display: block; color: var(--fg); font-size: 26px; margin-bottom: 4px; }
+
+  /* ---------- roteiro ---------- */
+  .road { display: grid; gap: 14px; }
+  .r { display: grid; grid-template-columns: 22px 1fr; gap: 24px; align-items: start; }
+  .r .dot { width: 22px; height: 22px; border-radius: 50%; margin-top: 10px; border: 3px solid var(--accent2); }
+  .r.done .dot { background: var(--ok); border-color: var(--ok); }
+  .r b { font-size: 32px; } .r span { display: block; font-size: 24px; color: var(--muted); margin-top: 2px; line-height: 1.35; }
+  .r span.k { display: inline-block; vertical-align: middle; font-size: 19px; font-weight: 700; color: var(--ok); margin: 0 0 4px 14px;
+    padding: 4px 12px; border-radius: 999px; background: rgba(74, 222, 128, .14); }
+  .r.next span.k { background: rgba(251, 191, 36, .14); }
+  .r.next .k { color: var(--warn); }
+</style>
+</head>
+<body>
+
+<!-- 1 · capa -->
+<section class="slide cover" id="s1">
+  <div class="num">1/6</div>
+  <div class="stage">
+    <span class="ring a"></span><span class="ring b"></span>
+    <div class="orb big"><span class="orb-rings"><i></i><i></i><i></i></span><span class="orb-liquid"><i></i><i></i></span>
+      <span class="orb-face"><i></i><i></i></span><span class="orb-sparkle"></span></div>
+  </div>
+  <h1>Conheça a <span class="hl">Zoe</span></h1>
+  <p class="lead">Uma companheira digital que vive na sua área de trabalho, conhece seus projetos e <b style="color:#fff">aprende com o seu uso</b>.</p>
+  <div class="chips"><span class="chip">IA local</span><span class="chip">Memória pessoal</span><span class="chip">Foco e tarefas</span><span class="chip">Desktop → celular</span></div>
+  <div class="foot" style="margin-top:0"><span class="arrow-next" style="margin:0 auto">Arraste para ver o cérebro dela →</span></div>
+</section>
+
+<!-- 2 · cascata -->
+<section class="slide" id="s2">
+  <div class="brand"><span class="mini"><i></i><i></i></span>Zoe</div><div class="num">2/6</div>
+  <div style="height:40px"></div>
+  <h2>O cérebro dela é uma <span class="hl">cascata</span></h2>
+  <p class="lead">Cada mensagem desce do caminho mais leve para o mais pesado. A IA só entra quando nada mais resolve.</p>
+  <div class="cascade">
+    <div class="lvl"><div class="n">0</div><div><b>Comandos</b><span>"foco 25", "nova tarefa", "como está o PC"</span></div><div class="t">instantâneo</div></div>
+    <div class="down">↓ não entendeu</div>
+    <div class="lvl"><div class="n">1</div><div><b>Sua memória</b><span>livros, projetos, hobbies, objetivos</span></div><div class="t">instantâneo</div></div>
+    <div class="down">↓</div>
+    <div class="lvl"><div class="n">2</div><div><b>O que ela aprendeu</b><span>respostas confirmadas, correções e fontes</span></div><div class="t">milissegundos</div></div>
+    <div class="down">↓ só o que sobrou</div>
+    <div class="lvl ai"><div class="n">3</div><div><b>IA local</b><span>com os trechos certos da memória (RAG)</span></div><div class="t">segundos</div></div>
+  </div>
+  <div class="foot"><b>Quanto mais você usa, menos ela precisa da IA.</b><span class="arrow-next">→</span></div>
+</section>
+
+<!-- 3 · aprendizado -->
+<section class="slide" id="s3">
+  <div class="brand"><span class="mini"><i></i><i></i></span>Zoe</div><div class="num">3/6</div>
+  <div style="height:40px"></div>
+  <h2>Ela <span class="hl">aprende</span> com você</h2>
+  <p class="lead">A resposta da IA nunca vira verdade sozinha. Você decide o que ela guarda.</p>
+  <div class="loop">
+    <div class="card step"><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M7 10v10H4V10zM7 10l4-7a2 2 0 0 1 3 2l-1 5h5a2 2 0 0 1 2 2l-2 7a2 2 0 0 1-2 1H7"/></svg></div>
+      <div><b>Confirmou?</b><span>Vira conhecimento. Da próxima vez ela responde sem IA.</span></div></div>
+    <div class="card step"><div class="ic" style="color:#fb7185;background:rgba(251,113,133,.15)"><svg class="i" viewBox="0 0 24 24"><path d="M17 14V4h3v10zM17 14l-4 7a2 2 0 0 1-3-2l1-5H6a2 2 0 0 1-2-2l2-7a2 2 0 0 1 2-1h9"/></svg></div>
+      <div><b>Errou?</b><span>Ela descarta e nunca repete aquela resposta.</span></div></div>
+    <div class="card step"><div class="ic"><svg class="i" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM13 7l4 4"/></svg></div>
+      <div><b>"Na verdade…"</b><span>A sua correção vale mais que qualquer outra fonte.</span></div></div>
+    <div class="card step"><div class="ic"><svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div>
+      <div><b>Confere a fonte</b><span>Opcional: depois da conversa, checa na Wikipédia e cita o link.</span></div></div>
+  </div>
+  <div class="card chat">
+    <div class="bubble me">Quem escreveu O Fantasma da Ópera?</div>
+    <div class="bubble">É um romance do escritor francês Gaston Leroux, publicado em 1910.<div class="src">Fonte: Wikipédia · O Fantasma da Ópera</div></div>
+  </div>
+  <div class="foot"><span class="arrow-next">→</span></div>
+</section>
+
+<!-- 4 · significado -->
+<section class="slide" id="s4">
+  <div class="brand"><span class="mini"><i></i><i></i></span>Zoe</div><div class="num">4/6</div>
+  <div style="height:40px"></div>
+  <h2>Ela entende o <span class="hl">sentido</span>, não só as palavras</h2>
+  <p class="lead">Cada frase vira um vetor de significado (embeddings). Perguntas iguais escritas de jeitos diferentes ficam "perto".</p>
+  <div class="card">
+    <div class="pair"><div class="q">Quem escreveu O Fantasma da Ópera?</div><div class="eq ok">=</div><div class="q">Quem é o autor de O Fantasma da Ópera?</div></div>
+    <p class="verdict"><b>Mesma pergunta:</b> responde na hora, sem IA, e mostra com qual ela comparou.</p>
+  </div>
+  <div class="card">
+    <div class="pair"><div class="q">Qual a capital da França?</div><div class="eq no">≠</div><div class="q">Qual a capital da Alemanha?</div></div>
+    <p class="verdict"><b>Parecidas, mas diferentes:</b> a guarda de nomes próprios impede uma resposta trocada.</p>
+  </div>
+  <div class="card" style="display:flex;gap:22px;align-items:center">
+    <svg class="i" viewBox="0 0 24 24" style="color:#c4b5fd;width:56px;height:56px"><path d="M4 21V14M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>
+    <p class="lead" style="font-size:28px">O limiar de "parecido" é <b style="color:#fff">calibrado no seu computador</b>, com pares de perguntas em português, para não confundir nenhuma.</p>
+  </div>
+  <div class="foot"><span class="arrow-next">→</span></div>
+</section>
+
+<!-- 5 · onde vive -->
+<section class="slide" id="s5">
+  <div class="brand"><span class="mini"><i></i><i></i></span>Zoe</div><div class="num">5/6</div>
+  <div style="height:40px"></div>
+  <h2>Um cérebro, <span class="hl">várias telas</span></h2>
+  <div class="card brain">
+    <div class="orb"><span class="orb-rings"><i></i><i></i><i></i></span><span class="orb-liquid"><i></i><i></i></span><span class="orb-face"><i></i><i></i></span><span class="orb-sparkle"></span></div>
+    <p class="lead" style="font-size:29px">O cérebro fica no <b style="color:#fff">seu computador</b>. Desktop e celular são janelas para a mesma Zoe, com a mesma memória.</p>
+  </div>
+  <div class="devices">
+    <div class="card dev"><h3><svg class="i" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>Desktop<span class="tag now">hoje</span></h3>
+      <ul><li>orbe flutuante que te acompanha</li><li>painel, tarefas, foco e relatórios</li><li>monitora a saúde do PC</li><li>conversa com IA local</li></ul></div>
+    <div class="card dev"><h3><svg class="i" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>Celular<span class="tag soon">em breve</span></h3>
+      <ul><li>pareamento por QR</li><li>conversa e avisos</li><li>sem nuvem no meio</li></ul></div>
+  </div>
+  <div class="card learn">
+    <div class="flow"><span>Você usa</span><i>→</i><span>confirma ou corrige</span><i>→</i><span>ela guarda</span><i>→</i><span>responde sozinha</span></div>
+    <p class="lead" style="font-size:27px;margin-top:14px">Ela <b style="color:#fff">aprende com o seu uso</b>, em qualquer tela: o que você ensina no celular vale no desktop, e vice-versa.</p>
+  </div>
+  <div class="priv">
+    <div><b>Local</b>IA e dados no seu PC</div>
+    <div><b>Sem espiar</b>nada de teclas ou tela</div>
+    <div><b>Seus dados</b>apague tudo quando quiser</div>
+  </div>
+  <div class="foot"><span class="arrow-next">→</span></div>
+</section>
+
+<!-- 6 · próximos passos -->
+<section class="slide" id="s6">
+  <div class="brand"><span class="mini"><i></i><i></i></span>Zoe</div><div class="num">6/6</div>
+  <div style="height:40px"></div>
+  <h2>Próximos <span class="hl">passos</span></h2>
+  <p class="lead">Ela evolui a cada versão para virar um agente de verdade: no desktop, no celular e aprendendo com o seu uso.</p>
+  <div class="road">
+    <div class="r done"><div class="dot"></div><div><b>Busca por significado</b><span class="k">PRONTO</span><span>Entende perguntas escritas de outro jeito e responde sem IA.</span></div></div>
+    <div class="r next"><div class="dot"></div><div><b>Seus documentos e repositórios</b><span class="k">PRÓXIMO</span><span>Lê seus arquivos e projetos e responde citando de onde veio.</span></div></div>
+    <div class="r"><div class="dot"></div><div><b>Aprende o seu jeito de pedir</b><span>"bota meia hora de foco" vira um comando, depois de você confirmar.</span></div></div>
+    <div class="r"><div class="dot"></div><div><b>Decide sozinha quando precisa de IA</b><span>Aprende com o que você confirma ou corrige e fica mais leve com o tempo.</span></div></div>
+    <div class="r"><div class="dot"></div><div><b>Zoe no celular</b><span>Conversa e avisos no bolso, com o mesmo cérebro.</span></div></div>
+    <div class="r"><div class="dot"></div><div><b>Guardian</b><span>Ajuda a equilibrar foco, pausas e distrações.</span></div></div>
+  </div>
+  <div class="foot"><b>Zoe</b> · mais foco, mais conquistas · <span style="color:#c4b5fd">acompanhe a evolução</span></div>
+</section>
+
+</body>
+</html>
