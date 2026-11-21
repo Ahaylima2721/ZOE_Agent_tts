@@ -22,7 +22,9 @@ window.__R = window.__semLento ? 1 : 0.4;   /* prévia rápida: __semLento */
 
 /*ORB_CSS*/
 
-  .orb .orb-face i{scale:1 calc(1 - var(--fala,0) * .38);translate:0 calc(var(--fala,0) * -14%)}
+  /* onda de voz atrás da Zoe (no lugar dos olhos pulando) */
+  .onda{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:0}
+  #grande,#mini{z-index:1}
 
   /* ---- topo: marca + manchete (abaixo da área do perfil do Instagram) ---- */
   .marca{position:absolute;left:44px;top:128px;font:600 12px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:#6D5E9C;display:flex;gap:9px;align-items:center;z-index:5}
@@ -92,10 +94,11 @@ window.__R = window.__semLento ? 1 : 0.4;   /* prévia rápida: __semLento */
   <div id="cenas"></div>
 
   <div class="zona" id="zona">
+    <canvas class="onda" id="ondaG"></canvas>
     <div class="orb" id="grande"><span class="orb-rings"><i></i><i></i><i></i></span><span class="orb-liquid"><i></i><i></i></span><span class="orb-face"><i></i><i></i></span><span class="orb-sparkle"></span></div>
     <div class="cards" id="cards"></div>
   </div>
-  <div class="narrador" id="narrador"><div class="orb" id="mini"><span class="orb-rings"><i></i><i></i><i></i></span><span class="orb-liquid"><i></i><i></i></span><span class="orb-face"><i></i><i></i></span><span class="orb-sparkle"></span></div></div>
+  <div class="narrador" id="narrador"><canvas class="onda" id="ondaM"></canvas><div class="orb" id="mini"><span class="orb-rings"><i></i><i></i><i></i></span><span class="orb-liquid"><i></i><i></i></span><span class="orb-face"><i></i><i></i></span><span class="orb-sparkle"></span></div></div>
 
   <div class="legenda"><span id="legenda"></span></div>
   <div class="final" id="final">
@@ -193,10 +196,39 @@ function quadro(agora) {
     }
   }
   const e = FILME.env[Math.min(FILME.env.length - 1, Math.floor(t * FILME.fps))] || 0;
-  grande.style.setProperty('--fala', e); mini.style.setProperty('--fala', e);
+  voz = e > voz ? voz + (e - voz) * 0.45 : voz * 0.9;   /* sobe rápido, desce suave */
+  desenharOnda(ondaG, voz, t); desenharOnda(ondaM, voz, t);
   const fimCenas = FILME.cenas[FILME.cenas.length - 1].fim;
   if (t > fimCenas + 0.1 && !finalizou) { finalizou = true; $('final').classList.add('on'); $('legenda').classList.remove('on'); }
   if (t < FILME.total + 0.3) requestAnimationFrame(quadro); else window.__acabou = true;
+}
+/* onda de voz: 3 contornos ondulados + brilho, amplitude pelo volume da fala */
+let voz = 0;
+function criarOnda(id, tam, raio) {
+  const cv = $(id), k = 1.5; cv.width = tam * k; cv.height = tam * k; cv.style.width = cv.style.height = tam + 'px';
+  const ctx = cv.getContext('2d'); ctx.scale(k, k); return { ctx, tam, raio };
+}
+const ondaG = criarOnda('ondaG', 640, 135), ondaM = criarOnda('ondaM', 300, 59);
+const CAMADAS = [
+  { lobos: 3, vel: 1.1, fase: 0.0, cor: '167,139,250', amp: 1.0 },
+  { lobos: 4, vel: -1.5, fase: 1.7, cor: '236,132,198', amp: 0.8 },
+  { lobos: 5, vel: 1.9, fase: 3.1, cor: '124,58,237', amp: 0.65 }];
+function desenharOnda(o, e, t) {
+  const { ctx, tam, raio } = o, c = tam / 2; ctx.clearRect(0, 0, tam, tam);
+  if (e < 0.02) return;
+  const g = ctx.createRadialGradient(c, c, raio * 0.9, c, c, raio * (1.25 + e * 0.6));
+  g.addColorStop(0, `rgba(167,139,250,${0.42 * e})`); g.addColorStop(1, 'rgba(167,139,250,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(c, c, raio * (1.25 + e * 0.6), 0, Math.PI * 2); ctx.fill();
+  CAMADAS.forEach(L => {
+    ctx.beginPath();
+    for (let s = 0; s <= 160; s++) {
+      const a = s / 160 * Math.PI * 2;
+      const r = raio * 1.04 + e * raio * 0.32 * L.amp * (0.55 + 0.45 * Math.sin(L.lobos * a + t * L.vel * 2.2 + L.fase)) * (0.8 + 0.2 * Math.sin(2 * a - t * 1.3));
+      const x = c + Math.cos(a) * r, y = c + Math.sin(a) * r; s ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    }
+    ctx.closePath(); ctx.fillStyle = `rgba(${L.cor},${0.16 * e})`; ctx.fill();
+    ctx.lineWidth = raio > 100 ? 2.5 : 1.6; ctx.strokeStyle = `rgba(${L.cor},${0.25 + 0.55 * e})`; ctx.stroke();
+  });
 }
 window.iniciar = () => requestAnimationFrame(quadro);
 </script>

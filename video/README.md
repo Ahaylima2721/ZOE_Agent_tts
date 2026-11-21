@@ -103,6 +103,8 @@ Vídeo vertical (1080×1920) de 55 segundos, com a Zoe como foco e sem boca (só
 
 Do portfólio ao futuro: a bolinha roxa sem nome, o conceito de agente, o que ela faz hoje e o próximo passo (agente de antiprocrastinação). Tem 68 s (65 s de fala + cartão final).
 
+Enquanto ela fala, os olhos ficam parados (só piscam) e uma **onda de voz** cresce atrás dela: 3 contornos ondulados (roxo, rosa e violeta) e um brilho, com a amplitude puxada do volume da narração (sobe rápido, desce suave).
+
 - **Voz:** ElevenLabs (Brittney), gerada pelo Ayalan num áudio único (`voz.mp3`, convertido para `voz.wav` mono 24 kHz). Os tempos de cada frase foram medidos pelas pausas do áudio e estão em `make_evolucao.py`. Se trocar o áudio, refaça esses tempos.
 - **Pasta de trabalho:** `voz.wav`, `orb.css`, `zoe-fx.js`, `mob/adf911f-full.png`, `mob/adf911f-top.png`, `mob/f8e1f2d-zoe.png` e `v/main/` (o `git archive` do `main` do portfólio, rodando ao vivo no celular).
 - **Passos:** `python3 make_evolucao.py <pasta>` → `node record_evolucao.js <pasta>` → `python3 montar_evolucao.py <pasta>` (gera `evolucao.mp4`, áudio em −14 LUFS).
