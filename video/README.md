@@ -96,3 +96,27 @@ Vídeo vertical (1080×1920) de 55 segundos, com a Zoe como foco e sem boca (só
 | 5 | Ganhei vida | Também ganhei vida: eu pisco, sigo o seu olhar, e voo pela página. |
 | 6 | Próximos passos | Meus próximos passos? Ganhar a minha própria voz, e aprender cada vez mais, até virar uma inteligência artificial de verdade. |
 | 7 | Vem comigo | Vem acompanhar a minha evolução! |
+
+---
+
+# A evolução da Zoe em 1 minuto (vertical, 1080×1920)
+
+Do portfólio ao futuro: a bolinha roxa sem nome, o conceito de agente, o que ela faz hoje e o próximo passo (agente de antiprocrastinação). Tem 68 s (65 s de fala + cartão final).
+
+- **Voz:** ElevenLabs (Brittney), gerada pelo Ayalan num áudio único (`voz.mp3`, convertido para `voz.wav` mono 24 kHz). Os tempos de cada frase foram medidos pelas pausas do áudio e estão em `make_evolucao.py`. Se trocar o áudio, refaça esses tempos.
+- **Pasta de trabalho:** `voz.wav`, `orb.css`, `zoe-fx.js`, `mob/adf911f-full.png`, `mob/adf911f-top.png`, `mob/f8e1f2d-zoe.png` e `v/main/` (o `git archive` do `main` do portfólio, rodando ao vivo no celular).
+- **Passos:** `python3 make_evolucao.py <pasta>` → `node record_evolucao.js <pasta>` → `python3 montar_evolucao.py <pasta>` (gera `evolucao.mp4`, áudio em −14 LUFS).
+
+| Cena | Manchete | O que aparece |
+| --- | --- | --- |
+| 1 | Oi, eu sou a Zoe | Zoe grande dando "olá!" |
+| 2 | Nasci no portfólio | Portfólio da fase em que ela nasceu |
+| 3 | Uma bolinha roxa | Zoom na bolinha no canto da tela |
+| 4 | Ganhei nome | Página própria da Zoe |
+| 5 | O conceito | Chatbot → agente, olhos de luz, emoções |
+| 6 | Hoje, eu tô viva | Portfólio atual ao vivo, com o voo ao rolar |
+| 7 | Recebo arquivos | Arquivos entrando nela + "achei!" |
+| 8 | Eu sinto | Corada, dança e confete |
+| 9 | Agora, com voz | "tenho voz!" |
+| 10 | O meu futuro | Agente de antiprocrastinação: ~~depois eu faço~~ → ✓ feito! |
+| 11 | Em breve, mais | Lupa, tontura e "eureka" |
