@@ -322,7 +322,7 @@ async function coreApi(method, p, body) {
       await sleep(300);
       const b1 = await bounds();
       assert.equal(b1.x, b0.x - 200); assert.equal(b1.y, b0.y - 120);
-      const saved = JSON.parse(fs.readFileSync(path.join(tmp, 'config', 'zoe-desktop', 'window.json'), 'utf8'));
+      const saved = JSON.parse(fs.readFileSync(path.join(tmp, 'config', 'Zoe', 'window.json'), 'utf8'));
       assert.equal(saved.x, b1.x + 64);
     });
 
