@@ -20,7 +20,7 @@ from pathlib import Path
 
 from aiohttp import WSMsgType, web
 
-from .ai.engine import is_local_url
+from .ai.engine import MODELS, is_local_url
 from .learning.research import is_allowed_url
 from .config import AUTONOMY_LEVELS, FREQUENCIES
 from .core import ZoeCore
@@ -49,6 +49,8 @@ SETTINGS_VALIDATORS = {
     "pc_alertas": lambda v: isinstance(v, bool),
     "checkins_memoria": lambda v: isinstance(v, bool),
     "ia_ativa": lambda v: isinstance(v, bool),
+    "emb_ativo": lambda v: isinstance(v, bool),
+    "emb_modelo": lambda v: isinstance(v, str) and bool(re.fullmatch(r"[a-z0-9][a-z0-9._:/-]{0,79}", v)),
     "pesquisa_web": lambda v: isinstance(v, bool),
     "pesquisa_web_url": lambda v: isinstance(v, str) and is_allowed_url(v),   # só Wikipédia (ou servidor local de teste)
     "ia_modelo": lambda v: isinstance(v, str) and bool(re.fullmatch(r"[a-z0-9][a-z0-9._:/-]{0,79}", v)),
@@ -244,8 +246,37 @@ async def ai_pull(request):
     st = await core.ai.status()
     if not st["ollama"]:
         return _bad(st["hint"], 503)
-    started = core.ai.start_pull()
+    data = await _json(request) if request.can_read_body else {}
+    model = data.get("model")
+    if model is not None:
+        from .learning.semantic import EMB_MODELS
+        s = core.db.get_settings()
+        allowed = {m["id"] for m in MODELS} | {m["id"] for m in EMB_MODELS} | {s.get("ia_modelo"), s.get("emb_modelo")}
+        if model not in allowed:
+            return _bad("modelo não está na lista da Zoe nem nas configurações")
+    started = core.ai.start_pull(model)
     return web.json_response({"started": started, "pull": core.ai.pull_state})
+
+
+# ---------------- busca por significado (R1) ----------------
+async def semantic_status(request):
+    return web.json_response(await request.app[CORE_KEY].retriever.semantic.status())
+
+
+async def semantic_calibrate(request):
+    """Mede o modelo de embeddings instalado com os pares em português e guarda os limiares."""
+    from .ai.ollama import OllamaError
+    core = request.app[CORE_KEY]
+    sem = core.retriever.semantic
+    ollama, has_model = await sem.installed()
+    if not (ollama and has_model):
+        return _bad("baixe o modelo de embeddings primeiro (e o Ollama precisa estar rodando)", 409)
+    try:
+        result = await sem.calibrate()
+        indexed = await sem.sync()
+    except OllamaError as e:
+        return _bad(str(e), 502)
+    return web.json_response({"calibration": result, "indexed": indexed})
 
 
 # ---------------- aprendizado ----------------
@@ -492,6 +523,8 @@ def build_app(core: ZoeCore, token: str) -> web.Application:
     app.router.add_get("/api/memory", memory_all)
     app.router.add_get("/api/ai", ai_status)
     app.router.add_get("/api/learning", learning_overview)
+    app.router.add_get("/api/semantic", semantic_status)
+    app.router.add_post("/api/semantic/calibrate", semantic_calibrate)
     app.router.add_post("/api/learning/feedback", learning_feedback)
     app.router.add_post("/api/learning/research", learning_research)
     app.router.add_patch("/api/learning/{id}", learning_update)

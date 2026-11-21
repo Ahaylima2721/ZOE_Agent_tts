@@ -131,3 +131,7 @@ Segue o mockup do projeto: barra lateral (Início, Assistente, Tarefas, Foco, Re
 - Abre pelo menu de aplicativos; fechar só esconde (a orbe continua). No início automático (`--oculto`) só a orbe aparece.
 - Cores das categorias validadas para daltonismo e contraste em ordem de anel: Estudo `#9085e9` → Trabalho `#199e70` → Geral `#3987e5` → Lazer `#d95926`; legenda sempre com nome e porcentagem.
 - `zoe --diagnostico` e `~/.config/Zoe/zoe.log` para descobrir por que algo não abre. O executável `zoe` é um lançador que decide o sandbox do Electron antes de ele iniciar (sandbox completo no `.deb`; `--no-sandbox` no AppImage, onde o SUID não existe).
+
+## 9. R1 — busca por significado
+
+Plano de aprendizado leve (R1 a R6): embeddings e classificadores pequenos em volta do LLM, que fica só para gerar texto. **R1 está pronta**: embeddings via Ollama (`/api/embed`), índice em SQLite, busca híbrida (palavras + significado), guarda de nomes próprios, limiares calibrados por modelo no próprio computador e RAG com os trechos certos. Próximas: R2 (seus documentos e repositórios), R3 (intenção treinável), R4 (roteador + fatos de passagem), R5 (avaliação contínua), R6 (ajuste fino opcional).

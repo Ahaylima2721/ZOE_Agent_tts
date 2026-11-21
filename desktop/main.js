@@ -331,6 +331,8 @@ const API_ALLOW = [
   ['PATCH', /^\/api\/tasks\/\d+$/],
   ['DELETE', /^\/api\/tasks\/\d+$/],
   ['GET', /^\/api\/ai$/],
+  ['GET', /^\/api\/semantic$/],
+  ['POST', /^\/api\/semantic\/calibrate$/],
   ['GET', /^\/api\/learning$/],
   ['POST', /^\/api\/learning\/(feedback|research)$/],
   ['PATCH', /^\/api\/learning\/\d+$/],

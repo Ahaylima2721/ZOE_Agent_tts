@@ -3,7 +3,7 @@
 'use strict';
 const { _electron: electron } = require('playwright');
 const assert = require('assert/strict');
-const { execFileSync } = require('child_process');
+const { execFileSync, spawn } = require('child_process');
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
@@ -14,6 +14,7 @@ const env = { ...process.env, ZOE_DATA_DIR: path.join(tmp, 'data'), ZOE_RUNTIME_
   XDG_CONFIG_HOME: path.join(tmp, 'config'), ZOE_DISABLE_GPU: '1' };
 delete env.XDG_SESSION_TYPE;
 const shots = process.env.ZOE_SHOTS;
+const children = [];   // Ollama simulado: encerrado no fim
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 async function until(fn, ms = 8000, what = 'condição') {
   const end = Date.now() + ms;
@@ -164,6 +165,39 @@ db.commit()`;
       await until(async () => /, Ayalan!$/.test(await page.textContent('#hello')), 4000, 'saudação');
     });
 
+    await step('R1: baixar e calibrar o modelo de embeddings pela tela', async () => {
+      const port = 20000 + Math.floor(Math.random() * 20000);
+      const fake = spawn('python3', [path.join(root, '..', 'core', 'tests', 'fake_ollama.py'), String(port)], { stdio: 'ignore' });
+      children.push(fake);
+      await until(async () => (await fetch(`http://127.0.0.1:${port}/api/version`)).ok, 8000, 'Ollama simulado');
+      await coreApi('PATCH', '/api/settings', { ia_url: `http://127.0.0.1:${port}` });
+      await nav('inicio'); await nav('configuracoes');
+      await until(async () => /Falta baixar o modelo paraphrase-multilingual/.test(await page.textContent('#semStatus')), 6000, 'falta baixar');
+      await page.click('#semPull');
+      await until(async () => /Modelo pronto/.test(await page.textContent('#semStatus')), 10000, 'modelo baixado');
+      await page.click('#semCal');
+      await until(async () => /^Ativa: reconhece \d+ de 16 perguntas reformuladas/.test(await page.textContent('#semStatus')), 8000, 'calibrado');
+      await shot('app-7-busca');
+    });
+
+    await step('R1: depois do 👍, a pergunta reformulada vem da base, sem IA', async () => {
+      await nav('assistente');
+      const finals = () => page.$$eval('#log .msg.zoe:not(.typing):not(.streaming)', (m) => m.length);
+      let n = await finals();
+      await page.fill('#input', 'Quem escreveu O Fantasma da Ópera?'); await page.press('#input', 'Enter');
+      await until(async () => (await finals()) > n, 8000, 'resposta da IA');
+      await page.click('#log .msg.zoe:last-child .fb:has-text("👍")');
+      await until(async () => /Guardei/.test(await page.textContent('#log .msg.zoe:last-child .msg-fb')), 4000, '👍');
+      n = await finals();
+      await page.fill('#input', 'Quem é o autor de O Fantasma da Ópera?'); await page.press('#input', 'Enter');
+      await until(async () => (await finals()) > n, 8000, 'resposta da base');
+      const src = await page.textContent('#log .msg.zoe:last-child .msg-src');
+      assert.match(src, /Lembrei da nossa conversa de \d\d\/\d\d · parecida com “Quem escreveu O Fantasma da Ópera\?”/);
+      const st = (await coreApi('GET', '/api/learning')).stats;
+      assert.equal(st.by_layer.base, 1);
+    });
+    await shot('app-8-parafrase');
+
     await step('fechar a janela só esconde (a orbe continua) e ela reabre', async () => {
       const hidden = await app.evaluate(({ BrowserWindow }) => {
         const w = BrowserWindow.getAllWindows().find((x) => x.webContents.getURL().includes('/app/'));
@@ -180,6 +214,7 @@ db.commit()`;
 
     console.log(`\n${results.length} verificações passaram`);
   } finally {
+    children.forEach((c) => c.kill());
     await app.close().catch(() => {});
     fs.rmSync(tmp, { recursive: true, force: true });
   }

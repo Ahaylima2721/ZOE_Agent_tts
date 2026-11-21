@@ -31,7 +31,9 @@ Toda requisição precisa do token: `Authorization: Bearer <token>`, ou `?token=
 | GET | `/api/pc` | — | `{snapshot, history{t,cpu,ram}}`: leitura atual e o último ~minuto. 503 se faltar o psutil |
 | GET | `/api/pc/diagnose` | — | `{summary, findings[], processes}`: diagnóstico na hora (funciona mesmo com alertas desligados) |
 | GET | `/api/ai` | — | `{enabled, url, model, models[], ollama, version, installed[], model_installed, pull, hint}` |
-| POST | `/api/ai/pull` | `{}` | começa a baixar o modelo configurado (só quando o usuário pede); 503 sem Ollama. Progresso pelo WebSocket (`ai.pull`) |
+| POST | `/api/ai/pull` | `{model?}` (modelo de conversa por padrão, ou um de embeddings da lista) | começa a baixar o modelo configurado (só quando o usuário pede); 503 sem Ollama. Progresso pelo WebSocket (`ai.pull`) |
+| GET | `/api/semantic` | — | busca por significado: `{enabled, model, models[], ollama, model_installed, calibration, indexed}` |
+| POST | `/api/semantic/calibrate` | `{}` | mede o modelo de embeddings com os pares em português, guarda os limiares e indexa; 409 sem o modelo |
 | GET | `/api/learning` | — | `{stats{total, local, sem_ia_pct, by_layer, knowledge}, items[]}`: o que a Zoe aprendeu e quanto responde sem IA (30 dias) |
 | POST | `/api/learning/feedback` | `{interaction_id, vote: up\|down}` | `{message}`: 👍 promove a resposta da IA; 👎 rejeita (respostas da IA e da base) |
 | PATCH | `/api/learning/{id}` | `{status: validada\|rejeitada}` | confirma ou rejeita um item |
@@ -60,6 +62,9 @@ Toda requisição precisa do token: `Authorization: Bearer <token>`, ou `?token=
 | `foco_minutos_padrao` | 1–240 | `25` |
 | `ocioso_minutos` | 1–240 | `5` |
 | `notificacoes_nativas` | bool (usa `notify-send` quando a orbe está fechada) | `true` |
+| `emb_ativo` | bool: busca por significado (embeddings via Ollama) | `true` |
+| `emb_modelo` | `paraphrase-multilingual` · `bge-m3` · `granite-embedding:278m`… | `paraphrase-multilingual` |
+| `emb_calibracao` | somente leitura: limiares por modelo, gravados pela calibração | `{}` |
 | `pesquisa_web` | bool: depois da conversa, conferir na Wikipédia o que só a IA respondeu | `false` |
 | `pesquisa_web_url` | só `https://*.wikipedia.org` (ou servidor local de teste) | `https://pt.wikipedia.org` |
 | `ia_ativa` | bool: usar a IA local quando as regras não entendem | `true` |
@@ -168,6 +173,8 @@ Cada mensagem desce os níveis até alguém responder; o nível fica gravado em 
 - a resposta reaproveitada diz de onde veio: "Lembrei da nossa conversa de 12/11", "Você me ensinou em 12/11" ou "Fonte: Wikipédia · Título" (com link).
 
 **Pesquisa pós-conversa** (opcional, desligada por padrão): 2 min depois da última mensagem, até 5 assuntos por vez (30 por dia), primeiro os que levaram 👎. Só o assunto sai do computador; o resumo guardado tem no máximo 3 frases. Cada descoberta vira um evento `NEW_DISCOVERY`.
+
+**Busca por significado (R1):** cada pergunta confirmada da base e cada item da memória ganham um vetor (tabela `vectors`, recalculado quando o texto muda). Uma pergunta nova é comparada por cosseno com dois limiares **calibrados no próprio computador** para o modelo instalado: acima de `direto` (e com os mesmos nomes próprios/números) responde pela base sem IA, mostrando "parecida com “…”"; acima de `contexto`, o trecho vai para a IA (RAG). A calibração usa 32 pares em português (metade são paráfrases, metade "mesmo assunto, outra pergunta") e escolhe o limiar que não confunde nenhum par diferente (piso 0,75). Sem Ollama ou sem o modelo, tudo volta para a busca por palavras.
 
 **Contexto enxuto da IA:** só itens da memória que têm palavras em comum com a pergunta (até 6) ou, sem nenhum, um retrato mínimo (o que está lendo/fazendo); mais até 3 itens confirmados da base sobre o assunto.
 

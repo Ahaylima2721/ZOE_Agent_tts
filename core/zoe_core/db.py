@@ -204,11 +204,25 @@ MIGRATIONS: list[str] = [
     );
     CREATE INDEX idx_focus_sessions_time ON focus_sessions(started_at);
     """,
+    # v5 — R1: vetores de significado (embeddings) para busca semântica
+    """
+    CREATE TABLE vectors (
+        id         INTEGER PRIMARY KEY,
+        kind       TEXT NOT NULL,
+        ref_id     INTEGER NOT NULL,
+        model      TEXT NOT NULL,
+        text_hash  TEXT NOT NULL,
+        dim        INTEGER NOT NULL,
+        vec        BLOB NOT NULL,
+        updated_at REAL NOT NULL
+    );
+    CREATE UNIQUE INDEX idx_vectors_ref ON vectors(kind, ref_id, model);
+    """,
 ]
 
 # Tabelas com dados pessoais (apagadas em "apagar meus dados").
 PERSONAL_TABLES = (
-    "interests", "personal_projects", "personal_activities", "books", "tasks", "goals", "knowledge", "focus_sessions",
+    "interests", "personal_projects", "personal_activities", "books", "tasks", "goals", "knowledge", "focus_sessions", "vectors",
     "focus_rules", "interactions", "notifications", "application_usage", "events",
 )
 

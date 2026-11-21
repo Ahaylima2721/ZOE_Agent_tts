@@ -68,6 +68,7 @@ window.ZoeIA = (function () {
     init(opts) { api = opts.api; },
     show: refresh,
     onPull(p) {
+      if (st && p.model && p.model !== st.model) return;     // download de outro modelo (ex.: embeddings)
       if (st) st.pull = p;
       pullView(p);
       if (p.done) refresh();

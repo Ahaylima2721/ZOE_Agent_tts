@@ -180,11 +180,15 @@ class ChatHandler:
             return fix
 
         # nível 2: base aprendida (respostas que você confirmou, correções e fontes da web)
-        known = core.knowledge.lookup(raw)
-        if known:
+        found = await core.retriever.lookup(raw)
+        if found:
+            known, how = found
             core.knowledge.mark_used(known["id"])
-            return Reply(known["answer"], "feliz", layer="base", source=core.knowledge.source_of(known),
-                         knowledge_id=known["id"])
+            source = core.knowledge.source_of(known)
+            if how["via"] == "significado":           # mostra por que achou: transparência na busca por significado
+                source["label"] += f" · parecida com “{known['question'][:80]}”"
+                source["score"] = how["score"]
+            return Reply(known["answer"], "feliz", layer="base", source=source, knowledge_id=known["id"])
 
         # nível 4: nenhuma regra local entendeu, aí sim a IA local (se estiver disponível)
         text, why = await core.ai.reply(raw, on_delta)

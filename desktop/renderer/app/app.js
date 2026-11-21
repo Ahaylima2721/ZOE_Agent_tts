@@ -23,7 +23,7 @@
     if (name === 'inicio' || name === 'relatorios' || name === 'foco') loadDashboard();
     if (name === 'tarefas') loadTasks();
     if (name === 'memoria') { window.ZoeMemoria.show(); window.ZoeAprendizado.show(); }
-    if (name === 'configuracoes') { loadSettings(); window.ZoeIA.show(); }
+    if (name === 'configuracoes') { loadSettings(); window.ZoeIA.show(); window.ZoeBusca.show(); }
     if (name === 'assistente') { if (!historyLoaded) loadHistory(); setTimeout(() => $('input').focus(), 30); }
   }
   document.querySelectorAll('.nav button').forEach((b) => { b.onclick = () => go(b.dataset.page); });
@@ -52,7 +52,7 @@
       else if (m.type === 'changed') { if (m.what === 'tasks') { loadDashboard(); if (page === 'tarefas') loadTasks(); } }
       else if (m.type === 'chat.delta' && streaming.has(m.ref)) streaming.get(m.ref)(m.text);
       else if (m.type === 'chat.reply' && pending.has(m.ref)) { pending.get(m.ref)(m); pending.delete(m.ref); }
-      else if (m.type === 'ai.pull') window.ZoeIA.onPull(m.pull);
+      else if (m.type === 'ai.pull') { window.ZoeIA.onPull(m.pull); window.ZoeBusca.onPull(m.pull); }
       else if (m.type === 'notification' && m.notification.category === 'foco') loadDashboard();
     };
   }
@@ -370,6 +370,7 @@
   window.ZoeMemoria.init({ api });
   window.ZoeIA.init({ api });
   window.ZoeAprendizado.init({ api });
+  window.ZoeBusca.init({ api });
   setOnline(false);
   renderFocus();
   connect();

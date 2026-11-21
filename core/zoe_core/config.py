@@ -89,6 +89,10 @@ DEFAULT_SETTINGS: dict = {
     # Aprendizado: conferir na Wikipédia, depois da conversa, o que só a IA respondeu (envia só o assunto)
     "pesquisa_web": False,
     "pesquisa_web_url": "https://pt.wikipedia.org",
+    # R1: busca por significado (embeddings via Ollama), com limiares calibrados por modelo
+    "emb_ativo": True,
+    "emb_modelo": "paraphrase-multilingual",
+    "emb_calibracao": {},
     # PC Companion (seção 5)
     "pc_alertas": True,             # a Zoe comenta sobre RAM, CPU, disco, temperatura e bateria
     "pc_intervalo_s": 5,            # intervalo entre leituras

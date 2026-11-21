@@ -158,7 +158,8 @@ body.app { background: radial-gradient(1200px 600px at 30% -10%, rgba(124, 58, 2
 .app .mem-form { border-color: var(--accent-2); }
 .rec-body.two { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 24px; }
 .app .meter { background: var(--accent-soft); }
-.settings.cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 28px; }
+.settings.cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 28px; align-items: start; }
+.settings.cols fieldset { align-content: start; }
 .settings.cols .wide { grid-column: 1 / -1; }
 .settings.cols .saved { margin: 0 0 0 auto; }
 .app fieldset { border-bottom-color: var(--line); }
@@ -168,3 +169,9 @@ body.app { background: radial-gradient(1200px 600px at 30% -10%, rgba(124, 58, 2
   .reports, .settings.cols, .rec-body.two { grid-template-columns: 1fr; }
 }
 @media (prefers-reduced-motion: reduce) { .hero-ring { animation: none; } .ring-fg { transition: none; } }
+
+/* Configurações → Busca por significado */
+.sem { display: grid; gap: 8px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; background: rgba(139, 92, 246, .06); }
+.sem h4 { margin: 0; font-size: 13px; }
+.sem .row { display: flex; gap: 8px; }
+.sem .btn[hidden] { display: none; }

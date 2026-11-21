@@ -210,6 +210,18 @@
             <div class="meter" id="iaPullMeter" role="meter" aria-label="Download do modelo" aria-valuemin="0" aria-valuemax="100"><i id="iaPullFill"></i></div>
             <p class="hint" id="iaPullText"></p>
           </div>
+          <div class="sem" id="semBox">
+            <h4>Busca por significado</h4>
+            <label class="check"><input type="checkbox" name="emb_ativo"> Reconhecer perguntas com o mesmo sentido (embeddings)</label>
+            <label>Modelo de embeddings <select name="emb_modelo" id="semModelo"></select></label>
+            <p class="hint ia-status" id="semStatus" aria-live="polite">Verificando…</p>
+            <div class="row"><button type="button" class="btn primary" id="semPull" hidden>Baixar</button>
+              <button type="button" class="btn" id="semCal" hidden>Calibrar agora</button></div>
+            <div class="ia-pull" id="semPullBox" hidden>
+              <div class="meter" role="meter" aria-label="Download do modelo de embeddings" aria-valuemin="0" aria-valuemax="100"><i id="semPullFill"></i></div>
+              <p class="hint" id="semPullText"></p>
+            </div>
+          </div>
           <label class="check"><input type="checkbox" name="pesquisa_web"> Depois da conversa, conferir na Wikipédia o que só a IA respondeu (envia só o assunto)</label>
         </fieldset>
         <fieldset>
@@ -237,6 +249,7 @@
 <script src="../memoria.js"></script>
 <script src="../ia.js"></script>
 <script src="../aprendizado.js"></script>
+<script src="../busca.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

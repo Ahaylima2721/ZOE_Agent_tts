@@ -74,6 +74,23 @@ class OllamaClient:
                 break
         return THINK_RE.sub("", "".join(parts)).strip()
 
+    async def embed(self, model: str, texts: list[str]) -> list[list[float]]:
+        """Embeddings (POST /api/embed). Um pedido para vários textos; o modelo fica carregado 10 min."""
+        try:
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=60, sock_connect=3)) as s:
+                async with s.post(self.base + "/api/embed", json={"model": model, "input": texts, "keep_alive": "10m"}) as r:
+                    data = await r.json(content_type=None)
+                    if r.status != 200 or data.get("error"):
+                        raise OllamaError(data.get("error") or f"Ollama respondeu {r.status}")
+        except aiohttp.ClientConnectorError as e:
+            raise OllamaError("não consegui falar com o Ollama") from e
+        except (aiohttp.ClientError, OSError, TimeoutError, ValueError) as e:
+            raise OllamaError("falha ao calcular embeddings") from e
+        vecs = data.get("embeddings") or []
+        if len(vecs) != len(texts):
+            raise OllamaError("o Ollama devolveu um número errado de embeddings")
+        return vecs
+
     async def pull(self, model: str, on_progress: Callable[[dict], Awaitable[None]]) -> None:
         async for d in self._stream("/api/pull", {"model": model, "stream": True}):
             await on_progress(d)

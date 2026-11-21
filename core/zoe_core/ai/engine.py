@@ -111,10 +111,11 @@ class AIEngine:
         return st
 
     # ---------------- download do modelo ----------------
-    def start_pull(self) -> bool:
+    def start_pull(self, model: str | None = None) -> bool:
+        """Baixa um modelo (o de conversa, por padrão; ou o de embeddings). Um download por vez."""
         if self._pull_task and not self._pull_task.done():
             return False
-        model = self.settings()[2]
+        model = model or self.settings()[2]
         self.pull_state = {"model": model, "status": "iniciando", "completed": 0, "total": 0, "error": None, "done": False}
         self._pull_task = asyncio.create_task(self._pull(model))
         return True
@@ -134,6 +135,7 @@ class AIEngine:
         try:
             await self.client().pull(model, progress)
             self.pull_state.update(done=True, status="success")
+            self.core.retriever.semantic.invalidate()          # um modelo de embeddings novo pode ter chegado
         except OllamaError as e:
             self.pull_state.update(done=True, error=str(e))
         await self.core.hub.broadcast({"type": "ai.pull", "pull": self.pull_state})
@@ -159,12 +161,15 @@ class AIEngine:
         facts = [f for _, f in scored[:self.MAX_FACTS]]
         return facts or current[:3]
 
-    def build_messages(self, user_text: str) -> list[dict]:
+    async def build_messages(self, user_text: str) -> list[dict]:
         s = self.core.db.get_settings()
         now = datetime.fromtimestamp(self.core.clock())
-        facts = self.relevant_facts(user_text)
+        # R1: memória por significado (embeddings); sem eles, por palavras em comum
+        semantic = await self.core.retriever.relevant_memory(user_text, self.MAX_FACTS)
+        facts = ([f"{KINDS[i['tipo']].label}: {describe(i)}" for i in semantic] if semantic
+                 else self.relevant_facts(user_text))
         about = "\n".join(f"- {f}" for f in facts) or "- (nada relacionado na memória)"
-        known = self.core.knowledge.related(user_text, self.MAX_KNOWLEDGE)
+        known = await self.core.retriever.related_knowledge(user_text, self.MAX_KNOWLEDGE)
         confirmed = "\n".join(f"- {k['question']} → {k['answer'][:300]}" for k in known)
         name = s.get("nome_usuario") or "(não informado)"
         system = (PERSONA + "\n" + TONE.get(s.get("tom", "equilibrado"), "") +
@@ -201,7 +206,7 @@ class AIEngine:
         async with self._lock:
             try:
                 text = await self.client().chat(
-                    model, self.build_messages(user_text),
+                    model, await self.build_messages(user_text),
                     options={"temperature": 0.4, "num_ctx": 2048, "num_predict": 220},
                     on_delta=visible, think=model_meta(model)["think"])
             except OllamaError as e:

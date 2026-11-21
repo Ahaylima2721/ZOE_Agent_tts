@@ -13,6 +13,7 @@ from .companion import checkins
 from .companion.memory import Memory
 from .learning.knowledge import KnowledgeBase
 from .learning.research import Researcher
+from .learning.retriever import Retriever
 from .db import Database
 from .decision import DecisionEngine
 from .events import Event, EventBus, EventType
@@ -62,6 +63,7 @@ class ZoeCore:
         self.memory = Memory(db, clock)
         self.knowledge = KnowledgeBase(db, clock)
         self.research = Researcher(self)
+        self.retriever = Retriever(self)
         self.ai = AIEngine(self)
         self.chat = ChatHandler(self)
         # PC Companion: opcional, para a Zoe funcionar mesmo sem o psutil instalado
