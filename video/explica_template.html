@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Zoe · Como funciona</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#ddd;font-family:"Segoe UI",system-ui,-apple-system,sans-serif;color:#1A1726}
+  .slide{position:relative;width:1080px;height:1350px;overflow:hidden;padding:70px 66px 56px;margin-bottom:20px;
+    background:radial-gradient(760px 600px at 100% 0%,rgba(167,139,250,.30),transparent 65%),
+               radial-gradient(620px 520px at 0% 100%,rgba(255,143,177,.16),transparent 65%),#F4F1EA}
+  .slide::before{content:"";position:absolute;inset:0;background-image:radial-gradient(rgba(26,23,38,.07) 1px,transparent 1.3px);background-size:22px 22px;pointer-events:none}
+  .slide>*{position:relative}
+  .marca{font:600 17px/1 ui-monospace,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;color:#6D5E9C;display:flex;gap:12px;align-items:center}
+  .marca i{width:11px;height:11px;border-radius:50%;background:#8B5CF6;box-shadow:0 0 12px #A78BFA}
+  .marca b{margin-left:auto;font-weight:600;color:#A79CC9}
+  h1{margin:18px 0 10px;font-size:64px;line-height:1;letter-spacing:-.035em;font-weight:800}
+  h1 em{font-style:normal;color:#7C3AED}
+  .sub{margin:0 0 22px;font-size:25px;line-height:1.35;color:#5E5A72;max-width:880px}
+  .mono{font-family:ui-monospace,Menlo,monospace}
+  .card{background:#fff;border:1px solid #E2DAF5;border-radius:20px;box-shadow:0 18px 40px -26px rgba(60,20,120,.45)}
+  code,.tag{font-family:ui-monospace,Menlo,monospace;font-size:.9em;background:#F1ECFC;color:#5B21B6;padding:2px 8px;border-radius:7px}
+  .rodape{position:absolute;left:72px;right:72px;bottom:52px;font-size:19px;color:#7A7590;display:flex;justify-content:space-between}
+
+  /* orbe estático */
+  .orb{position:relative;border-radius:50%;isolation:isolate;
+    background:radial-gradient(circle at 34% 28%,#C9A7FF 0%,#8B5CF6 45%,#5B21B6 80%,#2A0E5E 100%);
+    box-shadow:inset -8px -12px 24px rgba(42,14,94,.55),inset 6px 8px 18px rgba(255,255,255,.35),0 0 40px rgba(139,92,246,.45)}
+  .orb::after{content:"";position:absolute;left:22%;top:14%;width:26%;height:20%;border-radius:50%;background:radial-gradient(rgba(255,255,255,.75),transparent 70%)}
+  .orb .olhos{position:absolute;left:50%;top:52%;transform:translate(-50%,-50%);display:flex;gap:26%;width:44%;justify-content:center}
+  .orb .olhos i{width:22%;aspect-ratio:7/11;border-radius:999px;background:#F7F3FF;box-shadow:0 0 10px rgba(235,225,255,.95)}
+
+  /* ---------- 1: pipeline ---------- */
+  .pergunta{display:flex;align-items:center;gap:22px;padding:16px 26px;margin-bottom:14px}
+  .pergunta .orb{width:64px;height:64px;flex:none}
+  .pergunta p{margin:0;font-size:30px;font-weight:650}
+  .pergunta small{display:block;font:600 15px ui-monospace,Menlo,monospace;color:#8C84A8;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+  .passos{display:grid;gap:10px}
+  .passo{display:grid;grid-template-columns:60px 1fr 330px;gap:22px;align-items:center;padding:13px 22px}
+  .passo .n{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font:700 24px ui-monospace,Menlo,monospace;color:#fff;background:#7C3AED}
+  .passo h3{margin:0 0 4px;font-size:27px;letter-spacing:-.01em}
+  .passo p{margin:0;font-size:19px;line-height:1.35;color:#5E5A72}
+  .passo .ex{font:600 19px/1.4 ui-monospace,Menlo,monospace;color:#1A1726;background:#F7F4FF;border-radius:12px;padding:12px 14px}
+  .passo .ex s{color:#B0A8C6}
+  .passo .ex em{font-style:normal;color:#7C3AED}
+  .saidas{display:grid;grid-template-columns:1.25fr 1fr;gap:10px;margin-top:10px}
+  .saida{padding:16px 22px}
+  .saida h4{margin:0 0 6px;font-size:22px}
+  .saida p{margin:0;font-size:18px;line-height:1.38;color:#5E5A72}
+  .saida.ok{border-color:#C9B5F7;background:#FBF9FF}
+  .saida.nao{border-color:#F5C9D6;background:#FFF8FA}
+
+  /* ---------- 2: back-end ---------- */
+  .colunas{display:grid;grid-template-columns:1fr;gap:0}
+  .etapa{padding:17px 26px;display:grid;grid-template-columns:230px 1fr;gap:26px;align-items:start}
+  .etapa .rot{font:700 16px ui-monospace,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:#7C3AED}
+  .etapa .rot big{display:block;font:800 34px/1.05 "Segoe UI",system-ui,sans-serif;letter-spacing:-.02em;color:#1A1726;text-transform:none;margin-top:8px}
+  .etapa .rot small{display:block;margin-top:8px;font:500 17px/1.3 "Segoe UI",system-ui,sans-serif;color:#7A7590;letter-spacing:0;text-transform:none}
+  .itens{display:grid;gap:6px}
+  .item{display:flex;gap:14px;align-items:baseline;font-size:19px;line-height:1.34;color:#3A3550}
+  .item b{color:#1A1726}
+  .item::before{content:"";flex:none;width:9px;height:9px;border-radius:50%;background:#A78BFA;transform:translateY(-3px)}
+  .seta{height:32px;display:grid;place-items:center;color:#8B5CF6;font:700 16px ui-monospace,Menlo,monospace;letter-spacing:.08em}
+  .seta span{background:#F4F1EA;padding:0 14px;position:relative}
+  .seta::before{content:"";position:absolute;left:50%;top:0;bottom:0;border-left:3px dashed #C4B5FD}
+  .seta{position:relative}
+  .numeros{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px}
+  .num{padding:14px 18px}
+  .num b{display:block;font-size:36px;line-height:1;letter-spacing:-.03em;color:#6D28D9}
+  .num small{display:block;margin-top:6px;font-size:16px;line-height:1.3;color:#5E5A72}
+
+  /* ---------- 3 e 4: gráficos ---------- */
+  svg text{font-family:"Segoe UI",system-ui,sans-serif}
+  .lado{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px}
+  .nota{padding:20px 24px;font-size:19px;line-height:1.42;color:#4A4560}
+  .nota h4{margin:0 0 6px;font-size:22px;color:#1A1726}
+  .formula{font:600 22px ui-monospace,Menlo,monospace;color:#1A1726;text-align:center;padding:16px;margin-top:14px}
+  .formula em{font-style:normal;color:#7C3AED}
+</style>
+</head>
+<body>
+
+<!-- ================= 1. COMO ELA RESPONDE ================= -->
+<section class="slide" id="s1">
+  <div class="marca"><i></i>Zoe · como funciona<b>1/4</b></div>
+  <h1>Como a Zoe <em>responde</em></h1>
+  <p class="sub">Cada pergunta passa por seis passos, todos dentro do seu navegador. Exemplo real, com os números do modelo publicado:</p>
+
+  <div class="card pergunta"><div class="orb"><span class="olhos"><i></i><i></i></span></div>
+    <div><small>pergunta</small><p>“quantos testes tem o harmoni?”</p></div></div>
+
+  <div class="passos">
+    <div class="card passo"><div class="n">1</div><div><h3>Limpa o texto</h3><p>Tira acentos e palavras vazias, junta singular e plural.</p></div>
+      <div class="ex">quantos testes tem o harmoni<br>→ [teste, harmoni]</div></div>
+    <div class="card passo"><div class="n">2</div><div><h3>Corrige a digitação</h3><p>Compara com as 5.180 palavras que ela conhece.</p></div>
+      <div class="ex"><s>harmoni</s> → <em>harmony</em></div></div>
+    <div class="card passo"><div class="n">3</div><div><h3>Lembra da conversa</h3><p>“E quantos testes ele tem?” continua no assunto anterior: o contexto vale metade da decisão.</p></div>
+      <div class="ex">pergunta nova<br>→ sem contexto</div></div>
+    <div class="card passo"><div class="n">4</div><div><h3>Descobre o tema</h3><p>A rede de uma camada dá a probabilidade de cada um dos 15 temas.</p></div>
+      <div class="ex">harmony <em>92%</em><br>apresentação 2% · fora 2%</div></div>
+    <div class="card passo"><div class="n">5</div><div><h3>Procura o trecho</h3><p>Mede a semelhança (cosseno) da pergunta com os 193 trechos do portfólio.</p></div>
+      <div class="ex">“Harmony: tecnologias”<br>cosseno <em>0,21</em></div></div>
+    <div class="card passo"><div class="n">6</div><div><h3>Dá a nota final</h3><p>Junta as duas coisas e escolhe o melhor trecho.</p></div>
+      <div class="ex">0,6 × 0,21 + 0,4 × 0,92<br>= nota <em>0,49</em></div></div>
+  </div>
+
+  <div class="saidas">
+    <div class="card saida ok"><h4>✓ Responde com o link</h4><p>Mostra o trecho e leva você até a parte do site de onde a resposta veio.</p></div>
+    <div class="card saida nao"><h4>✕ Recusa com educação</h4><p>Tema “fora” ≥ 50% ou nota &lt; 0,1. Ex.: “qual a idade dele?” → fora, 92%.</p></div>
+  </div>
+</section>
+
+<!-- ================= 2. O BACK-END ================= -->
+<section class="slide" id="s2">
+  <div class="marca"><i></i>Zoe · como funciona<b>2/4</b></div>
+  <h1>O back-end <em>sem servidor</em></h1>
+  <p class="sub">O trabalho pesado acontece uma vez, no treino. O que chega ao navegador é só um arquivo com o modelo pronto.</p>
+
+  <div class="card etapa"><div class="rot">1 · Python<big>Base de conhecimento</big><small><code>extrair.py</code></small></div>
+    <div class="itens">
+      <div class="item"><span>Lê o <b>index.html</b> do portfólio e corta em trechos com título e link</span></div>
+      <div class="item"><span>Soma os READMEs dos repositórios, os textos sobre a própria Zoe e um perfil do Ayalan</span></div>
+      <div class="item"><span>Resultado: <b>193 trechos</b>, cada um com um tema</span></div>
+    </div></div>
+  <div class="seta"><span>trechos + perguntas</span></div>
+  <div class="card etapa"><div class="rot">2 · Python<big>Treino do modelo</big><small><code>construir_indice.py</code></small></div>
+    <div class="itens">
+      <div class="item"><span><b>601 perguntas</b> escritas à mão em <b>15 temas</b>, mais duas versões de cada com erro de digitação</span></div>
+      <div class="item"><span>Vetores TF-IDF dos trechos + classificador de temas (regressão logística)</span></div>
+      <div class="item"><span>Busca em grade escolhe os ajustes: <b>C = 10</b>, <b>λ = 0,4</b> e os limiares de “fora do escopo”</span></div>
+      <div class="item"><span>Poda os pesos menores que 8% do maior: o modelo cabe em <b>~120 KB</b> com gzip</span></div>
+    </div></div>
+  <div class="seta"><span>indice.json</span></div>
+  <div class="card etapa"><div class="rot">3 · GitHub Actions<big>A cada push</big><small>só publica se tudo passar</small></div>
+    <div class="itens">
+      <div class="item"><span>Treina de novo e roda a avaliação com <b>72 perguntas</b> que ela nunca viu</span></div>
+      <div class="item"><span>Teste de <b>paridade</b>: as 600+ perguntas passam pelo Python e pelo JavaScript, e as respostas têm que ser idênticas</span></div>
+      <div class="item"><span>Publica o site no GitHub Pages</span></div>
+    </div></div>
+  <div class="seta"><span>site publicado</span></div>
+  <div class="card etapa"><div class="rot">4 · Navegador<big>A resposta</big><small><code>motor.js</code></small></div>
+    <div class="itens">
+      <div class="item"><span>Baixa o <b>indice.json</b> e responde na hora, no seu próprio aparelho</span></div>
+      <div class="item"><span>Nenhuma pergunta sai do navegador</span></div>
+    </div></div>
+
+  <div class="numeros">
+    <div class="card num"><b>0</b><small>servidores</small></div>
+    <div class="card num"><b>0</b><small>chaves de API</small></div>
+    <div class="card num"><b>~120 KB</b><small>modelo com gzip</small></div>
+    <div class="card num"><b>96%</b><small>de acerto nos testes</small></div>
+  </div>
+</section>
+
+<!-- ================= 3. A REDE NEURAL ================= -->
+<section class="slide" id="s3">
+  <div class="marca"><i></i>Zoe · como funciona<b>3/4</b></div>
+  <h1>A <em>rede neural</em></h1>
+  <p class="sub">O classificador de temas é uma rede de uma camada: cada pedaço de texto é um neurônio de entrada, cada tema é uma saída. Os pesos abaixo são os reais, para “quantos testes tem o harmoni?”.</p>
+  <div class="card" style="padding:10px 6px 4px"><svg id="rede" width="924" height="640" viewBox="0 0 924 640"></svg></div>
+  <div class="formula card">p(tema) = <em>softmax</em>( W · x + b )</div>
+  <div class="lado">
+    <div class="card nota"><h4>Entradas: 4.815 neurônios</h4>1.943 pedaços de palavras (como <code>harmony</code>) e 2.872 pedaços de letras (como <code>rmo</code>). Os de letras ajudam quando a palavra vem escrita errada.</div>
+    <div class="card nota"><h4>Laboratório no site</h4>Na página da Zoe, dá para treinar ao vivo uma rede com <b>camada oculta</b> (ReLU + softmax, otimizador Adam) com as mesmas perguntas.</div>
+  </div>
+</section>
+
+<!-- ================= 4. OS EMBEDDINGS ================= -->
+<section class="slide" id="s4">
+  <div class="marca"><i></i>Zoe · como funciona<b>4/4</b></div>
+  <h1>Os <em>embeddings</em></h1>
+  <p class="sub">Cada trecho do portfólio vira um vetor com 5.180 dimensões, uma por palavra ou par de palavras (TF-IDF). Abaixo, os 193 vetores reais achatados em 2D:</p>
+  <div class="card" style="padding:8px"><svg id="mapa" width="932" height="540" viewBox="0 0 932 540"></svg></div>
+  <div class="lado">
+    <div class="card nota"><h4>Um vetor por dentro</h4><svg id="barras" width="400" height="200" viewBox="0 0 400 200"></svg></div>
+    <div class="card nota"><h4>Perto = parecido</h4>A pergunta vira um vetor do mesmo jeito. A Zoe mede o ângulo entre ela e cada trecho:
+      <div class="formula" style="font-size:19px;padding:12px 0 4px">cos = <em>q · t</em> / (|q|·|t|)</div></div>
+  </div>
+  <div class="card nota" style="margin-top:14px">Diferente de embeddings de redes grandes, que captam sentido, o TF-IDF conta palavras raras e importantes. Por isso a Zoe completa com <b>62 sinônimos</b> e com o classificador de letras.</div>
+</section>
+
+<script>
+/*DADOS*/
+const NS = 'http://www.w3.org/2000/svg';
+function el(svg, tag, at, txt) { const e = document.createElementNS(NS, tag); for (const k in at) e.setAttribute(k, at[k]); if (txt != null) e.textContent = txt; svg.appendChild(e); return e; }
+const br = n => String(n).replace('.', ',');
+
+/* ---- rede neural ---- */
+(function () {
+  const s = document.getElementById('rede');
+  const ent = EXP.feats.slice(0, 8), H = 640, x1 = 210, x2 = 650;
+  const NOMES = { apresentacao: 'apresentação', sobre: 'sobre', dia_a_dia: 'dia a dia', principios: 'princípios', habilidades: 'habilidades', trajetoria: 'trajetória',
+    ferramentas: 'ferramentas', contato: 'contato', projetos: 'projetos', fluxo: 'Fluxo', mapa: 'Mapa de Vendas', superagente: 'SuperAgente', harmony: 'Harmony', assistente: 'Zoe', fora: 'fora do portfólio' };
+  const saidas = Object.entries(EXP.probs).sort((a, b) => b[1] - a[1]).slice(0, 7);
+  const ye = i => 70 + i * (H - 140) / (ent.length - 1), ys = i => 70 + i * (H - 140) / (saidas.length - 1);
+  const maxc = ent[0].c;
+  el(s, 'text', { x: x1, y: 32, 'text-anchor': 'middle', 'font-size': 16, 'font-weight': 700, fill: '#8C84A8', 'letter-spacing': '1.5' }, 'ENTRADAS ATIVAS (8 de 37)');
+  el(s, 'text', { x: x2, y: 32, 'text-anchor': 'middle', 'font-size': 16, 'font-weight': 700, fill: '#8C84A8', 'letter-spacing': '1.5' }, 'SAÍDAS (TEMAS)');
+  /* ligações de cada entrada para todas as saídas mostradas; destaque para Harmony */
+  ent.forEach((f, i) => saidas.forEach(([t], j) => {
+    const top = t === 'harmony';
+    el(s, 'path', { d: `M${x1 + 22},${ye(i)} C${(x1 + x2) / 2},${ye(i)} ${(x1 + x2) / 2},${ys(j)} ${x2 - 22},${ys(j)}`, fill: 'none',
+      stroke: top ? '#7C3AED' : '#D9D1EC', 'stroke-width': top ? 1.5 + 7 * f.c / maxc : 1, opacity: top ? 0.85 : 0.6 });
+  }));
+  ent.forEach((f, i) => {
+    el(s, 'circle', { cx: x1, cy: ye(i), r: 20, fill: '#fff', stroke: '#A78BFA', 'stroke-width': 3 });
+    el(s, 'circle', { cx: x1, cy: ye(i), r: 6 + 10 * Math.min(1, f.v / 0.63), fill: '#8B5CF6' });
+    const nome = f.p === 'letras' ? '“' + f.t.replace(/ /g, '␣') + '”' : f.t;
+    el(s, 'text', { x: x1 - 34, y: ye(i) - 2, 'text-anchor': 'end', 'font-size': 22, 'font-weight': 700, fill: '#1A1726', 'font-family': 'ui-monospace,Menlo,monospace' }, nome);
+    el(s, 'text', { x: x1 - 34, y: ye(i) + 20, 'text-anchor': 'end', 'font-size': 15, fill: '#7A7590' }, `${f.p === 'letras' ? 'letras' : 'palavra'} · peso ${br(f.w.toFixed(2))}`);
+  });
+  saidas.forEach(([t, p], j) => {
+    const top = t === 'harmony';
+    el(s, 'circle', { cx: x2, cy: ys(j), r: 20, fill: top ? '#7C3AED' : '#fff', stroke: top ? '#7C3AED' : '#CFC6E6', 'stroke-width': 3 });
+    el(s, 'text', { x: x2 + 36, y: ys(j) - 2, 'font-size': 22, 'font-weight': top ? 800 : 600, fill: top ? '#5B21B6' : '#4A4560' }, NOMES[t] || t);
+    el(s, 'rect', { x: x2 + 36, y: ys(j) + 9, width: 170, height: 9, rx: 4.5, fill: '#EEE9F8' });
+    el(s, 'rect', { x: x2 + 36, y: ys(j) + 9, width: Math.max(3, 170 * p), height: 9, rx: 4.5, fill: top ? '#7C3AED' : '#B9AEDA' });
+    el(s, 'text', { x: x2 + 216, y: ys(j) + 19, 'font-size': 16, 'font-weight': 700, fill: top ? '#5B21B6' : '#7A7590' }, (p * 100 < 1 ? '<1' : Math.round(p * 100)) + '%');
+  });
+  el(s, 'text', { x: x2 + 36, y: H - 12, 'font-size': 15, fill: '#8C84A8' }, '+ 8 temas abaixo de 1%');
+})();
+
+/* ---- mapa dos vetores ---- */
+(function () {
+  const s = document.getElementById('mapa'), W = 932, H = 540, P = MAPA.pts;
+  const COR = { fluxo: '#0EA5E9', mapa: '#F59E0B', superagente: '#10B981', harmony: '#EC4899', assistente: '#7C3AED' };
+  const NOME = { fluxo: 'Fluxo', mapa: 'Mapa de Vendas', superagente: 'SuperAgente', harmony: 'Harmony', assistente: 'Zoe', outro: 'Sobre o Ayalan e o resto' };
+  const xs = P.map(p => p[0]).concat(MAPA.q[0]), ys = P.map(p => p[1]).concat(MAPA.q[1]);
+  const [x0, x1] = [Math.min(...xs), Math.max(...xs)], [y0, y1] = [Math.min(...ys), Math.max(...ys)];
+  const X = v => 40 + (v - x0) / (x1 - x0) * (W - 80), Y = v => 40 + (y1 - v) / (y1 - y0) * (H - 130);
+  P.forEach(p => { if (!COR[p[2]]) el(s, 'circle', { cx: X(p[0]), cy: Y(p[1]), r: 7, fill: '#CFC8DF', opacity: 0.85 }); });
+  P.forEach(p => { if (COR[p[2]]) el(s, 'circle', { cx: X(p[0]), cy: Y(p[1]), r: 8.5, fill: COR[p[2]], opacity: 0.9, stroke: '#fff', 'stroke-width': 1.5 }); });
+  /* pergunta */
+  const qx = X(MAPA.q[0]), qy = Y(MAPA.q[1]);
+  const est = [...Array(10)].map((_, i) => { const r = i % 2 ? 9 : 22, a = -Math.PI / 2 + i * Math.PI / 5; return (qx + r * Math.cos(a)) + ',' + (qy + r * Math.sin(a)); }).join(' ');
+  el(s, 'circle', { cx: qx, cy: qy, r: 34, fill: 'rgba(124,58,237,.12)' });
+  el(s, 'polygon', { points: est, fill: '#1A1726', stroke: '#fff', 'stroke-width': 2 });
+  const lx = 44, ly = qy + 104;
+  el(s, 'path', { d: `M${qx - 6},${qy + 24} L${lx + 60},${ly - 30}`, stroke: '#1A1726', 'stroke-width': 1.5, 'stroke-dasharray': '4 4', fill: 'none' });
+  el(s, 'text', { x: lx, y: ly - 6, 'font-size': 20, 'font-weight': 800, fill: '#1A1726' }, 'sua pergunta');
+  el(s, 'text', { x: lx, y: ly + 18, 'font-size': 16, fill: '#5E5A72' }, 'cai perto dos trechos do Harmony');
+  /* legenda */
+  let lx2 = 40;
+  ['harmony', 'fluxo', 'mapa', 'superagente', 'assistente', 'outro'].forEach(k => {
+    el(s, 'circle', { cx: lx2 + 8, cy: H - 34, r: 8, fill: COR[k] || '#CFC8DF' });
+    const t = el(s, 'text', { x: lx2 + 22, y: H - 28, 'font-size': 17, fill: '#4A4560', 'font-weight': 600 }, NOME[k]);
+    lx2 += 22 + t.getComputedTextLength() + 26;
+  });
+})();
+
+/* ---- barras de um vetor ---- */
+(function () {
+  const s = document.getElementById('barras'), d = MAPA.t130;
+  el(s, 'text', { x: 0, y: 18, 'font-size': 16, fill: '#7A7590' }, '“Harmony: tecnologias”: maiores pesos');
+  d.forEach(([t, v], i) => {
+    const y = 38 + i * 27;
+    el(s, 'text', { x: 170, y: y + 14, 'text-anchor': 'end', 'font-size': 16, 'font-family': 'ui-monospace,Menlo,monospace', fill: '#1A1726' }, t);
+    el(s, 'rect', { x: 180, y: y + 2, width: 170 * v / d[0][1], height: 15, rx: 4, fill: '#A78BFA' });
+    el(s, 'text', { x: 186 + 170 * v / d[0][1], y: y + 15, 'font-size': 15, fill: '#5E5A72' }, br(v.toFixed(2)));
+  });
+})();
+</script>
+</body>
+</html>

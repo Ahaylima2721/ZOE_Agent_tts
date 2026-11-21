@@ -122,3 +122,16 @@ Enquanto ela fala, os olhos ficam parados (só piscam) e uma **onda de voz** cre
 | 9 | Agora, com voz | "tenho voz!" |
 | 10 | O meu futuro | Agente de antiprocrastinação: ~~depois eu faço~~ → ✓ feito! |
 | 11 | Em breve, mais | Lupa, tontura e "eureka" |
+
+---
+
+# Imagens: como a Zoe funciona (carrossel 4:5)
+
+Quatro imagens de 1080×1350 (geradas em 2×), com os números reais do modelo publicado no portfólio (`assistente/indice.json`) e uma pergunta de exemplo rodada no `motor.js` de verdade (“quantos testes tem o harmoni?”).
+
+1. **Como a Zoe responde:** os seis passos (limpeza, correção, contexto, tema, trecho, nota) e as duas saídas: resposta com link ou recusa.
+2. **O back-end sem servidor:** extração dos trechos, treino em Python, GitHub Actions (avaliação e paridade Python × JS) e o navegador.
+3. **A rede neural:** o classificador como rede de uma camada, com os 8 neurônios de entrada mais fortes, os pesos reais e as probabilidades dos temas.
+4. **Os embeddings:** os 193 vetores TF-IDF dos trechos projetados em 2D (PCA), a pergunta no mapa e um vetor por dentro. A imagem avisa que são vetores TF-IDF, não embeddings de uma rede grande.
+
+**Como refazer:** `python3 dados_explica.py <portfólio>/assistente <pasta>` → `node render_explica.js <pasta> explica_template.html 2`.
