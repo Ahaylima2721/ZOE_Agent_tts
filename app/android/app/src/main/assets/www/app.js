@@ -146,7 +146,7 @@
       rascunho.vigiados = v;
     }
     if (p === 'agenda') rascunho.blocos = S.blocos.length ? copia(S.blocos) : (S.onboarded ? [] : [{ dias: UTEIS.slice(), inicio: 540, fim: 720 }]);
-    if (p === 'jeito') { rascunho.tom = S.tom; rascunho.voz = S.voz; }
+    if (p === 'jeito') { rascunho.tom = S.tom; }
   }
 
   function conteudo(p, editor) {
@@ -256,11 +256,7 @@
       return '<button class="linha escolha" role="radio" aria-checked="' + on + '" aria-pressed="' + on + '" data-acao="tom" data-arg="' + t.id + '" style="align-items:flex-start">' +
         orbe(48, t.humor, 'animation:none') +
         '<span class="meio"><strong>' + t.nome + '</strong><span class="det" style="white-space:normal">“' + esc(t.exemplo) + '”</span></span></button>';
-    }).join('') + '</div>' +
-      '<button class="linha" role="switch" aria-checked="' + !!rascunho.voz + '" data-acao="voz">' +
-      '<span class="perm-ico">' + ico('<path d="M11 5L6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/>') + '</span>' +
-      '<span class="meio"><strong style="white-space:normal">Falar as broncas em voz alta</strong><span class="det" style="white-space:normal">Usa a voz do próprio celular, sem internet.</span></span>' +
-      '<span class="interruptor" aria-hidden="true"></span></button>';
+    }).join('') + '</div>' ;
   }
 
   // ---------- permissões ----------
@@ -441,7 +437,7 @@
       '<div style="display:flex;align-items:center;gap:16px">' + orbe(80, humorPorEnergia(S.energia)) +
       '<div><h1 class="titulo">Zoe</h1><p class="sub">Energia ' + S.energia + ' · ' + S.sequencia + ' dias seguidos</p></div></div>' +
       '<ul class="lista">' +
-      item('editar', 'jeito', I.zoe, 'Jeito da Zoe', tom.nome + (S.voz ? ' · fala em voz alta' : ' · silenciosa')) +
+      item('editar', 'jeito', I.zoe, 'Jeito da Zoe', tom.nome) +
       item('editar', 'viloes', I.olho, 'Apps vigiados', S.vigiados.length + ' apps') +
       item('editar', 'agenda', I.relogio, 'Horários de foco', S.blocos.length ? S.blocos.length + (S.blocos.length === 1 ? ' horário' : ' horários') : 'Nenhum') +
       item('editar', 'habitos', I.certo, 'Hábitos', S.habitos.length + ' hábitos') +
@@ -496,7 +492,6 @@
       render();
     },
     tom: function (t) { rascunho.tom = t; render(); },
-    voz: function () { rascunho.voz = !rascunho.voz; render(); },
     duracao: function (m) { duracao = +m; render(); },
     focar: function (m) { Z.focarAgora(+m); carregar(); rota = 'foco'; render(); },
     encerrar: function () {
@@ -512,7 +507,7 @@
         if (ruim.length) { erro = 'Cada horário precisa de pelo menos um dia e terminar depois de começar.'; render(); return; }
         if (!Z.salvarBlocos(JSON.stringify(rascunho.blocos))) { erro = 'Não consegui salvar esses horários.'; render(); return; }
       }
-      if (p === 'jeito') { Z.salvarTom(rascunho.tom); Z.salvarVoz(!!rascunho.voz); }
+      if (p === 'jeito') { Z.salvarTom(rascunho.tom); }
       if (p === 'perms' && !S.onboarded) { Z.concluirBoasVindas(); rota = 'hoje'; }
       carregar();
       if (!S.onboarded) { passo++; }
@@ -566,7 +561,7 @@
   // ---------------- ponte falsa (só para abrir no navegador do computador) ----------------
   function pontaFalsa() {
     var st = {
-      onboarded: location.hash !== '#novo', energia: 72, sequencia: 12, tom: 'firme', voz: true,
+      onboarded: location.hash !== '#novo', energia: 72, sequencia: 12, tom: 'firme',
       vigiados: ['com.instagram.android', 'com.google.android.youtube'], nomesVigiados: ['Instagram', 'YouTube'],
       blocos: [{ dias: [1, 2, 3, 4, 5], inicio: 540, fim: 720 }, { dias: [1, 2, 3, 4, 5], inicio: 840, fim: 1080 }],
       habitos: HABITOS_SUGERIDOS.slice(0, 4), feitosHoje: ['ler'],
@@ -586,7 +581,7 @@
       salvarHabitos: function (j) { st.habitos = JSON.parse(j); },
       alternarHabito: function (id) { var i = st.feitosHoje.indexOf(id); if (i >= 0) st.feitosHoje.splice(i, 1); else st.feitosHoje.push(id); },
       salvarBlocos: function (j) { st.blocos = JSON.parse(j); return true; },
-      salvarTom: function (t) { st.tom = t; }, salvarVoz: function (v) { st.voz = v; },
+      salvarTom: function (t) { st.tom = t; },
       concluirBoasVindas: function () { st.onboarded = true; },
       liberar: function (p) { st.perms[p] = true; setTimeout(window.zoeVoltou, 50); },
       focarAgora: function (m) { st.foco = { ativo: true, fim: Date.now() + m * 60e3, tentativas: 0, proximo: 0 }; },

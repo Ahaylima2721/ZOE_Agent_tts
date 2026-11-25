@@ -100,10 +100,9 @@ body{background:rgba(22,10,51,.92);color:#F4EEFF;min-height:100%}
   }
   document.getElementById('tela').innerHTML = html;
 
-  var Z = window.Zoe || { ok: function () {}, emergencia: function () {}, falar: function () {} };
+  var Z = window.Zoe || { ok: function () {}, emergencia: function () {} };
   document.getElementById('ok').onclick = function () { Z.ok(); };
   document.getElementById('emergencia').onclick = function () { Z.emergencia(); };
-  Z.falar(nivel === 3 ? app + ' bloqueado até as ' + ate + '. ' + fala : fala);
 })();
 </script>
 </body>

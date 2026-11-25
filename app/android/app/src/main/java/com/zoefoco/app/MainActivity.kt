@@ -86,7 +86,6 @@ class MainActivity : Activity() {
             .put("energia", Store.energia(c))
             .put("sequencia", Store.sequencia(c))
             .put("tom", Store.tom(c))
-            .put("voz", Store.voz(c))
             .put("vigiados", JSONArray(Store.vigiados(c).toList()))
             .put("nomesVigiados", JSONArray(Store.vigiados(c).map { nomeDoApp(it) }))
             .put("blocos", JSONArray(Store.blocosJson(c)))
@@ -150,9 +149,6 @@ class MainActivity : Activity() {
 
         @JavascriptInterface
         fun salvarTom(tom: String) = Store.setTom(c, tom)
-
-        @JavascriptInterface
-        fun salvarVoz(v: Boolean) = Store.setVoz(c, v)
 
         @JavascriptInterface
         fun concluirBoasVindas() {

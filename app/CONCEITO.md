@@ -107,7 +107,9 @@ Permissões necessárias (todas pedidas com a Zoe explicando):
 
 **Sobre o Serviço de Acessibilidade**: ele daria um controle mais fino (por exemplo, bloquear só os Reels e deixar o direct do Instagram, ou só os Shorts do YouTube), mas a Google Play recusa apps que usam acessibilidade para isso. Fica para uma versão futura distribuída fora da loja (APK direto), como opção avançada.
 
-### 6.4 A voz da Zoe sem depender de internet
+### 6.4 A voz da Zoe (adiada)
+
+**Decisão de 25/11/2026: por enquanto a Zoe é só texto e vibração.** O plano abaixo fica para uma versão futura.
 
 - **Broncas e comemorações**: cerca de 40 frases pré-gravadas com a voz Luana (a mesma do vídeo, gerada pelo Speko), em Opus, cerca de 10 KB cada, ou seja, uns 400 KB no total. Soa natural e funciona offline.
 - **Frases dinâmicas** (nome do hábito, minutos restantes): o leitor de voz do próprio Android (TextToSpeech), offline e grátis.

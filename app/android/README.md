@@ -61,7 +61,7 @@ AlarmManager ──(início/fim de cada foco)──▶ Guard.sincronizar
 | `Perms.kt` | Checa e abre cada permissão |
 | `Guard.kt` | Agenda alarmes, liga o vigia, notificações |
 | `FocusGuardService.kt` | O vigia que detecta o app aberto |
-| `PetelecoActivity.kt` | A tela por cima, com vibração e voz (TextToSpeech, offline) |
+| `PetelecoActivity.kt` | A tela por cima, com texto e vibração |
 | `MainActivity.kt` | Hospeda a interface e a ponte `window.Zoe` |
 | `assets/www/` | Interface em HTML/CSS/JS, com o mesmo orbe do portfólio |
 

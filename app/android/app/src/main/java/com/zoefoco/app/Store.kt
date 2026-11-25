@@ -36,9 +36,6 @@ object Store {
         if (t in setOf("gentil", "firme", "brava")) p(c).edit().putString("tom", t).apply()
     }
 
-    fun voz(c: Context) = p(c).getBoolean("voz", true)
-    fun setVoz(c: Context, v: Boolean) = p(c).edit().putBoolean("voz", v).apply()
-
     fun blocosJson(c: Context): String = p(c).getString("blocos", "[]")!!
     fun setBlocos(c: Context, json: String) {
         parseBlocos(json) // valida antes de salvar
