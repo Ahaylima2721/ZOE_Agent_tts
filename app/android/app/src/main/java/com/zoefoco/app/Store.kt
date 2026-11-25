@@ -297,4 +297,56 @@ object Store {
     const val MAX_CONVERSA = 20
     fun conversasHoje(c: Context) = p(c).getInt("conversa_${dia()}", 0)
     fun contarConversa(c: Context) = p(c).edit().putInt("conversa_${dia()}", conversasHoje(c) + 1).apply()
+
+    // ---------------- bolinha: recados e aviso de rolagem (fora do foco) ----------------
+
+    fun recadosAtivos(c: Context) = p(c).getBoolean("recadosAtivos", true)
+    fun rolagemAtiva(c: Context) = p(c).getBoolean("rolagemAtiva", true)
+    fun recadosPorDia(c: Context) = p(c).getInt("recadosPorDia", 3)
+    fun rolagemSeguidos(c: Context) = p(c).getInt("rolagemSeguidos", 20)
+    fun rolagemLimite(c: Context) = p(c).getInt("rolagemLimite", 60)
+
+    fun setRecados(c: Context, recados: Boolean, porDia: Int, rolagem: Boolean, seguidos: Int, limite: Int) =
+        p(c).edit()
+            .putBoolean("recadosAtivos", recados).putInt("recadosPorDia", porDia.coerceIn(1, 5))
+            .putBoolean("rolagemAtiva", rolagem).putInt("rolagemSeguidos", seguidos.coerceIn(10, 60))
+            .putInt("rolagemLimite", limite.coerceIn(15, 240))
+            .apply()
+
+    /** Silêncio: das 22h às 8h a bolinha não aparece. */
+    fun silencio(t: Long = System.currentTimeMillis()): Boolean {
+        val h = java.util.Calendar.getInstance().apply { timeInMillis = t }.get(java.util.Calendar.HOUR_OF_DAY)
+        return h >= 22 || h < 8
+    }
+
+    fun recadosHoje(c: Context) = p(c).getInt("recados_${dia()}", 0)
+    fun ultimoRecado(c: Context) = p(c).getLong("ultimoRecado", 0)
+    fun recadoJaDado(c: Context, chave: String) = p(c).getBoolean("recado_${chave}_${dia()}", false)
+    fun registrarRecado(c: Context, chave: String) = p(c).edit()
+        .putInt("recados_${dia()}", recadosHoje(c) + 1)
+        .putLong("ultimoRecado", System.currentTimeMillis())
+        .putBoolean("recado_${chave}_${dia()}", true)
+        .apply()
+
+    /** Dispensou ou ignorou 3 seguidos: por 7 dias, no máximo 1 recado por dia. */
+    fun limiteRecadosHoje(c: Context): Int =
+        if (System.currentTimeMillis() < p(c).getLong("calmaAte", 0)) 1 else recadosPorDia(c)
+
+    fun recadoIgnorado(c: Context) {
+        val n = p(c).getInt("ignorados", 0) + 1
+        val e = p(c).edit().putInt("ignorados", n)
+        if (n >= 3) e.putLong("calmaAte", System.currentTimeMillis() + 7L * 24 * 3600_000).putInt("ignorados", 0)
+        e.apply()
+    }
+
+    fun recadoRespondido(c: Context) = p(c).edit().putInt("ignorados", 0).apply()
+
+    // rolagem: no máximo 2 avisos por dia; "tô de boa" silencia o resto do dia
+    fun avisosRolagemHoje(c: Context) = p(c).getInt("rolagem_${dia()}", 0)
+    fun contarAvisoRolagem(c: Context) = p(c).edit().putInt("rolagem_${dia()}", avisosRolagemHoje(c) + 1).apply()
+    fun rolagemSilenciadaHoje(c: Context) = p(c).getBoolean("rolagemSilencio_${dia()}", false)
+    fun silenciarRolagemHoje(c: Context) = p(c).edit().putBoolean("rolagemSilencio_${dia()}", true).apply()
+    fun adiadoAte(c: Context) = p(c).getLong("rolagemAdiadoAte", 0)
+    fun adiarRolagem(c: Context, min: Int) =
+        p(c).edit().putLong("rolagemAdiadoAte", System.currentTimeMillis() + min * MIN).apply()
 }

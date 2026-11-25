@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 12+: a tela de abertura do sistema já começa no roxo-noite da animação de entrada -->
+    <style name="Zoe" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/noite</item>
+        <item name="android:colorPrimary">@color/violeta</item>
+        <item name="android:colorAccent">@color/violeta</item>
+        <item name="android:statusBarColor">@color/noite</item>
+        <item name="android:navigationBarColor">@color/noite</item>
+        <item name="android:windowSplashScreenBackground">@color/noite</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_zoe</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@color/noite</item>
+    </style>
+
+    <style name="Zoe.Peteleco" parent="android:Theme.Translucent.NoTitleBar">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+</resources>

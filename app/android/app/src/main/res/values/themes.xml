@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Zoe" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:windowBackground">@color/fundo</item>
+        <item name="android:windowBackground">@color/noite</item>
         <item name="android:colorPrimary">@color/violeta</item>
         <item name="android:colorAccent">@color/violeta</item>
         <item name="android:statusBarColor">@color/fundo</item>

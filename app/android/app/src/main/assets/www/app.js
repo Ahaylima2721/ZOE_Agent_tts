@@ -1,4 +1,4 @@
-/* Zoe Foco · telas do app. Conversa com o Android pela ponte window.Zoe (MainActivity.Ponte). */
+/* Zoe · telas do app. Conversa com o Android pela ponte window.Zoe (MainActivity.Ponte). */
 (function () {
   'use strict';
 
@@ -8,6 +8,7 @@
   var pilha = [];             // de onde viemos (para o botão voltar)
   var E = null;               // módulo de Estudos (estudos.js)
   var lemb = null;            // rascunho dos lembretes
+  var rec = null;             // rascunho dos ajustes da bolinha
   var passo = 0;              // passo das boas-vindas
   var rascunho = {};          // edições ainda não salvas
   var apps = null;            // lista de apps instalados (carrega uma vez)
@@ -18,7 +19,7 @@
 
   var PASSOS = ['ola', 'habitos', 'viloes', 'agenda', 'jeito', 'perms'];
   var EDITORES = ['habitos', 'viloes', 'agenda', 'jeito', 'perms'];
-  var INTERNAS = ['trilha', 'novaTrilha', 'pilula', 'conversa', 'ia', 'lembretes', 'resumo'];
+  var INTERNAS = ['trilha', 'novaTrilha', 'pilula', 'conversa', 'ia', 'lembretes', 'resumo', 'bolinha'];
   var ABAS = ['hoje', 'estudos', 'foco', 'zoe'];
   var DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
   var DIAS_LONGOS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
@@ -275,13 +276,13 @@
   // ---------- permissões ----------
   var PERMS = [
     { grupo: 'Essenciais', itens: [
-      { id: 'uso', ico: I.olho, nome: 'Ver qual app está aberto', porque: 'É assim que eu sei que você abriu o Instagram no horário de foco. Eu só olho durante o foco, e isso fica no seu celular.', onde: 'Na lista, toque em Zoe Foco e ative "Permitir acesso ao uso".' },
+      { id: 'uso', ico: I.olho, nome: 'Ver qual app está aberto', porque: 'É assim que eu sei que você abriu o Instagram no horário de foco. Fora do foco, só uso isso para avisar se você rolar demais (dá pra desligar em Zoe › Bolinha). Tudo fica no seu celular.', onde: 'Na lista, toque em Zoe e ative "Permitir acesso ao uso".' },
       { id: 'sobrepor', ico: I.camadas, nome: 'Aparecer por cima de outros apps', porque: 'Pra eu aparecer na frente do app e dar o peteleco.', onde: 'Ative "Permitir sobreposição a outros apps".' }
     ] },
     { grupo: 'Recomendadas', itens: [
       { id: 'notificacoes', ico: I.sino, nome: 'Notificações', porque: 'Pra avisar que o foco começou e mostrar que estou de guarda.' },
       { id: 'alarmes', ico: I.relogio, nome: 'Alarmes no horário certo', porque: 'Pra eu começar a vigiar exatamente na hora do seu foco, e não uns minutos depois.' },
-      { id: 'bateria', ico: I.bateria, nome: 'Rodar sem economia de bateria', porque: 'Alguns celulares desligam apps em segundo plano. Isso evita que eu durma no meio do seu foco. Só gasto bateria enquanto vigio.', onde: 'Procure Zoe Foco e escolha "Não otimizar" ou "Sem restrições".' }
+      { id: 'bateria', ico: I.bateria, nome: 'Rodar sem economia de bateria', porque: 'Alguns celulares desligam apps em segundo plano. Isso evita que eu durma no meio do seu foco. Só gasto bateria enquanto vigio.', onde: 'Procure Zoe e escolha "Não otimizar" ou "Sem restrições".' }
     ] }
   ];
 
@@ -445,6 +446,7 @@
   function telaInterna(r) {
     if (r === 'resumo') return telaResumo();
     if (r === 'lembretes') return telaLembretes();
+    if (r === 'bolinha') return telaBolinha();
     return E.telas[r](S);
   }
 
@@ -484,6 +486,35 @@
       evol + '</section>';
   }
 
+  // ---------------- bolinha: recados e aviso de rolagem ----------------
+  function telaBolinha() {
+    if (!rec) rec = JSON.parse(JSON.stringify(S.recados));
+    var sw = function (acao, on, titulo, det) {
+      return '<button class="linha" role="switch" aria-checked="' + on + '" data-acao="' + acao + '"><span class="meio"><strong style="white-space:normal">' + titulo + '</strong><span class="det" style="white-space:normal">' + det + '</span></span><span class="interruptor" aria-hidden="true"></span></button>';
+    };
+    var chips = function (rot, campo, ops) {
+      return '<div class="campo"><span class="lbl">' + rot + '</span><div class="chips" role="radiogroup" aria-label="' + rot + '">' + ops.map(function (o) {
+        return '<button class="chip-btn" style="flex:1" role="radio" aria-checked="' + (rec[campo] === o[0]) + '" data-acao="recChip" data-arg="' + campo + ':' + o[0] + '">' + o[1] + '</button>';
+      }).join('') + '</div></div>';
+    };
+    return '<section class="tela">' +
+      '<div class="topo"><button class="voltar" data-acao="voltar" aria-label="Voltar">' + ico(I.voltar) + '</button><h1>Bolinha da Zoe</h1></div>' +
+      '<div class="balao" style="align-items:flex-start">' + orbe(56, '', 'animation:none') + '<p style="margin:0">Fora do foco eu apareço de vez em quando, por cima de qualquer app, com um recado. Me arrasta até o X pra dispensar.</p></div>' +
+      (!S.perms.sobrepor ? '<div class="aviso">' + ico(I.camadas) + '<p>Preciso da permissão de aparecer por cima de outros apps.</p><button class="btn secundario pequeno" data-acao="liberar" data-arg="sobrepor">Liberar</button></div>' : '') +
+      sw('recAtivos', rec.ativos, 'Recados', 'Livro parado, perguntas pra revisar, hábito pendente, sequência') +
+      (rec.ativos ? chips('Quantos recados por dia', 'porDia', [[1, 'Até 1'], [3, 'Até 3'], [5, 'Até 5']]) : '') +
+      '<h2 style="font-size:17px;margin-top:6px">Aviso de rolagem</h2>' +
+      '<p class="sub" style="font-size:13px;margin-top:-10px">Fora do foco eu não fecho nada: só aviso, e você decide.</p>' +
+      sw('recRolagem', rec.rolagem, 'Avisar quando eu rolar demais', 'Nos apps vigiados: ' + (S.nomesVigiados.length ? S.nomesVigiados.map(esc).join(', ') : 'nenhum ainda')) +
+      (rec.rolagem ? chips('Avisar depois de (seguidos)', 'seguidos', [[15, '15 min'], [20, '20 min'], [30, '30 min']]) +
+        chips('Limite do dia (somando todos)', 'limite', [[30, '30 min'], [60, '1h'], [90, '1h30'], [120, '2h']]) : '') +
+      (rec.rolagem && !S.perms.uso ? '<div class="aviso">' + ico(I.olho) + '<p>Pra saber quanto você rolou, preciso ver qual app está aberto.</p><button class="btn secundario pequeno" data-acao="liberar" data-arg="uso">Liberar</button></div>' : '') +
+      '<div class="linha" style="cursor:default"><span class="meio"><strong>Silêncio</strong><span class="det">Eu não apareço nesse horário</span></span><strong>22:00 – 08:00</strong></div>' +
+      '<p class="sub" style="font-size:13px">Nunca apareço durante o foco (ali só existe o peteleco) nem em ligações. Se você me dispensar 3 vezes seguidas, mando no máximo 1 recado por dia durante uma semana.</p>' +
+      (S.perms.sobrepor ? '<div class="linha-campo"><button class="btn secundario pequeno" style="flex:1" data-acao="testarBolha" data-arg="recado">Ver um recado</button><button class="btn secundario pequeno" style="flex:1" data-acao="testarBolha" data-arg="rolagem">Ver um aviso</button></div>' : '') +
+      '<div class="rodape"><button class="btn principal" data-acao="salvarRecados">Salvar</button></div></section>';
+  }
+
   // ---------------- lembretes ----------------
   function telaLembretes() {
     if (!lemb) lemb = { ativo: S.lembrete.ativo, minuto: S.lembrete.minuto, resumo: S.lembrete.resumo };
@@ -515,11 +546,12 @@
       item('editar', 'habitos', I.certo, 'Hábitos', S.habitos.length + ' hábitos') +
       item('editar', 'perms', I.escudo, 'Permissões', permsLiberadas() + ' de 5 liberadas') +
       item('sub', 'ia', I.chave, 'Inteligência', S.ia.temChave ? 'Gemini conectado' : 'Configurar chave grátis') +
+      item('sub', 'bolinha', I.zoe, 'Bolinha', S.recados.ativos || S.recados.rolagem ? (S.recados.ativos ? 'Recados' : '') + (S.recados.ativos && S.recados.rolagem ? ' e ' : '') + (S.recados.rolagem ? 'aviso de rolagem' : '') : 'Desligada') +
       item('sub', 'lembretes', I.sino, 'Lembretes', S.lembrete.ativo ? 'Hábitos às ' + hhmm(S.lembrete.minuto) : 'Desligados') +
       item('sub', 'resumo', I.grafico, 'Resumo do dia', 'Como foi hoje') +
       '</ul>' +
       '<p class="sub" style="display:flex;gap:8px;align-items:flex-start">' + ico(I.escudo, 18) + '<span>Privacidade: hábitos, horários e o uso dos apps ficam só neste celular. A internet é usada só em Estudos, e só com o tema da trilha.</span></p>' +
-      '<p class="sub" style="font-size:12px">Zoe Foco 0.2.1</p></section>';
+      '<p class="sub" style="font-size:12px">Zoe 0.3.0</p></section>';
   }
 
   // ---------------- ações ----------------
@@ -528,7 +560,12 @@
     voltar: function () { window.zoeVoltar(); },
     aba: function (a) { irAba(a); },
     editar: function (p) { erro = ''; delete rascunho[{ habitos: 'habitos', viloes: 'vigiados', agenda: 'blocos', jeito: 'tom' }[p]]; abrir(p); },
-    sub: function (p) { if (p === 'lembretes') lemb = null; abrir(p); },
+    sub: function (p) { if (p === 'lembretes') lemb = null; if (p === 'bolinha') rec = null; abrir(p); },
+    recAtivos: function () { rec.ativos = !rec.ativos; render(); },
+    recRolagem: function () { rec.rolagem = !rec.rolagem; render(); },
+    recChip: function (arg) { var p = arg.split(':'); rec[p[0]] = +p[1]; render(); },
+    salvarRecados: function () { Z.salvarRecados(!!rec.ativos, rec.porDia, !!rec.rolagem, rec.seguidos, rec.limite); carregar(); fechar(); },
+    testarBolha: function (t) { Z.testarBolha(t); },
     lembAtivo: function () { lemb.ativo = !lemb.ativo; render(); },
     lembResumo: function () { lemb.resumo = !lemb.resumo; render(); },
     salvarLembretes: function () { Z.salvarLembretes(!!lemb.ativo, lemb.minuto, !!lemb.resumo); carregar(); fechar(); },
@@ -675,6 +712,7 @@
       petelecosHoje: 1, minutosFocoHoje: 50,
       perms: { uso: true, sobrepor: false, notificacoes: true, alarmes: false, bateria: false, marca: 'Xiaomi', marcaAgressiva: 'xiaomi', android: 35 },
       emergenciasRestantes: 2, lembrete: { ativo: true, minuto: 1200, resumo: true },
+      recados: { ativos: true, porDia: 3, rolagem: true, seguidos: 20, limite: 60 },
       ia: { temChave: location.hash === '#chave', modelo: 'gemini-2.5-flash', conversasRestantes: 20 },
       agora: Date.now()
     };
@@ -694,6 +732,9 @@
       liberar: function (p) { st.perms[p] = true; setTimeout(window.zoeVoltou, 50); },
       focarAgora: function (m) { st.foco = { ativo: true, fim: Date.now() + m * 60e3, tentativas: 0, proximo: 0 }; },
       encerrarFoco: function () { st.foco.ativo = false; },
+      salvarRecados: function (a, p, r, s, l) { st.recados = { ativos: a, porDia: p, rolagem: r, seguidos: s, limite: l }; },
+      testarBolha: function () { window.open('bolha.html', '_blank'); },
+      introPronta: function () { },
       salvarLembretes: function (a, m, r) { st.lembrete = { ativo: a, minuto: m, resumo: r }; },
       ler: function (k) { try { return localStorage.getItem('mock_' + k) || ''; } catch (e) { return ''; } },
       guardar: function (k, v) { try { localStorage.setItem('mock_' + k, v); } catch (e) { } },
@@ -722,6 +763,23 @@
   }
 
   if (!Z) Z = pontaFalsa();
+
+  // Animação de entrada: ~2 s (curta com "reduzir movimento"). Toque pula.
+  (function intro() {
+    var el = document.getElementById('intro');
+    if (!el) return;
+    var calmo = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var feito = false;
+    function sair() {
+      if (feito) return; feito = true;
+      el.classList.add('sai');
+      try { Z.introPronta && Z.introPronta(); } catch (e) { }
+      setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 500);
+    }
+    el.addEventListener('click', sair);
+    setTimeout(sair, calmo ? 500 : 2100);
+  })();
+
   carregar();
   E = window.ZoeEstudos({
     Z: Z, esc: esc, ico: ico, I: I, orbe: orbe,

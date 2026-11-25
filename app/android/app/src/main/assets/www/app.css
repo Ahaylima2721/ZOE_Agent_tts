@@ -107,3 +107,27 @@ textarea.entrada{height:auto;resize:none;font:inherit;line-height:1.45}
 .msg.eu{align-self:flex-end;background:var(--violeta);color:#FFFFFF;border-radius:18px 18px 4px 18px}
 .msg .cod-bloco{margin-top:8px;font-size:13px}
 .chip-btn:disabled{opacity:.5}
+
+/* ---------- v0.3: animação de entrada ---------- */
+#intro{position:fixed;inset:0;z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;
+  background:radial-gradient(120% 70% at 50% 40%,#2A1460 0%,#160A33 62%);color:#F4EEFF;transition:opacity .45s ease}
+#intro.sai{opacity:0;pointer-events:none}
+#intro.sai .intro-orb{transform:scale(1.18) translateY(-12px)}
+.intro-orb{transition:transform .45s ease;animation:nasce .75s cubic-bezier(.3,1.6,.5,1) both}
+@keyframes nasce{0%{transform:scale(.15);opacity:0}60%{opacity:1}100%{transform:scale(1)}}
+#intro .orb{box-shadow:inset -8px -10px 22px rgba(30,8,70,.55),0 0 60px rgba(139,92,246,.55)}
+#intro .orb::after{top:110%;animation:enche .9s .45s cubic-bezier(.3,1.3,.5,1) forwards,onda 6s linear infinite}
+@keyframes enche{to{top:62%}}
+#intro .eye{animation:abre .35s 1s ease-out both}
+@keyframes abre{from{transform:scaleY(.08)}to{transform:scaleY(1)}}
+#intro .bochecha{animation:cora .4s 1.15s ease-out forwards}
+@keyframes cora{to{opacity:.8}}
+.intro-nome{display:flex;gap:2px;font:700 46px/1 system-ui,sans-serif;letter-spacing:.02em}
+.intro-nome span{display:inline-block;animation:letra .45s cubic-bezier(.3,1.5,.5,1) both}
+.intro-nome span:nth-child(1){animation-delay:1.05s}.intro-nome span:nth-child(2){animation-delay:1.15s}.intro-nome span:nth-child(3){animation-delay:1.25s}
+@keyframes letra{from{transform:translateY(18px);opacity:0}to{transform:none;opacity:1}}
+.intro-frase{margin:-8px 0 0;font-size:15px;color:#C9A7FF;animation:letra .5s 1.45s ease-out both}
+@media (prefers-reduced-motion:reduce){
+  .intro-orb,#intro .orb::after,#intro .eye,#intro .bochecha,.intro-nome span,.intro-frase{animation:none!important}
+  #intro .orb::after{top:62%}#intro .bochecha{opacity:.8}
+}

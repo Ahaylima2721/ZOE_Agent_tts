@@ -1,4 +1,4 @@
-/* Zoe Foco · Estudos: trilhas, pacotes de perguntas (Gemini), pílula com revisão espaçada e conversa socrática.
+/* Zoe · Estudos: trilhas, pacotes de perguntas (Gemini), pílula com revisão espaçada e conversa socrática.
    Tudo fica no celular (ponte Zoe.ler/guardar). Só o tema da trilha e as mensagens da conversa vão para a internet. */
 window.ZoeEstudos = function (ctx) {
   'use strict';
@@ -42,7 +42,7 @@ window.ZoeEstudos = function (ctx) {
   function nomeTrilha(t) { return t.tipo === 'leitura' ? (t.titulo || 'Livro') : (t.tema || 'Estudo'); }
   function detalheTrilha(t) {
     return t.tipo === 'leitura'
-      ? 'Leitura · capítulo ' + esc(t.capitulo || '1') + (t.autor ? ' · ' + esc(t.autor) : '')
+      ? (t.concluida ? 'Leitura concluída' : (t.pausada ? 'Leitura pausada · capítulo ' + esc(t.capitulo || '1') : 'Leitura · capítulo ' + esc(t.capitulo || '1'))) + (t.autor ? ' · ' + esc(t.autor) : '')
       : 'Estudo' + (t.topico ? ' · agora: ' + esc(t.topico) : '') + (t.nivel ? ' · ' + esc(t.nivel) : '');
   }
   function sigla(t) { return t.tipo === 'leitura' ? ico(I.livro) : esc((t.tema || '?').slice(0, 2).toLowerCase()); }
@@ -354,7 +354,7 @@ window.ZoeEstudos = function (ctx) {
       var t = f.tipo === 'estudo'
         ? { id: uid('t'), tipo: 'estudo', tema: f.tema.trim(), nivel: f.nivel, topico: f.topico.trim(), objetivo: f.objetivo.trim() }
         : { id: uid('t'), tipo: 'leitura', titulo: f.titulo.trim(), autor: f.autor.trim(), capitulo: String(Math.max(1, parseInt(f.capitulo, 10) || 1)) };
-      t.criada = hoje();
+      t.criada = hoje(); t.capituloEm = t.criada;
       trilhas.push(t); salvarTudo();
       form = null; atual = t.id;
       ctx.trocar('trilha');
@@ -364,7 +364,7 @@ window.ZoeEstudos = function (ctx) {
     gerar: function (id) { var t = trilha(id); if (t) gerarPacote(t); },
     capitulo: function (id) {
       var t = trilha(id), v = parseInt((document.getElementById('cap') || {}).value, 10);
-      if (t && v > 0) { t.capitulo = String(v); salvarTudo(); ctx.render(); }
+      if (t && v > 0) { t.capitulo = String(v); t.capituloEm = hoje(); delete t.pausada; salvarTudo(); ctx.render(); }
     },
     topico: function (id) {
       var t = trilha(id), v = ((document.getElementById('top') || {}).value || '').trim();

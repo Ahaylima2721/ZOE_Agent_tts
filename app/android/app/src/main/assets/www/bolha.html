@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Zoe</title>
+<link rel="stylesheet" href="zoe.css">
+<style>
+html,body{background:transparent!important;overflow:hidden}
+.btn{min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--borda-forte);background:#FFFFFF;font:600 14px system-ui,sans-serif;color:var(--tinta);cursor:pointer}
+.btn.forte{background:var(--violeta);border-color:var(--violeta);color:#FFFFFF}
+.op{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;width:100%;min-height:56px;padding:10px 14px;border-radius:16px;border:1px solid var(--borda-forte);background:#FFFFFF;text-align:left;font:600 15px system-ui,sans-serif;color:var(--tinta);cursor:pointer}
+.op.forte{background:var(--violeta);border-color:var(--violeta);color:#FFFFFF}
+.op small{font-size:12px;font-weight:400;opacity:.8;margin-top:2px}
+.msg{margin:0;background:#FFFFFF;border:1px solid var(--borda);border-radius:18px 18px 18px 4px;padding:12px 14px;font-size:16px;line-height:1.45}
+.eu{align-self:flex-end;max-width:80%;background:var(--violeta);color:#FFFFFF;border:0;border-radius:18px 18px 4px 18px;font-size:15px}
+
+/* bolha */
+#bolha{position:fixed;inset:0;display:flex;align-items:center;gap:10px;padding:0 10px;flex-direction:row-reverse}
+#bolha.esquerda{flex-direction:row}
+.balao{max-width:200px;border:0;text-align:left;background:#FFFFFF;border-radius:18px 18px 4px 18px;padding:10px 14px;font:500 15px/1.35 system-ui,sans-serif;color:var(--tinta);box-shadow:0 10px 30px -10px rgba(20,8,50,.6);cursor:pointer;transition:opacity .2s}
+#bolha.esquerda .balao{border-radius:18px 18px 18px 4px}
+#bolha.arrastando .balao{opacity:0;pointer-events:none}
+.tocar{border:0;padding:0;background:none;border-radius:50%;cursor:pointer}
+.entra{animation:entra .5s cubic-bezier(.3,1.5,.5,1) both}
+@keyframes entra{from{transform:translateX(80px) scale(.6);opacity:0}to{transform:none;opacity:1}}
+#bolha.esquerda .entra{animation-name:entraE}
+@keyframes entraE{from{transform:translateX(-80px) scale(.6);opacity:0}to{transform:none;opacity:1}}
+.desce{animation:desce .45s cubic-bezier(.3,1.4,.5,1) both}
+@keyframes desce{from{transform:translateY(-40px);opacity:0}to{transform:none;opacity:1}}
+.sobe{animation:sobe .4s cubic-bezier(.3,1.3,.5,1) both}
+@keyframes sobe{from{transform:translateY(30px) scale(.96);opacity:0}to{transform:none;opacity:1}}
+
+/* topo e tela */
+#topo{position:fixed;left:12px;right:12px;top:12px;background:#FFFFFF;border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:14px;box-shadow:0 24px 50px -18px rgba(20,8,50,.55),0 0 0 1px rgba(109,40,217,.12)}
+.grade{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+#fundo{position:fixed;inset:0;background:rgba(22,10,51,.55)}
+#cartao{position:fixed;left:14px;right:14px;top:0;bottom:0;margin:auto 0;height:fit-content;background:var(--fundo);border-radius:26px;padding:20px;display:flex;flex-direction:column;gap:14px;box-shadow:0 30px 60px -20px rgba(10,4,30,.8);max-height:88vh;overflow:auto}
+.fechar{display:grid;place-items:center;width:44px;height:44px;border:0;border-radius:50%;background:#EAE2FA;cursor:pointer;flex:none}
+@media (prefers-reduced-motion:reduce){.entra,.desce,.sobe{animation:none}}
+</style>
+</head>
+<body>
+<div id="raiz"></div>
+<script>
+(function () {
+  'use strict';
+  var Z = window.Zoe || {
+    dados: function () {
+      var m = location.hash.slice(1) || 'bolha';
+      return JSON.stringify(m === 'topo' ? { chave: 'rolagem1', modo: 'topo', titulo: 'Ei, já são 52 min de Instagram hoje', texto: 'Os últimos 25 min sem parar. Não é hora de foco, então a escolha é sua. Tá tudo bem?', botoes: [{ id: 'sair', texto: 'Valeu, vou sair', forte: true }, { id: 'mais10', texto: 'Só mais 10 min' }, { id: 'pergunta', texto: 'Uma pergunta no lugar' }, { id: 'deboa', texto: 'Tô de boa hoje' }], lado: 'direita' }
+        : m === 'tela' ? { chave: 'rolagem2', modo: 'tela', humor: 'triste', titulo: 'Os 10 minutos já passaram', texto: 'Hoje foram 1h 18min entre Instagram e Facebook, quase o dobro da sua média. Quer uma ajudinha minha?', botoes: [{ id: 'foco25', texto: 'Começar um foco de 25 min', detalhe: 'Eu fico de guarda e os petelecos voltam', forte: true }, { id: 'pausa30', texto: 'Pausar as redes por 30 min', detalhe: 'Só se você quiser: igual ao bloqueio do foco' }, { id: 'deixa', texto: 'Me deixa, Zoe', detalhe: 'Hoje eu não falo mais disso' }], lado: 'direita' }
+        : { chave: 'livro', modo: 'bolha', balao: 'Terminou O fantasma da ópera?', contexto: 'Leitura · O fantasma da ópera', texto: 'Faz 5 dias que você está no capítulo 10. Terminou o livro ou parou em algum lugar?', botoes: [{ id: 'livroFim:x', texto: 'Terminei!', forte: true }, { id: 'livroAvancei:x', texto: 'Avancei uns capítulos' }, { id: 'livroPausa:x', texto: 'Parei de ler' }, { id: 'depois', texto: 'Depois' }], lado: 'direita' });
+    },
+    expandir: function () {}, altura: function () {}, fechar: function () {}, concluir: function () {},
+    responder: function () { return JSON.stringify({ reacao: 'Combinado!', depois: '', humor: 'feliz' }); }
+  };
+
+  var R = JSON.parse(Z.dados());
+  var modo = R.modo || 'bolha';
+  var lado = R.lado || 'direita';
+  var reacao = null;
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function orbe(tam, humor, extra) {
+    return '<div class="orb ' + (humor || '') + ' ' + (extra || '') + '" style="--s:' + tam + 'px" role="img" aria-label="Zoe">' +
+      '<span class="bochecha e"></span><span class="bochecha d"></span><div class="face"><i class="eye"></i><i class="eye"></i></div></div>';
+  }
+  var X = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1E1336" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+
+  function botoes(estilo) {
+    return (R.botoes || []).map(function (b) {
+      if (estilo === 'op') return '<button class="op' + (b.forte ? ' forte' : '') + '" data-id="' + esc(b.id) + '">' + esc(b.texto) + (b.detalhe ? '<small>' + esc(b.detalhe) + '</small>' : '') + '</button>';
+      return '<button class="btn' + (b.forte ? ' forte' : '') + '" data-id="' + esc(b.id) + '">' + esc(b.texto) + '</button>';
+    }).join('');
+  }
+
+  function render() {
+    var html;
+    if (modo === 'bolha') {
+      html = '<div id="bolha" class="' + lado + '"><button class="tocar entra" data-abrir="1" aria-label="Abrir recado da Zoe">' + orbe(62, R.humor, 'flutua') + '</button>' +
+        '<button class="balao entra" data-abrir="1">' + esc(R.balao || R.texto) + '</button></div>';
+    } else if (modo === 'topo') {
+      html = '<div id="topo" class="desce" role="dialog" aria-label="Recado da Zoe">' +
+        '<div style="display:flex;gap:12px;align-items:flex-start">' + orbe(48, reacao ? reacao.humor : R.humor) +
+        '<div style="flex:1;display:flex;flex-direction:column;gap:4px">' +
+        (reacao ? '<p style="margin:0;font-size:15px;line-height:1.45">' + esc(reacao.reacao) + '</p>'
+          : '<strong style="font-size:16px;line-height:1.3">' + esc(R.titulo) + '</strong><span style="font-size:14px;line-height:1.45;color:#3D3456">' + esc(R.texto) + '</span>') +
+        '</div></div>' + (reacao ? '' : '<div class="grade">' + botoes('btn') + '</div>') + '</div>';
+    } else if (R.chave === 'rolagem2') {
+      html = '<div id="fundo"></div><div id="cartao" class="sobe" role="dialog" aria-labelledby="t">' +
+        '<div style="display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center">' + orbe(84, reacao ? reacao.humor : R.humor) +
+        (reacao ? '<p style="margin:0;font-size:16px;line-height:1.5">' + esc(reacao.reacao) + '</p>'
+          : '<h1 id="t" style="margin:0;font-size:21px;line-height:1.25">' + esc(R.titulo) + '</h1><p style="margin:0;font-size:15px;line-height:1.5;color:#3D3456">' + esc(R.texto) + '</p>') +
+        '</div>' + (reacao ? '' : '<div style="display:flex;flex-direction:column;gap:8px">' + botoes('op') + '</div>') + '</div>';
+    } else {
+      html = '<div id="fundo" data-fora="1"></div><div id="cartao" class="sobe" role="dialog" aria-label="Recado da Zoe">' +
+        '<div style="display:flex;align-items:center;gap:12px">' + orbe(52, reacao ? reacao.humor : R.humor) +
+        '<div style="flex:1;display:flex;flex-direction:column;gap:2px"><strong style="font-size:17px">Zoe</strong><span style="font-size:12px;color:var(--suave)">' + esc(R.contexto || '') + '</span></div>' +
+        '<button class="fechar" data-fechar="1" aria-label="Fechar">' + X + '</button></div>' +
+        '<p class="msg">' + esc(R.texto) + '</p>' +
+        (reacao ? '<p class="msg eu">' + esc(reacao.escolha) + '</p><p class="msg">' + esc(reacao.reacao) + '</p>'
+          : '<div style="display:flex;flex-wrap:wrap;gap:8px">' + botoes('btn') + '</div>') + '</div>';
+    }
+    document.getElementById('raiz').innerHTML = html;
+    if (modo === 'topo') {
+      var t = document.getElementById('topo');
+      Z.altura(Math.ceil(t.getBoundingClientRect().height + 30));
+    }
+  }
+
+  document.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-id],[data-abrir],[data-fechar],[data-fora]');
+    if (!t || reacao) return;
+    if (t.hasAttribute('data-abrir')) { modo = 'tela'; Z.expandir(); setTimeout(render, 60); return; }
+    if (t.hasAttribute('data-fechar') || t.hasAttribute('data-fora')) { Z.fechar(); return; }
+    var id = t.getAttribute('data-id');
+    var b = (R.botoes || []).filter(function (x) { return x.id === id; })[0] || {};
+    reacao = JSON.parse(Z.responder(id));
+    reacao.escolha = b.texto;
+    render();
+    setTimeout(function () { Z.concluir(reacao.depois || ''); }, reacao.depois ? 1600 : 2400);
+  });
+
+  window.zoeArrastando = function (sim, novoLado) {
+    var b = document.getElementById('bolha');
+    if (!b) return;
+    if (novoLado) { lado = novoLado; b.className = lado; }
+    b.classList.toggle('arrastando', !!sim);
+  };
+
+  render();
+})();
+</script>
+</body>
+</html>

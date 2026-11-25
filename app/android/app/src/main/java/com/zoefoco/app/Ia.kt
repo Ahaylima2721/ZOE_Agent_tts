@@ -24,7 +24,7 @@ class IaErro(val codigo: Int, mensagem: String, val chaveRuim: Boolean = false) 
  */
 object Ia {
     private const val BASE = "https://generativelanguage.googleapis.com/v1beta"
-    private const val UA = "ZoeFoco/0.2.1 (app Android)"
+    private const val UA = "Zoe/0.3.0 (app Android)"
     private const val PERGUNTAS_POR_PACOTE = 12
 
     private fun segredo(c: Context) = c.getSharedPreferences("segredo", Context.MODE_PRIVATE)

@@ -64,6 +64,7 @@ class BootReceiver : BroadcastReceiver() {
         if (i.action in acoes) {
             Guard.sincronizar(c)
             Lembretes.agendar(c)
+            Recados.agendar(c)
         }
     }
 }

@@ -1,4 +1,4 @@
-# Zoe Foco · app Android (v0.2)
+# Zoe · app Android (v0.3)
 
 Do [conceito](../CONCEITO.md) e da [Zoe de estudos](../INTELIGENCIA.md):
 
@@ -7,6 +7,9 @@ Do [conceito](../CONCEITO.md) e da [Zoe de estudos](../INTELIGENCIA.md):
   trilhas de estudo ou leitura, pacotes de perguntas feitos pelo Gemini (plano gratuito), revisão espaçada,
   pílula depois do foco, "Me dá uma pergunta no lugar" no peteleco, conversa socrática (20 mensagens por dia)
   e os óculos da Zoe com 50 respostas numa trilha.
+- **v0.3**: o app passa a se chamar **Zoe**, ganha animação de entrada e a **bolinha** (estilo chat head):
+  recados fora do foco (livro parado, revisão, hábito pendente, trilha parada, sequência) e **aviso de rolagem**
+  quando você passa muito tempo nos apps vigiados fora do foco. Fora do foco ela só avisa; nunca fecha o app.
 - **Sem voz**: a Zoe usa só texto e vibração.
 - **Leve**: o APK tem cerca de 95 KB. Usa só Kotlin e o WebView do sistema, sem bibliotecas extras.
 - **Privado**: hábitos, horários e uso dos apps ficam só no celular. A internet é usada só em Estudos, com o tema da trilha.
@@ -14,7 +17,7 @@ Do [conceito](../CONCEITO.md) e da [Zoe de estudos](../INTELIGENCIA.md):
 
 ## Como instalar no celular
 
-1. Baixe `app/dist/zoe-foco-0.2.1.apk` (ou gere com o comando abaixo).
+1. Baixe `app/dist/zoe-0.3.0.apk` (ou gere com o comando abaixo).
 2. No celular, abra o arquivo e permita "instalar apps desta fonte" quando o Android pedir.
 3. Abra a Zoe Foco e siga as boas-vindas.
 
@@ -72,6 +75,9 @@ AlarmManager ──(início/fim de cada foco)──▶ Guard.sincronizar
 | `MainActivity.kt` | Hospeda a interface e a ponte `window.Zoe` |
 | `Ia.kt` | Gemini: pacote de perguntas (busca do Google, ou Wikipedia e Open Library se a busca não for liberada) e conversa |
 | `Lembretes.kt` | Lembrete dos hábitos e resumo das 22h |
+| `Recados.kt` | O "cérebro" da bolinha: a cada ~5 min com a tela ligada, decide se mostra aviso de rolagem ou recado |
+| `Bolha.kt` | A janela flutuante (arrastar, grudar na borda, soltar no X) e o serviço que a mantém viva |
+| `assets/www/bolha.html` | Bolinha, cartão no topo e cartão central |
 | `assets/www/` | Interface em HTML/CSS/JS, com o mesmo orbe do portfólio |
 
 Para ver a interface no navegador do computador, abra `assets/www/index.html` (usa dados de exemplo; `index.html#novo` mostra as boas-vindas).
@@ -89,3 +95,14 @@ Cada pacote de perguntas é feito em dois passos:
 2. **Perguntas:** o Gemini transforma as notas em 12 perguntas em JSON, cada uma apontando a fonte.
 
 A chave fica no arquivo `segredo.xml`, fora do backup do Android. No plano gratuito, o Google pode usar o que é enviado para melhorar os produtos dele, e o app avisa isso na tela.
+
+## Bolinha (v0.3)
+
+- Fora do foco, das 8h às 22h, fora de ligações e só com a tela ligada (o alarme não acorda o celular).
+- Recados: até 3 por dia (ajustável), com pelo menos 2h entre eles. Dispensou 3 seguidos: 1 por dia durante uma semana.
+- Aviso de rolagem: 20 min seguidos nos apps vigiados (trocar entre eles conta junto) ou passou do limite do dia.
+  1º aviso: cartão no topo. Se escolher "Só mais 10 min" e continuar: 2º aviso no centro, com foco de 25 min ou pausa de 30 min.
+  No máximo 2 avisos por dia. "Tô de boa" / "Me deixa" silenciam o resto do dia.
+- Ajustes em Zoe › Bolinha, com botões para ver um recado e um aviso de exemplo.
+
+O `applicationId` continua `com.zoefoco.app` para a versão nova instalar por cima sem perder os dados.

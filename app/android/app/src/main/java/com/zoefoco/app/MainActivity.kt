@@ -33,6 +33,9 @@ class MainActivity : Activity() {
             "com.twitter.android", "com.kwai.video", "com.reddit.frontpage"
         )
         private val ROTAS = setOf("hoje", "estudos", "foco", "zoe", "resumo", "pilula")
+
+        private const val EXEMPLO_RECADO = """{"chave":"exemplo","modo":"bolha","humor":"","balao":"Oi! É assim que eu apareço","contexto":"Exemplo","texto":"Fora do foco eu passo aqui de vez em quando com um recado. Pode me arrastar até o X pra dispensar.","botoes":[{"id":"depois","texto":"Entendi!","forte":true}]}"""
+        private const val EXEMPLO_ROLAGEM = """{"chave":"exemplo","modo":"topo","humor":"","titulo":"Ei, já são 52 min de Instagram hoje","texto":"Exemplo: é assim que eu aviso quando você rola demais fora do foco. A escolha é sempre sua.","botoes":[{"id":"depois","texto":"Entendi!","forte":true},{"id":"depois","texto":"Ok"}]}"""
     }
 
     private lateinit var web: WebView
@@ -43,11 +46,12 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Avisos.criarCanais(this)
-        web = Web.criar(this, Ponte(), Web.FUNDO) {
+        // Começa no roxo-noite para emendar com a animação de entrada (index.html).
+        web = Web.criar(this, Ponte(), Web.NOITE) {
             carregada = true
             abrirRotaPendente()
         }
-        setContentView(Web.moldura(this, web, Web.FUNDO, iconesEscuros = true))
+        setContentView(Web.moldura(this, web, Web.NOITE, iconesEscuros = false))
         web.loadUrl("file:///android_asset/www/index.html")
         tratarIntent(intent)
 
@@ -83,6 +87,7 @@ class MainActivity : Activity() {
         super.onResume()
         Guard.sincronizar(this)
         Lembretes.agendar(this)
+        Recados.agendar(this)
         // voltou das configurações: a página atualiza o estado das permissões
         web.evaluateJavascript("window.zoeVoltou && zoeVoltou()", null)
     }
@@ -137,6 +142,12 @@ class MainActivity : Activity() {
                 .put("temChave", Ia.chave(c) != null)
                 .put("modelo", Ia.modelo(c))
                 .put("conversasRestantes", Store.MAX_CONVERSA - Store.conversasHoje(c)))
+            .put("recados", JSONObject()
+                .put("ativos", Store.recadosAtivos(c))
+                .put("porDia", Store.recadosPorDia(c))
+                .put("rolagem", Store.rolagemAtiva(c))
+                .put("seguidos", Store.rolagemSeguidos(c))
+                .put("limite", Store.rolagemLimite(c)))
             .put("perms", Perms.estado(c))
             .put("agora", System.currentTimeMillis())
             .toString()
@@ -196,10 +207,40 @@ class MainActivity : Activity() {
         }
 
         @JavascriptInterface
+        fun salvarRecados(ativos: Boolean, porDia: Int, rolagem: Boolean, seguidos: Int, limite: Int) {
+            Store.setRecados(c, ativos, porDia, rolagem, seguidos, limite)
+            Recados.agendar(c)
+        }
+
+        /** Mostra um recado de exemplo agora (botão "Ver como fica"). */
+        @JavascriptInterface
+        fun testarBolha(tipo: String) = runOnUiThread {
+            Bolha.mostrar(c, JSONObject(if (tipo == "rolagem") EXEMPLO_ROLAGEM else EXEMPLO_RECADO))
+            moveTaskToBack(true)
+        }
+
+        /** Fim da animação de entrada: volta a cor clara atrás da página. */
+        @JavascriptInterface
+        fun introPronta() = runOnUiThread {
+            window.decorView.setBackgroundColor(Web.FUNDO)
+            (web.parent as? android.view.View)?.setBackgroundColor(Web.FUNDO)
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility =
+                android.view.View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+            if (Build.VERSION.SDK_INT < 35) {
+                @Suppress("DEPRECATION")
+                window.statusBarColor = Web.FUNDO
+                @Suppress("DEPRECATION")
+                window.navigationBarColor = android.graphics.Color.WHITE
+            }
+        }
+
+        @JavascriptInterface
         fun concluirBoasVindas() {
             Store.setOnboarded(c)
             Guard.sincronizar(c)
             Lembretes.agendar(c)
+            Recados.agendar(c)
         }
 
         @JavascriptInterface
