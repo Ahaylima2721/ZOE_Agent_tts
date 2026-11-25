@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Zoe" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/fundo</item>
+        <item name="android:colorPrimary">@color/violeta</item>
+        <item name="android:colorAccent">@color/violeta</item>
+        <item name="android:statusBarColor">@color/fundo</item>
+        <item name="android:navigationBarColor">@color/branco</item>
+    </style>
+
+    <!-- Tela do peteleco: transparente, por cima do app que foi aberto -->
+    <style name="Zoe.Peteleco" parent="android:Theme.Translucent.NoTitleBar">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+</resources>

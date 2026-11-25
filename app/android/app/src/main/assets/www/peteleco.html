@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Peteleco</title>
+<link rel="stylesheet" href="zoe.css">
+<style>
+body{background:rgba(22,10,51,.92);color:#F4EEFF;min-height:100%}
+.tela{min-height:100vh;display:flex;flex-direction:column;padding:40px 24px 24px;gap:20px}
+.passos{display:flex;justify-content:center;gap:8px}
+.passos i{width:28px;height:6px;border-radius:3px;background:rgba(255,255,255,.2)}
+.passos i.on{background:var(--peteleco)}
+.palco{position:relative;display:grid;place-items:center;height:240px}
+.titulo{text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px}
+.titulo h1{font-size:44px;line-height:1;color:var(--peteleco)}
+.titulo h1.calmo{color:#FFFFFF;font-size:28px;line-height:1.2}
+.fala{margin:0;font-size:19px;line-height:1.45;max-width:320px}
+.chip{display:inline-block;font-size:13px;font-weight:600;color:#FFB4A3;background:rgba(255,107,74,.14);padding:6px 12px;border-radius:999px}
+.acoes{margin-top:auto;display:flex;flex-direction:column;gap:10px}
+.btn{display:grid;place-items:center;min-height:56px;border-radius:16px;border:0;font-size:17px;font-weight:600;cursor:pointer}
+.btn.principal{background:#FFFFFF;color:var(--noite)}
+.btn.texto{background:transparent;color:#D9CCF5;font-size:15px;min-height:48px}
+.treme{animation:treme .5s cubic-bezier(.36,.07,.19,.97) .25s 2 both}
+@keyframes treme{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}30%,50%,70%{transform:translateX(-8px) rotate(-1deg)}40%,60%{transform:translateX(8px) rotate(1deg)}}
+.dedo{position:absolute;right:calc(50% - 150px);top:6px;animation:dedo .6s ease-out both}
+@keyframes dedo{from{opacity:0;transform:translate(-20px,10px) scale(.8)}to{opacity:1;transform:none}}
+.braco{position:absolute;height:24px;width:112px;border-radius:999px;background:linear-gradient(#D9C5FF,#A78BFA);box-shadow:0 4px 10px rgba(22,10,51,.5);left:calc(50% - 56px);top:150px}
+.cadeado{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.08)}
+.caixa{background:rgba(255,255,255,.06);border:1px solid rgba(201,167,255,.2);border-radius:18px;padding:16px;font-size:14px;line-height:1.5;color:#D9CCF5}
+.caixa strong{color:#FFFFFF;display:block;margin-bottom:4px;font-size:15px}
+</style>
+</head>
+<body>
+<main id="tela" class="tela" role="alertdialog" aria-labelledby="titulo" aria-describedby="fala"></main>
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  var nivel = Math.min(3, Math.max(1, parseInt(q.get('nivel') || '1', 10)));
+  var app = q.get('app') || 'esse app';
+  var ate = q.get('ate') || '';
+  var faltam = q.get('faltam') || '';
+  var tom = q.get('tom') || 'firme';
+
+  var falas = {
+    gentil: {
+      1: ['Opa, acho que você abriu o {app} sem querer. Bora voltar?', 'Ei, ainda é hora do foco. Volta comigo?'],
+      2: ['De novo o {app}? Tudo bem, acontece. Mas vamos voltar pro foco, tá?'],
+      3: ['Faltam só {faltam} minutinhos. Você consegue, eu tô torcendo.']
+    },
+    firme: {
+      1: ['Ei! A gente combinou foco até as {ate}. Volta pra tarefa!', 'Opa, opa. Ainda é hora do foco.'],
+      2: ['De novo o {app}? Peteleco! A gente combinou foco até as {ate}.'],
+      3: ['Faltam {faltam} minutos. Eu sei que você consegue.']
+    },
+    brava: {
+      1: ['Não. Fecha o {app} agora.', 'Foco. Agora.'],
+      2: ['DE NOVO?! Peteleco! Volta pro trabalho!'],
+      3: ['Acabou. Nem tenta. Faltam {faltam} minutos.']
+    }
+  };
+  function escolher(lista) { return lista[Math.floor(Math.random() * lista.length)]; }
+  function preencher(t) { return t.replace(/\{app\}/g, app).replace(/\{ate\}/g, ate).replace(/\{faltam\}/g, faltam); }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+
+  var fala = preencher(escolher((falas[tom] || falas.firme)[nivel]));
+  var orbe = function (humor, s) {
+    return '<div class="orb ' + humor + '" style="--s:' + s + 'px" role="img" aria-label="Zoe ' + (humor === 'brava' ? 'brava' : 'séria') + '">' +
+      '<span class="bochecha e"></span><span class="bochecha d"></span><div class="face"><i class="eye"></i><i class="eye"></i></div></div>';
+  };
+  var passos = '<div class="passos" role="img" aria-label="Tentativa ' + nivel + ' de 3">' +
+    [1, 2, 3].map(function (i) { return '<i class="' + (i <= nivel ? 'on' : '') + '"></i>'; }).join('') + '</div>';
+
+  var html;
+  if (nivel === 1) {
+    html = passos +
+      '<div class="palco">' + orbe('foco flutua', 160) + '</div>' +
+      '<div class="titulo"><h1 id="titulo" class="calmo">Ei, é hora do foco</h1><p id="fala" class="fala">' + esc(fala) + '</p></div>' +
+      '<div class="acoes"><button class="btn principal" id="ok">Tá bom, Zoe</button>' +
+      '<button class="btn texto" id="emergencia">Preciso mesmo · 5 min</button></div>';
+  } else if (nivel === 2) {
+    html = '<div class="treme" style="display:flex;flex-direction:column;gap:20px;flex:1">' + passos +
+      '<div class="palco">' + orbe('brava', 170) +
+      '<svg class="dedo" width="140" height="110" viewBox="0 0 140 110" aria-hidden="true">' +
+      '<path d="M8 96 C 40 92, 70 70, 96 36" fill="none" stroke="#C9A7FF" stroke-width="12" stroke-linecap="round" opacity=".35"/>' +
+      '<path d="M8 96 C 40 92, 70 70, 96 36" fill="none" stroke="#F7F3FF" stroke-width="5" stroke-linecap="round"/>' +
+      '<path d="M112 6 L116 22 M132 16 L120 26 M136 40 L122 36" stroke="#FF6B4A" stroke-width="4" stroke-linecap="round"/></svg></div>' +
+      '<div class="titulo"><h1 id="titulo">Peteleco!</h1><p id="fala" class="fala">' + esc(fala) + '</p>' +
+      '<span class="chip">Energia da Zoe −5 · na próxima, o app fica bloqueado</span></div>' +
+      '<div class="acoes"><button class="btn principal" id="ok">Tá bom, Zoe</button>' +
+      '<button class="btn texto" id="emergencia">Preciso mesmo · 5 min</button></div></div>';
+  } else {
+    html = passos +
+      '<div class="palco">' + orbe('foco', 160) + '<i class="braco" style="transform:rotate(-16deg)"></i><i class="braco" style="transform:rotate(16deg)"></i></div>' +
+      '<div class="titulo"><span class="cadeado" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C9A7FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>' +
+      '<h1 id="titulo" class="calmo">' + esc(app) + ' bloqueado até as ' + esc(ate) + '</h1><p id="fala" class="fala">' + esc(fala) + '</p></div>' +
+      '<div class="caixa"><strong>Precisa mesmo?</strong>A emergência libera o app por 5 minutos. A Zoe perde 15 de energia e fica tristinha, mas nunca te prende.</div>' +
+      '<div class="acoes"><button class="btn principal" id="ok">Voltar para a tela inicial</button>' +
+      '<button class="btn texto" id="emergencia">Usar emergência · 5 min</button></div>';
+  }
+  document.getElementById('tela').innerHTML = html;
+
+  var Z = window.Zoe || { ok: function () {}, emergencia: function () {}, falar: function () {} };
+  document.getElementById('ok').onclick = function () { Z.ok(); };
+  document.getElementById('emergencia').onclick = function () { Z.emergencia(); };
+  Z.falar(nivel === 3 ? app + ' bloqueado até as ' + ate + '. ' + fala : fala);
+})();
+</script>
+</body>
+</html>

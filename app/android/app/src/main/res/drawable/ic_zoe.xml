@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- O orbe da Zoe (108x108, área segura no centro de 66x66) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:fillColor="#5B21B6"
+        android:pathData="M54,24a30,30 0,1 1,0 60a30,30 0,1 1,0 -60z" />
+    <path android:fillColor="#8B5CF6"
+        android:pathData="M51,26a26,26 0,1 1,0 52a26,26 0,1 1,0 -52z" />
+    <path android:fillColor="#C9A7FF"
+        android:pathData="M44,33a8,5.5 0,1 1,0 11a8,5.5 0,1 1,0 -11z" />
+    <path android:fillColor="#F7F3FF"
+        android:pathData="M45.5,50a3,3 0,0 1,6 0v8a3,3 0,0 1,-6 0z" />
+    <path android:fillColor="#F7F3FF"
+        android:pathData="M58.5,50a3,3 0,0 1,6 0v8a3,3 0,0 1,-6 0z" />
+</vector>

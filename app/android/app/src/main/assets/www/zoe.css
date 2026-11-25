@@ -1,0 +1,51 @@
+/* Zoe Foco · estilos compartilhados (app e peteleco). Sem fontes externas: o app não tem internet. */
+:root{
+  --lilas:#C9A7FF; --violeta:#6D28D9; --violeta-claro:#8B5CF6; --roxo:#5B21B6;
+  --noite:#160A33; --fundo:#F6F2FF; --tinta:#1E1336; --suave:#5E5478;
+  --borda:#E6DDFB; --borda-forte:#D9CCF5; --peteleco:#FF6B4A; --peteleco-escuro:#B3360F;
+  --ok:#1F7A4D;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--tinta);background:var(--fundo);-webkit-font-smoothing:antialiased}
+h1,h2,h3{margin:0;font-weight:700;letter-spacing:-.01em}
+button{font:inherit;color:inherit}
+a{color:var(--violeta)}
+
+/* ---------- o orbe da Zoe ---------- */
+.orb{position:relative;flex:none;width:var(--s);height:var(--s);border-radius:50%;overflow:hidden;
+  background:radial-gradient(circle at 32% 26%,#C9A7FF 0%,#8B5CF6 38%,#5B21B6 72%,#2A0E5E 100%);
+  box-shadow:inset calc(var(--s)*-.05) calc(var(--s)*-.07) calc(var(--s)*.15) rgba(30,8,70,.55),
+    0 0 0 calc(var(--s)*.05) rgba(167,139,250,.18),
+    0 calc(var(--s)*.12) calc(var(--s)*.25) calc(var(--s)*-.08) rgba(124,58,237,.65)}
+.orb::before{content:"";position:absolute;z-index:2;left:20%;top:13%;width:28%;height:20%;border-radius:50%;
+  background:radial-gradient(closest-side,rgba(255,255,255,.95),rgba(255,255,255,0))}
+.orb::after{content:"";position:absolute;left:-20%;right:-20%;top:var(--nivel,64%);height:80%;border-radius:45%;
+  background:rgba(201,167,255,.3);animation:onda 6s linear infinite;transition:top .6s cubic-bezier(.3,1.4,.5,1)}
+@keyframes onda{to{transform:rotate(360deg)}}
+.face{position:absolute;z-index:3;inset:0;display:flex;justify-content:center;align-items:center;
+  gap:calc(var(--s)*.16);padding-bottom:calc(var(--s)*.04);transition:transform .4s}
+.eye{display:block;width:calc(var(--s)*.09);height:calc(var(--s)*.15);border-radius:999px;background:#F7F3FF;
+  box-shadow:0 0 calc(var(--s)*.06) rgba(247,243,255,.9);animation:piscar 5.5s infinite}
+@keyframes piscar{0%,46%,50%,100%{transform:scaleY(1)}48%{transform:scaleY(.1)}}
+.feliz .eye{width:calc(var(--s)*.13);height:calc(var(--s)*.065);background:none;box-shadow:none;
+  border:calc(var(--s)*.03) solid #F7F3FF;border-bottom:0;border-radius:999px 999px 0 0;animation:none}
+.foco .eye{height:calc(var(--s)*.1)}
+.sono .eye{height:calc(var(--s)*.025);width:calc(var(--s)*.12);animation:none}
+.brava .eye:first-child{clip-path:polygon(0 0,100% 40%,100% 100%,0 100%);animation:none}
+.brava .eye:last-child{clip-path:polygon(0 40%,100% 0,100% 100%,0 100%);animation:none}
+.triste .eye:first-child{clip-path:polygon(0 40%,100% 0,100% 100%,0 100%)}
+.triste .eye:last-child{clip-path:polygon(0 0,100% 40%,100% 100%,0 100%)}
+.pensa .face{transform:translate(calc(var(--s)*.08),calc(var(--s)*-.12))}
+.bochecha{position:absolute;z-index:3;top:60%;width:15%;height:8%;border-radius:50%;background:#FF8FB1;filter:blur(1.5px);opacity:0;transition:opacity .3s}
+.bochecha.e{left:16%}.bochecha.d{right:16%}
+.feliz .bochecha{opacity:.85}
+.brava .bochecha{opacity:.85;background:var(--peteleco)}
+.flutua{animation:flutua 4.5s ease-in-out infinite}
+@keyframes flutua{50%{transform:translateY(-6px)}}
+.respira{animation:respira 5s ease-in-out infinite}
+@keyframes respira{50%{transform:scale(1.04)}}
+
+@media (prefers-reduced-motion:reduce){
+  .flutua,.respira,.orb::after,.eye,.treme,.dedo{animation:none!important}
+}
