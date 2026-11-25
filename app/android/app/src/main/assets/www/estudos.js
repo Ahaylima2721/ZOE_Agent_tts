@@ -171,7 +171,7 @@ window.ZoeEstudos = function (ctx) {
       '<span class="sub" style="font-size:13px">' + (resp >= OCULOS ? 'Conquistado! A Zoe agora usa óculos.' : 'Com ' + OCULOS + ' respostas nesta trilha, a Zoe ganha óculos.') + '</span></div>';
     if (gerando[t.id]) {
       html += '<div class="card" style="display:flex;gap:14px;align-items:center">' + orbe(56, 'pensa') +
-        '<div><strong>Buscando referências…</strong><p class="sub" style="font-size:14px">Pode levar até um minuto. Pode sair desta tela.</p></div></div>';
+        '<div><strong>Buscando referências…</strong><p class="sub" style="font-size:14px">Pode levar até 2 minutos: o plano grátis às vezes fica lento. Pode sair desta tela.</p></div></div>';
     }
     if (erros[t.id]) html += '<div class="aviso"><p>' + esc(erros[t.id]) + '</p></div>';
     if (!S.ia.temChave) html += cardChave();

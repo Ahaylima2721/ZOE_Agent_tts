@@ -519,7 +519,7 @@
       item('sub', 'resumo', I.grafico, 'Resumo do dia', 'Como foi hoje') +
       '</ul>' +
       '<p class="sub" style="display:flex;gap:8px;align-items:flex-start">' + ico(I.escudo, 18) + '<span>Privacidade: hábitos, horários e o uso dos apps ficam só neste celular. A internet é usada só em Estudos, e só com o tema da trilha.</span></p>' +
-      '<p class="sub" style="font-size:12px">Zoe Foco 0.2.0</p></section>';
+      '<p class="sub" style="font-size:12px">Zoe Foco 0.2.1</p></section>';
   }
 
   // ---------------- ações ----------------

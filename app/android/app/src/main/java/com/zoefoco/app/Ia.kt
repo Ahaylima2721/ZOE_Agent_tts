@@ -5,6 +5,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.IOException
 import java.net.HttpURLConnection
+import java.net.SocketTimeoutException
 import java.net.URL
 import java.net.URLEncoder
 
@@ -23,7 +24,7 @@ class IaErro(val codigo: Int, mensagem: String, val chaveRuim: Boolean = false) 
  */
 object Ia {
     private const val BASE = "https://generativelanguage.googleapis.com/v1beta"
-    private const val UA = "ZoeFoco/0.2 (app Android)"
+    private const val UA = "ZoeFoco/0.2.1 (app Android)"
     private const val PERGUNTAS_POR_PACOTE = 12
 
     private fun segredo(c: Context) = c.getSharedPreferences("segredo", Context.MODE_PRIVATE)
@@ -35,7 +36,7 @@ object Ia {
 
     // ---------------- HTTP ----------------
 
-    private fun http(url: String, corpo: String? = null, chave: String? = null): String {
+    private fun http(url: String, corpo: String? = null, chave: String? = null, espera: Int = 45_000): String {
         val con = try {
             URL(url).openConnection() as HttpURLConnection
         } catch (e: IOException) {
@@ -43,7 +44,7 @@ object Ia {
         }
         try {
             con.connectTimeout = 15_000
-            con.readTimeout = 120_000
+            con.readTimeout = espera
             con.setRequestProperty("User-Agent", UA)
             if (chave != null) con.setRequestProperty("x-goog-api-key", chave)
             if (corpo != null) {
@@ -57,6 +58,8 @@ object Ia {
                 ?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } ?: ""
             if (codigo !in 200..299) throw erroHttp(codigo, txt)
             return txt
+        } catch (e: SocketTimeoutException) {
+            throw IaErro(504, "O Gemini demorou demais pra responder. Tenta de novo daqui a pouco.")
         } catch (e: IOException) {
             throw IaErro(0, "Sem internet agora. Tenta de novo quando conectar.")
         } finally {
@@ -75,7 +78,7 @@ object Ia {
         return when {
             chaveRuim -> IaErro(codigo, "Essa chave não funcionou. Confira se copiou ela inteira.", true)
             codigo == 429 -> IaErro(codigo, "Acabou o limite gratuito por agora. Tenta de novo mais tarde.")
-            codigo >= 500 -> IaErro(codigo, "O Google está instável agora. Tenta de novo daqui a pouco.")
+            codigo >= 500 -> IaErro(codigo, "O Gemini está sobrecarregado agora (acontece no plano grátis). Tenta de novo em alguns minutos.")
             else -> IaErro(codigo, msg.ifBlank { "Algo deu errado ($codigo)." })
         }
     }
@@ -117,20 +120,47 @@ object Ia {
         (it.getOrNull(0)?.toDoubleOrNull() ?: 0.0) + (it.getOrNull(1)?.toDoubleOrNull() ?: 0.0) / 100
     }
 
-    /** Tenta os modelos em ordem até um responder. Guarda o que funcionou. */
-    private fun gerar(c: Context, chave: String, corpo: JSONObject): JSONObject {
+    /** Modelos que recusaram a busca hoje (no plano grátis, a busca costuma ser liberada só em alguns). */
+    private fun semBusca(c: Context): MutableSet<String> {
+        val p = Store.p(c)
+        if (p.getString("semBuscaDia", "") != Store.dia()) return mutableSetOf()
+        return p.getString("semBusca", "")!!.split(",").filter { it.isNotBlank() }.toMutableSet()
+    }
+
+    private fun ordem(c: Context, chave: String, busca: Boolean): List<String> {
+        val todos = candidatos(c, chave)
+        if (!busca) return todos
+        val bloqueados = semBusca(c)
+        val salvo = Store.p(c).getString("modeloBusca", "")!!
+        // Na nossa medição (nov/2026), a busca grátis funcionou no 2.5-flash e foi recusada nos 3.x.
+        val preferidos = listOf(salvo, "gemini-2.5-flash").filter { it.isNotBlank() }
+        return (preferidos + todos).distinct().filter { it !in bloqueados }
+    }
+
+    /**
+     * Tenta os modelos em ordem até um responder, dentro de um orçamento de tempo.
+     * Pula modelo sobrecarregado (503), sem cota (429) ou inexistente (404). Guarda o que funcionou.
+     */
+    private fun gerar(c: Context, chave: String, corpo: JSONObject, busca: Boolean = false, orcamento: Long = 100_000): JSONObject {
+        val fim = System.currentTimeMillis() + orcamento
         var ultimo: IaErro? = null
-        for (m in candidatos(c, chave).take(3)) {
+        for (m in ordem(c, chave, busca).take(5)) {
+            val resta = fim - System.currentTimeMillis()
+            if (resta < 8_000) break
             try {
-                val r = JSONObject(http("$BASE/models/$m:generateContent", corpo.toString(), chave))
-                Store.p(c).edit().putString("modelo", m).apply()
+                val r = JSONObject(http("$BASE/models/$m:generateContent", corpo.toString(), chave, minOf(45_000L, resta).toInt()))
+                Store.p(c).edit().putString(if (busca) "modeloBusca" else "modelo", m).apply()
                 return r
             } catch (e: IaErro) {
                 if (e.chaveRuim || e.codigo == 0) throw e
+                if (busca && e.codigo == 429) {
+                    val b = semBusca(c).apply { add(m) }
+                    Store.p(c).edit().putString("semBusca", b.joinToString(",")).putString("semBuscaDia", Store.dia()).apply()
+                }
                 ultimo = e
             }
         }
-        throw ultimo ?: IaErro(0, "Nenhum modelo respondeu.")
+        throw ultimo ?: IaErro(504, "O Gemini demorou demais pra responder. Tenta de novo daqui a pouco.")
     }
 
     private fun texto(r: JSONObject): String {
@@ -173,11 +203,38 @@ object Ia {
         "Pesquise resenhas e análises críticas deste livro. $desc\n" +
             "Escreva notas em português sobre as ideias centrais e as críticas que leitores e críticos fizeram, " +
             "considerando SOMENTE o conteúdo até o capítulo $cap. Não revele nada que aconteça depois do capítulo $cap. " +
+            "Na dúvida se algo acontece antes ou depois do capítulo $cap, NÃO mencione. " +
             "Se não souber como os capítulos se dividem, fique nas ideias gerais do começo do livro. Máximo de 500 palavras."
     } else {
         "Pesquise na web e escreva notas de estudo objetivas, em português, para esta trilha. $desc\n" +
             "Inclua conceitos-chave, um ou dois exemplos curtos de código quando fizer sentido e erros comuns. " +
             "Prefira fontes confiáveis, como a documentação oficial. Máximo de 500 palavras."
+    }
+
+    /**
+     * Coloca [n] no fim de cada trecho das notas que veio da fonte n (groundingSupports).
+     * Assim o segundo passo sabe de qual fonte cada ideia saiu. Os índices do Google são em bytes UTF-8.
+     */
+    private fun marcarFontes(notas: String, supports: JSONArray?, nFontes: Int): String {
+        if (supports == null || supports.length() == 0 || nFontes == 0) return notas
+        val bytes = notas.toByteArray(Charsets.UTF_8)
+        val marcas = sortedMapOf<Int, MutableSet<Int>>(compareByDescending { it })
+        for (i in 0 until supports.length()) {
+            val sup = supports.optJSONObject(i) ?: continue
+            val fim = sup.optJSONObject("segment")?.optInt("endIndex", -1) ?: -1
+            val idx = sup.optJSONArray("groundingChunkIndices") ?: continue
+            if (fim !in 1..bytes.size) continue
+            for (k in 0 until idx.length()) {
+                val n = idx.optInt(k, -1)
+                if (n in 0 until nFontes) marcas.getOrPut(fim) { sortedSetOf() }.add(n + 1)
+            }
+        }
+        var out = bytes
+        for ((fim, ns) in marcas) {
+            val m = " [" + ns.joinToString(",") + "]"
+            out = out.copyOfRange(0, fim) + m.toByteArray(Charsets.UTF_8) + out.copyOfRange(fim, out.size)
+        }
+        return String(out, Charsets.UTF_8)
     }
 
     private class Fonte(val titulo: String, val url: String, val texto: String = "")
@@ -193,15 +250,14 @@ object Ia {
         try {
             val r = gerar(c, chave, JSONObject()
                 .put("contents", usuario(promptPesquisa(trilha, desc)))
-                .put("tools", JSONArray().put(JSONObject().put("google_search", JSONObject()))))
-            notas = texto(r)
-            val chunks = r.optJSONArray("candidates")?.optJSONObject(0)
-                ?.optJSONObject("groundingMetadata")?.optJSONArray("groundingChunks") ?: JSONArray()
-            for (i in 0 until chunks.length()) {
-                val w = chunks.getJSONObject(i).optJSONObject("web") ?: continue
-                val url = w.optString("uri")
-                if (url.isNotBlank() && fontes.none { it.url == url }) fontes += Fonte(w.optString("title", "Fonte"), url)
+                .put("tools", JSONArray().put(JSONObject().put("google_search", JSONObject()))), busca = true, orcamento = 60_000)
+            val meta = r.optJSONArray("candidates")?.optJSONObject(0)?.optJSONObject("groundingMetadata")
+            val chunks = meta?.optJSONArray("groundingChunks") ?: JSONArray()
+            for (i in 0 until minOf(chunks.length(), 8)) {
+                val w = chunks.getJSONObject(i).optJSONObject("web")
+                fontes += Fonte(w?.optString("title", "Fonte") ?: "Fonte", w?.optString("uri") ?: "")
             }
+            notas = marcarFontes(texto(r), meta?.optJSONArray("groundingSupports"), fontes.size)
             if (fontes.isEmpty()) throw IaErro(-1, "busca sem fontes")
             modo = "busca"
         } catch (e: IaErro) {
@@ -242,10 +298,42 @@ object Ia {
                 .put("resposta", q.optString("resposta").trim())
                 .put("explicacao", q.optString("explicacao").trim())
                 .put("dificuldade", q.optInt("dificuldade", 1).coerceIn(1, 3))
-                .put("fonte", if (fonte != null) JSONObject().put("titulo", fonte.titulo).put("url", fonte.url) else JSONObject.NULL))
+                .put("fonte", if (fonte != null && fonte.url.isNotBlank()) JSONObject().put("titulo", fonte.titulo).put("url", fonte.url) else JSONObject.NULL))
         }
-        if (perguntas.length() == 0) throw IaErro(0, "Não consegui montar perguntas desta vez. Tenta de novo.")
-        return JSONObject().put("perguntas", perguntas).put("modo", modo).put("modelo", modelo(c))
+        if (perguntas.length() == 0) throw IaErro(-2, "Não consegui montar perguntas desta vez. Tenta de novo.")
+        val finais = if (trilha.optString("tipo") == "leitura") semSpoiler(c, chave, trilha, perguntas) else perguntas
+        if (finais.length() == 0) throw IaErro(-2, "Todas as perguntas tinham spoiler, então joguei fora. Tenta de novo.")
+        return JSONObject().put("perguntas", finais).put("modo", modo).put("modelo", modelo(c))
+    }
+
+    /**
+     * Livros: uma segunda olhada só para tirar spoiler. Um pedido focado nisso erra menos do que a geração.
+     * Se a checagem falhar, devolve as perguntas sem filtrar (melhor que perder o pacote).
+     */
+    private fun semSpoiler(c: Context, chave: String, t: JSONObject, perguntas: JSONArray): JSONArray {
+        val cap = t.optString("capitulo", "1")
+        val lista = (0 until perguntas.length()).joinToString("\n") { i ->
+            val q = perguntas.getJSONObject(i)
+            "${i + 1}. " + listOf(q.optString("citacao"), q.optString("pergunta"), q.optString("resposta")).filter { it.isNotBlank() }.joinToString(" / ")
+        }
+        val prompt = "Você revisa perguntas para quem está lendo \"${t.optString("titulo")}\"" +
+            (if (t.optString("autor").isNotBlank()) " de ${t.optString("autor")}" else "") +
+            " e parou no capítulo $cap. Pense em como o livro se divide em capítulos e no que acontece em cada um. " +
+            "Marque como spoiler qualquer pergunta que mencione ou insinue algo revelado depois do capítulo $cap " +
+            "(revelações, passado de personagens, reviravoltas, desfecho). Na dúvida, marque como spoiler.\n\n" +
+            "PERGUNTAS:\n$lista\n\nResponda com um array JSON com os números das perguntas SEGURAS."
+        return try {
+            val r = gerar(c, chave, JSONObject().put("contents", usuario(prompt)).put("generationConfig", JSONObject()
+                .put("responseMimeType", "application/json")
+                .put("responseSchema", JSONObject().put("type", "ARRAY").put("items", JSONObject().put("type", "INTEGER")))),
+                orcamento = 45_000)
+            val seguras = lerLista(texto(r))
+            val ok = (0 until seguras.length()).map { seguras.optInt(it, 0) }.toSet()
+            JSONArray().apply { for (i in 0 until perguntas.length()) if ((i + 1) in ok) put(perguntas.get(i)) }
+        } catch (e: IaErro) {
+            if (e.chaveRuim) throw e
+            perguntas
+        }
     }
 
     private fun promptPerguntas(t: JSONObject, desc: String, notas: String, fontes: List<Fonte>, existentes: JSONArray): String {
@@ -255,7 +343,8 @@ object Ia {
             "- Tipos: \"contraponto\" (traga uma crítica ou opinião de resenha no campo \"citacao\" e pergunte se a pessoa concorda), " +
                 "\"conexao\" (ligue uma ideia do livro à vida ou a outro assunto) e \"frase\" (peça para resumir uma ideia em uma frase).\n" +
                 "- Não existe resposta certa: em \"resposta\" escreva um jeito de pensar, curto.\n" +
-                "- NUNCA revele nada depois do capítulo $cap.\n" +
+                "- NUNCA revele nada depois do capítulo $cap: nem reviravoltas, nem revelações, nem o destino dos personagens. " +
+                "Na dúvida se algo acontece antes ou depois desse capítulo, não use.\n" +
                 "- Citações: no máximo 2 frases, sem aspas no campo \"citacao\"."
         } else {
             "- Tipos: \"conceito\", \"codigo\" (um trecho curto no campo \"codigo\", perguntando o que ele faz ou imprime) e \"erro\" (uma armadilha comum).\n" +
@@ -269,7 +358,7 @@ object Ia {
             "- Português do Brasil, frases curtas.\n$regras\n" +
             "- \"dica\": uma pista que não entrega a resposta.\n" +
             "- \"dificuldade\": 1 (fácil) a 3 (difícil).\n" +
-            "- \"fonte\": o número da fonte em que a pergunta se baseia (1 a ${fontes.size}), ou 0 se nenhuma. Nunca invente fontes.\n" +
+            "- \"fonte\": as NOTAS têm marcas [n] dizendo de qual fonte veio cada trecho. Use o número da fonte do trecho em que a pergunta se baseia (1 a ${fontes.size}). Use 0 só se a pergunta não vier de nenhum trecho marcado. Nunca invente fontes.\n" +
             (if (ja.isNotBlank()) "- Não repita estas perguntas:\n$ja\n" else "") +
             "\nNOTAS:\n${notas.take(12_000)}\n\nFONTES:\n$listaFontes\n\n" +
             "Responda só com um array JSON de objetos com os campos: tipo, pergunta, codigo, citacao, dica, resposta, explicacao, fonte, dificuldade."
@@ -308,11 +397,13 @@ object Ia {
             try {
                 out += openLibrary(t.optString("titulo"), t.optString("autor"))
             } catch (e: Exception) { /* segue sem */ }
-            out += wikipedia("pt", "${t.optString("titulo")} livro ${t.optString("autor")}".trim(), 2)
+            val w = wikipedia("pt", "${t.optString("titulo")} livro ${t.optString("autor")}".trim(), 2)
+            out += w.ifEmpty { listOfNotNull(resumoWiki("pt", t.optString("titulo"))) }
         } else {
             val q = listOf(t.optString("tema"), t.optString("topico")).filter { it.isNotBlank() }.joinToString(" ")
             out += wikipedia("pt", q, 3)
             if (out.isEmpty()) out += wikipedia("en", q, 3)
+            if (out.isEmpty()) out += listOfNotNull(resumoWiki("pt", t.optString("tema")), resumoWiki("en", t.optString("tema")))
         }
         return out
     }
@@ -320,7 +411,7 @@ object Ia {
     private fun wikipedia(lingua: String, busca: String, n: Int): List<Fonte> = try {
         val url = "https://$lingua.wikipedia.org/w/api.php?action=query&format=json&generator=search" +
             "&gsrsearch=${enc(busca)}&gsrlimit=$n&prop=extracts&exintro=1&explaintext=1&exlimit=$n"
-        val pages = JSONObject(http(url)).optJSONObject("query")?.optJSONObject("pages") ?: JSONObject()
+        val pages = JSONObject(http(url, espera = 15_000)).optJSONObject("query")?.optJSONObject("pages") ?: JSONObject()
         pages.keys().asSequence().map { pages.getJSONObject(it) }
             .sortedBy { it.optInt("index", 99) }
             .filter { it.optString("extract").length > 80 }
@@ -330,6 +421,19 @@ object Ia {
             }.toList()
     } catch (e: Exception) {
         emptyList()
+    }
+
+    /** Resumo direto de uma página (não usa a busca da Wikipedia, que às vezes fica ocupada). */
+    private fun resumoWiki(lingua: String, titulo: String): Fonte? = try {
+        if (titulo.isBlank()) null else {
+            val nome = enc(titulo.trim().replace(' ', '_')).replace("+", "%20")
+            val o = JSONObject(http("https://$lingua.wikipedia.org/api/rest_v1/page/summary/$nome", espera = 15_000))
+            val txt = o.optString("extract")
+            if (txt.length < 80) null
+            else Fonte("Wikipedia: ${o.optString("title", titulo)}", "https://$lingua.wikipedia.org/wiki/$nome", txt.take(3500))
+        }
+    } catch (e: Exception) {
+        null
     }
 
     private fun openLibrary(titulo: String, autor: String): List<Fonte> {

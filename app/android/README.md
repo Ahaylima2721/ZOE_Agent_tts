@@ -14,7 +14,7 @@ Do [conceito](../CONCEITO.md) e da [Zoe de estudos](../INTELIGENCIA.md):
 
 ## Como instalar no celular
 
-1. Baixe `app/dist/zoe-foco-0.2.0.apk` (ou gere com o comando abaixo).
+1. Baixe `app/dist/zoe-foco-0.2.1.apk` (ou gere com o comando abaixo).
 2. No celular, abra o arquivo e permita "instalar apps desta fonte" quando o Android pedir.
 3. Abra a Zoe Foco e siga as boas-vindas.
 
