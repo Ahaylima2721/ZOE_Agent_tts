@@ -1,14 +1,20 @@
-# Zoe Foco · app Android (v0.1)
+# Zoe Foco · app Android (v0.2)
 
-O MVP do [conceito](../CONCEITO.md): hábitos, horários de foco, apps vigiados e o peteleco em 3 níveis.
+Do [conceito](../CONCEITO.md) e da [Zoe de estudos](../INTELIGENCIA.md):
 
-- **Leve**: o APK final tem cerca de 60 KB. Usa só Kotlin e o WebView do sistema, sem bibliotecas extras.
-- **Privado**: o app **não tem permissão de internet**. Hábitos e uso dos apps ficam só no celular.
+- **v0.1**: hábitos, horários de foco, apps vigiados e o peteleco em 3 níveis.
+- **v0.2**: lembrete dos hábitos, resumo do dia às 22h, no máximo 2 emergências por dia, e **Estudos**:
+  trilhas de estudo ou leitura, pacotes de perguntas feitos pelo Gemini (plano gratuito), revisão espaçada,
+  pílula depois do foco, "Me dá uma pergunta no lugar" no peteleco, conversa socrática (20 mensagens por dia)
+  e os óculos da Zoe com 50 respostas numa trilha.
+- **Sem voz**: a Zoe usa só texto e vibração.
+- **Leve**: o APK tem cerca de 95 KB. Usa só Kotlin e o WebView do sistema, sem bibliotecas extras.
+- **Privado**: hábitos, horários e uso dos apps ficam só no celular. A internet é usada só em Estudos, com o tema da trilha.
 - **Android 8.0 ou mais novo** (minSdk 26).
 
 ## Como instalar no celular
 
-1. Baixe o `app-release.apk` (ou gere com o comando abaixo).
+1. Baixe `app/dist/zoe-foco-0.2.0.apk` (ou gere com o comando abaixo).
 2. No celular, abra o arquivo e permita "instalar apps desta fonte" quando o Android pedir.
 3. Abra a Zoe Foco e siga as boas-vindas.
 
@@ -36,6 +42,7 @@ O APK sai em `app/build/outputs/apk/release/app-release.apk`.
 | Recomendada | Alarmes exatos (`SCHEDULE_EXACT_ALARM`, Android 12+) | Começar a vigiar na hora certa e poder iniciar o vigia em segundo plano | Configurações › Alarmes e lembretes |
 | Recomendada | Sem otimização de bateria | Evitar que o sistema mate o vigia no meio do foco | Configurações › Bateria |
 | Automática | Serviço em primeiro plano, iniciar com o celular, vibrar | Manter o vigia rodando, reagendar depois de reiniciar, vibrar no peteleco | Não pede nada ao usuário |
+| Automática | Internet (`INTERNET`) | Só em Estudos: Gemini, Wikipedia e Open Library | Não pede nada ao usuário |
 | Futura | Acessibilidade | Bloquear só Reels e Shorts | Não pedimos: a Play Store não aceita esse uso |
 
 Em celulares Xiaomi, Samsung, Huawei, Oppo, Vivo, Realme, OnePlus, Motorola e Asus, a tela de permissões mostra um passo extra ("início automático").
@@ -63,6 +70,22 @@ AlarmManager ──(início/fim de cada foco)──▶ Guard.sincronizar
 | `FocusGuardService.kt` | O vigia que detecta o app aberto |
 | `PetelecoActivity.kt` | A tela por cima, com texto e vibração |
 | `MainActivity.kt` | Hospeda a interface e a ponte `window.Zoe` |
+| `Ia.kt` | Gemini: pacote de perguntas (busca do Google, ou Wikipedia e Open Library se a busca não for liberada) e conversa |
+| `Lembretes.kt` | Lembrete dos hábitos e resumo das 22h |
 | `assets/www/` | Interface em HTML/CSS/JS, com o mesmo orbe do portfólio |
 
 Para ver a interface no navegador do computador, abra `assets/www/index.html` (usa dados de exemplo; `index.html#novo` mostra as boas-vindas).
+
+## Inteligência (Estudos)
+
+1. Crie uma chave grátis em [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
+2. No app: Zoe › Inteligência › cole a chave › Salvar e testar.
+
+O app escolhe sozinho o modelo "flash" mais novo que a chave consegue usar.
+
+Cada pacote de perguntas é feito em dois passos:
+
+1. **Pesquisa:** o Gemini busca na web com o Google Search e escreve notas com fontes. Se a chave grátis não puder usar a busca, o app usa Wikipedia (e Open Library, para livros) como fonte.
+2. **Perguntas:** o Gemini transforma as notas em 12 perguntas em JSON, cada uma apontando a fonte.
+
+A chave fica no arquivo `segredo.xml`, fora do backup do Android. No plano gratuito, o Google pode usar o que é enviado para melhorar os produtos dele, e o app avisa isso na tela.
