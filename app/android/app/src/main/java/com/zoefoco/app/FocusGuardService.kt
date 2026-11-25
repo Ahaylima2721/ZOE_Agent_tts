@@ -108,7 +108,12 @@ class FocusGuardService : Service() {
         if (!rodando) return
         rodando = false
         handler.removeCallbacks(tique)
-        if (!Store.encerradoNaMao(this)) Store.focoConcluido(this)
+        if (!Store.encerradoNaMao(this)) {
+            Store.focoConcluido(this)
+            if (Store.temPerguntas(this)) {
+                Avisos.notificar(this, 5, "Foco concluído!", "Bora de uma pílula de 1 minuto antes de pegar o celular?", "pilula")
+            }
+        }
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
         Guard.agendarProximo(this)

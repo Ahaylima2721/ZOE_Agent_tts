@@ -59,7 +59,8 @@ class PetelecoActivity : Activity() {
             "esse app"
         }
         val q = "nivel=$nivel&app=${Uri.encode(nome)}&ate=$ate&faltam=$faltam" +
-            "&tom=${Store.tom(this)}&energia=${Store.energia(this)}"
+            "&tom=${Store.tom(this)}&energia=${Store.energia(this)}" +
+            "&emerg=${Store.emergenciasRestantes(this)}&pergunta=${if (Store.temPerguntas(this)) 1 else 0}"
         web.loadUrl("file:///android_asset/www/peteleco.html?$q")
         vibrar(nivel)
     }
@@ -99,9 +100,22 @@ class PetelecoActivity : Activity() {
 
         @JavascriptInterface
         fun emergencia() = runOnUiThread {
-            Store.usarEmergencia(this@PetelecoActivity)
+            if (!Store.usarEmergencia(this@PetelecoActivity)) {
+                irParaInicio()
+                return@runOnUiThread
+            }
             val abrir = packageManager.getLaunchIntentForPackage(pacote)
             if (abrir != null) startActivity(abrir.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+            finish()
+        }
+
+        /** Troca o vício por uma pergunta de estudo: abre a pílula na Zoe. */
+        @JavascriptInterface
+        fun pergunta() = runOnUiThread {
+            startActivity(Intent(this@PetelecoActivity, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                .putExtra(MainActivity.EXTRA_ROTA, "pilula")
+                .putExtra(MainActivity.EXTRA_TROCA, true))
             finish()
         }
     }

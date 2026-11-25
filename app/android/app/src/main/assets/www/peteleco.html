@@ -21,6 +21,8 @@ body{background:rgba(22,10,51,.92);color:#F4EEFF;min-height:100%}
 .btn{display:grid;place-items:center;min-height:56px;border-radius:16px;border:0;font-size:17px;font-weight:600;cursor:pointer}
 .btn.principal{background:#FFFFFF;color:var(--noite)}
 .btn.texto{background:transparent;color:#D9CCF5;font-size:15px;min-height:48px}
+.btn.troca{background:rgba(201,167,255,.16);border:1px solid rgba(201,167,255,.4);color:#FFFFFF;font-size:16px}
+.esgotada{margin:0;text-align:center;font-size:14px;color:#D9CCF5;padding:12px 0}
 .treme{animation:treme .5s cubic-bezier(.36,.07,.19,.97) .25s 2 both}
 @keyframes treme{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}30%,50%,70%{transform:translateX(-8px) rotate(-1deg)}40%,60%{transform:translateX(8px) rotate(1deg)}}
 .dedo{position:absolute;right:calc(50% - 150px);top:6px;animation:dedo .6s ease-out both}
@@ -41,6 +43,8 @@ body{background:rgba(22,10,51,.92);color:#F4EEFF;min-height:100%}
   var ate = q.get('ate') || '';
   var faltam = q.get('faltam') || '';
   var tom = q.get('tom') || 'firme';
+  var emerg = parseInt(q.get('emerg') || '0', 10);
+  var temPergunta = q.get('pergunta') === '1';
 
   var falas = {
     gentil: {
@@ -98,11 +102,20 @@ body{background:rgba(22,10,51,.92);color:#F4EEFF;min-height:100%}
       '<div class="acoes"><button class="btn principal" id="ok">Voltar para a tela inicial</button>' +
       '<button class="btn texto" id="emergencia">Usar emergência · 5 min</button></div>';
   }
+  // Emergência: no máximo 2 por dia. Pergunta no lugar: só se já houver trilha de estudo.
+  var trocar = temPergunta ? '<button class="btn troca" id="pergunta">Me dá uma pergunta no lugar</button>' : '';
+  var sem = '<p class="esgotada">Emergências de hoje esgotadas. Amanhã tem mais duas.</p>';
+  html = html.replace(/<button class="btn texto" id="emergencia">([^<]*)<\/button>/, function (m, txt) {
+    return trocar + (emerg > 0 ? '<button class="btn texto" id="emergencia">' + txt + ' (' + emerg + (emerg === 1 ? ' restante' : ' restantes') + ')</button>' : sem);
+  });
   document.getElementById('tela').innerHTML = html;
 
-  var Z = window.Zoe || { ok: function () {}, emergencia: function () {} };
+  var Z = window.Zoe || { ok: function () {}, emergencia: function () {}, pergunta: function () {} };
   document.getElementById('ok').onclick = function () { Z.ok(); };
-  document.getElementById('emergencia').onclick = function () { Z.emergencia(); };
+  var b = document.getElementById('emergencia');
+  if (b) b.onclick = function () { Z.emergencia(); };
+  b = document.getElementById('pergunta');
+  if (b) b.onclick = function () { Z.pergunta(); };
 })();
 </script>
 </body>

@@ -223,9 +223,19 @@ object Store {
 
     fun emergenciaAte(c: Context) = p(c).getLong("emergenciaAte", 0)
 
-    fun usarEmergencia(c: Context) {
-        p(c).edit().putLong("emergenciaAte", System.currentTimeMillis() + 5 * MIN).apply()
+    const val MAX_EMERGENCIAS = 2
+    fun emergenciasHoje(c: Context) = p(c).getInt("emerg_${dia()}", 0)
+    fun emergenciasRestantes(c: Context) = (MAX_EMERGENCIAS - emergenciasHoje(c)).coerceAtLeast(0)
+
+    /** Libera o app por 5 min. No máximo 2 por dia. */
+    fun usarEmergencia(c: Context): Boolean {
+        if (emergenciasRestantes(c) <= 0) return false
+        p(c).edit()
+            .putLong("emergenciaAte", System.currentTimeMillis() + 5 * MIN)
+            .putInt("emerg_${dia()}", emergenciasHoje(c) + 1)
+            .apply()
         addEnergia(c, -15)
+        return true
     }
 
     fun focoConcluido(c: Context) {
@@ -236,4 +246,55 @@ object Store {
     }
 
     fun minutosFocoHoje(c: Context) = p(c).getInt("minutosFoco_${dia()}", 0)
+
+    fun inicioDoDia(t: Long = System.currentTimeMillis()): Long = meiaNoite(t).timeInMillis
+
+    // ---------------- lembretes ----------------
+
+    fun lembreteAtivo(c: Context) = p(c).getBoolean("lembreteAtivo", true)
+    fun lembreteHora(c: Context) = p(c).getInt("lembreteHora", 20 * 60)
+    fun resumoAtivo(c: Context) = p(c).getBoolean("resumoAtivo", true)
+    fun setLembretes(c: Context, ativo: Boolean, minuto: Int, resumo: Boolean) =
+        p(c).edit().putBoolean("lembreteAtivo", ativo)
+            .putInt("lembreteHora", minuto.coerceIn(0, 24 * 60 - 1))
+            .putBoolean("resumoAtivo", resumo).apply()
+
+    fun habitosPendentes(c: Context): List<String> {
+        val arr = JSONArray(habitosJson(c))
+        val feitos = feitosHoje(c)
+        return (0 until arr.length()).map { arr.getJSONObject(it) }
+            .filter { it.optString("id") !in feitos }
+            .map { it.optString("nome") }
+    }
+
+    // ---------------- estudos ----------------
+
+    private val CHAVES_ESTUDO = setOf("est_trilhas", "est_perguntas", "est_respostas", "est_conversas")
+
+    fun ler(c: Context, chave: String): String =
+        if (chave in CHAVES_ESTUDO) p(c).getString(chave, "")!! else ""
+
+    fun guardar(c: Context, chave: String, valor: String) {
+        if (chave in CHAVES_ESTUDO) p(c).edit().putString(chave, valor).apply()
+    }
+
+    fun temPerguntas(c: Context) = try {
+        JSONArray(p(c).getString("est_perguntas", "[]")!!.ifEmpty { "[]" }).length() > 0
+    } catch (e: Exception) {
+        false
+    }
+
+    /** Energia por estudar. No máximo 5 recompensas por dia, para não virar farm. */
+    fun recompensa(c: Context, pontos: Int): Boolean {
+        val k = "recompensas_${dia()}"
+        val n = p(c).getInt(k, 0)
+        if (n >= 5) return false
+        p(c).edit().putInt(k, n + 1).apply()
+        addEnergia(c, pontos.coerceIn(1, 10))
+        return true
+    }
+
+    const val MAX_CONVERSA = 20
+    fun conversasHoje(c: Context) = p(c).getInt("conversa_${dia()}", 0)
+    fun contarConversa(c: Context) = p(c).edit().putInt("conversa_${dia()}", conversasHoje(c) + 1).apply()
 }

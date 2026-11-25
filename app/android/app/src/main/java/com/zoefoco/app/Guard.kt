@@ -61,7 +61,10 @@ class BootReceiver : BroadcastReceiver() {
     )
 
     override fun onReceive(c: Context, i: Intent) {
-        if (i.action in acoes) Guard.sincronizar(c)
+        if (i.action in acoes) {
+            Guard.sincronizar(c)
+            Lembretes.agendar(c)
+        }
     }
 }
 
@@ -81,9 +84,31 @@ object Avisos {
         )
         nm.createNotificationChannel(
             NotificationChannel(CANAL_AVISOS, "Avisos da Zoe", NotificationManager.IMPORTANCE_DEFAULT).apply {
-                description = "Início do foco e lembretes"
+                description = "Início do foco, lembretes de hábitos, resumo do dia e pílulas de estudo"
             }
         )
+    }
+
+    /** Notificação simples que abre o app numa tela (rota) da interface. */
+    fun notificar(c: Context, id: Int, titulo: String, texto: String, rota: String) {
+        criarCanais(c)
+        val i = Intent(c, MainActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            .putExtra(MainActivity.EXTRA_ROTA, rota)
+        val pi = PendingIntent.getActivity(c, 100 + id, i, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+        val n = Notification.Builder(c, CANAL_AVISOS)
+            .setSmallIcon(R.drawable.ic_zoe)
+            .setContentTitle(titulo)
+            .setContentText(texto)
+            .setStyle(Notification.BigTextStyle().bigText(texto))
+            .setAutoCancel(true)
+            .setContentIntent(pi)
+            .build()
+        try {
+            c.getSystemService(NotificationManager::class.java).notify(id, n)
+        } catch (e: SecurityException) {
+            // sem permissão de notificação
+        }
     }
 
     private fun abrirApp(c: Context, extra: String? = null): PendingIntent {

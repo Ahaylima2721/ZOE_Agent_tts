@@ -2,6 +2,7 @@ package com.zoefoco.app
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.Intent
 import android.graphics.Color
 import android.os.Build
 import android.view.View
@@ -12,11 +13,14 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
 
-/** A interface da Zoe é HTML local (assets/www), desenhada num WebView do próprio sistema. */
+/**
+ * A interface da Zoe é HTML local (assets/www), desenhada num WebView do próprio sistema.
+ * Links externos (fontes das perguntas) abrem no navegador do celular, nunca dentro do app.
+ */
 object Web {
 
     @SuppressLint("SetJavaScriptEnabled", "JavascriptInterface")
-    fun criar(a: Activity, ponte: Any, fundo: Int): WebView {
+    fun criar(a: Activity, ponte: Any, fundo: Int, aoCarregar: () -> Unit = {}): WebView {
         val w = WebView(a)
         w.settings.javaScriptEnabled = true
         w.settings.domStorageEnabled = true
@@ -25,9 +29,19 @@ object Web {
         w.overScrollMode = View.OVER_SCROLL_NEVER
         w.webChromeClient = WebChromeClient()
         w.webViewClient = object : WebViewClient() {
-            // Só páginas do próprio app: nada de navegar para fora.
-            override fun shouldOverrideUrlLoading(v: WebView, r: WebResourceRequest) =
-                !r.url.toString().startsWith("file:///android_asset/")
+            // Só páginas do próprio app dentro do WebView. Links https abrem no navegador.
+            override fun shouldOverrideUrlLoading(v: WebView, r: WebResourceRequest): Boolean {
+                val url = r.url
+                if (url.toString().startsWith("file:///android_asset/")) return false
+                if (url.scheme == "https") {
+                    try {
+                        a.startActivity(Intent(Intent.ACTION_VIEW, url).addCategory(Intent.CATEGORY_BROWSABLE))
+                    } catch (e: Exception) { /* sem navegador */ }
+                }
+                return true
+            }
+
+            override fun onPageFinished(v: WebView, url: String) = aoCarregar()
         }
         w.addJavascriptInterface(ponte, "Zoe")
         return w

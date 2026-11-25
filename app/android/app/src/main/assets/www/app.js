@@ -4,8 +4,10 @@
 
   var Z = window.Zoe || null; // sem Android: ponte falsa, criada no fim do arquivo
   var S = null;               // estado vindo do Android
-  var rota = 'hoje';          // aba ou editor atual
-  var rotaAnterior = 'hoje';
+  var rota = 'hoje';          // aba, editor ou tela interna atual
+  var pilha = [];             // de onde viemos (para o botão voltar)
+  var E = null;               // módulo de Estudos (estudos.js)
+  var lemb = null;            // rascunho dos lembretes
   var passo = 0;              // passo das boas-vindas
   var rascunho = {};          // edições ainda não salvas
   var apps = null;            // lista de apps instalados (carrega uma vez)
@@ -16,6 +18,8 @@
 
   var PASSOS = ['ola', 'habitos', 'viloes', 'agenda', 'jeito', 'perms'];
   var EDITORES = ['habitos', 'viloes', 'agenda', 'jeito', 'perms'];
+  var INTERNAS = ['trilha', 'novaTrilha', 'pilula', 'conversa', 'ia', 'lembretes', 'resumo'];
+  var ABAS = ['hoje', 'estudos', 'foco', 'zoe'];
   var DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
   var DIAS_LONGOS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
   var UTEIS = [1, 2, 3, 4, 5];
@@ -67,13 +71,20 @@
     lixo: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
     certo: '<path d="M5 12l5 5 9-10"/>',
     seta: '<path d="M9 6l6 6-6 6"/>',
-    fogo: '<path d="M12 2c1 4 5 6 5 11a5 5 0 0 1-10 0c0-3 2-4 2-7 2 1 3 3 3 5"/>'
+    fogo: '<path d="M12 2c1 4 5 6 5 11a5 5 0 0 1-10 0c0-3 2-4 2-7 2 1 3 3 3 5"/>',
+    livro: '<path d="M4 19V5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M19 19v2H6"/>',
+    balao: '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>',
+    externo: '<path d="M10 14L21 3M15 3h6v6M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/>',
+    fechar: '<path d="M6 6l12 12M18 6L6 18"/>',
+    chave: '<circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3L21 2M17 6l3 3M14 9l2 2"/>',
+    grafico: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'
   };
 
   function orbe(tam, humor, extraStyle) {
     return '<div class="orb flutua ' + (humor || '') + '" style="--s:' + tam + 'px;' + (extraStyle || '') + '" role="img" aria-label="Zoe' + (humor ? ' ' + nomeHumor(humor) : '') + '">' +
       '<span class="bochecha e"></span><span class="bochecha d"></span>' +
-      '<div class="face"><i class="eye"></i><i class="eye"></i></div></div>';
+      '<div class="face"><i class="eye"></i><i class="eye"></i></div>' +
+      (E && E.oculos() ? '<span class="oculos" aria-hidden="true"><i></i><i></i></span>' : '') + '</div>';
   }
   function nomeHumor(h) {
     return { feliz: 'feliz', sono: 'sonolenta', foco: 'concentrada', brava: 'brava', triste: 'triste', pensa: 'pensativa' }[h] || '';
@@ -94,6 +105,8 @@
       html = telaBoasVindas();
     } else if (EDITORES.indexOf(rota) >= 0) {
       html = telaEditor(rota);
+    } else if (INTERNAS.indexOf(rota) >= 0) {
+      html = telaInterna(rota);
     } else {
       html = telaAba(rota) + nav();
     }
@@ -370,8 +383,15 @@
       focoCard +
       '<div style="display:flex;justify-content:space-between;align-items:baseline"><h2 style="font-size:19px">Hábitos de hoje</h2><span class="sub" style="font-size:14px">' + feitos + ' de ' + S.habitos.length + '</span></div>' +
       habitos +
-      '<p class="sub" style="font-size:13px">Hoje: ' + S.minutosFocoHoje + ' min de foco · ' + S.petelecosHoje + (S.petelecosHoje === 1 ? ' peteleco' : ' petelecos') + '</p>' +
+      revisao() +
+      '<button class="linha" data-acao="sub" data-arg="resumo"><span class="perm-ico">' + ico(I.grafico) + '</span><span class="meio"><strong>Resumo do dia</strong><span class="det">' +
+      S.minutosFocoHoje + ' min de foco · ' + S.petelecosHoje + (S.petelecosHoje === 1 ? ' peteleco' : ' petelecos') + '</span></span>' + ico(I.seta) + '</button>' +
       '</section>';
+  }
+  function revisao() {
+    var n = E.devidas();
+    if (!n) return '';
+    return '<button class="linha" data-acao="pilula"><span class="perm-ico">' + ico(I.estudo) + '</span><span class="meio"><strong>' + n + (n === 1 ? ' pergunta para revisar' : ' perguntas para revisar') + '</strong><span class="det">Uma pílula rápida de estudo</span></span>' + ico(I.seta) + '</button>';
   }
   function saudacao(d) { var h = d.getHours(); return h < 12 ? 'Bom dia!' : (h < 18 ? 'Boa tarde!' : 'Boa noite!'); }
 
@@ -420,11 +440,63 @@
     if (resta <= 0) { clearInterval(relogio); setTimeout(function () { carregar(); render(); }, 1500); }
   }
 
-  function telaEstudos() {
-    return '<section class="tela centro">' + orbe(120, 'pensa') +
-      '<h1 class="titulo">Estudos chega logo</h1>' +
-      '<p class="texto">Na próxima versão você vai contar o que está estudando ou lendo, e eu trago perguntas e provocações pra você pensar no intervalo do foco.</p>' +
-      '<p class="sub">Por enquanto, foco no peteleco.</p></section>';
+  function telaEstudos() { return E.telas.estudos(S); }
+
+  function telaInterna(r) {
+    if (r === 'resumo') return telaResumo();
+    if (r === 'lembretes') return telaLembretes();
+    return E.telas[r](S);
+  }
+
+  // ---------------- resumo do dia ----------------
+  function telaResumo() {
+    var R = {};
+    try { R = JSON.parse(Z.resumo()); } catch (e) { R = { viloes: [], minutosViloes: 0, mediaViloes: 0, temUso: false }; }
+    var feitos = S.habitos.filter(function (h) { return S.feitosHoje.indexOf(h.id) >= 0; }).length, total = S.habitos.length;
+    var estudadas = E.respondidasHoje();
+    var bom = total ? feitos * 2 >= total : true;
+    var fala = (total ? feitos + ' de ' + total + ' hábitos' : 'Nenhum hábito marcado') + ', ' + tempo(S.minutosFocoHoje) + ' de foco e ' +
+      (S.petelecosHoje === 0 ? 'nenhum peteleco' : S.petelecosHoje + (S.petelecosHoje === 1 ? ' peteleco' : ' petelecos')) + '. ' +
+      (bom ? 'Orgulho! ' : 'Amanhã a gente tenta de novo. ') + (new Date().getHours() >= 21 ? 'Agora bora dormir?' : '');
+    var max = Math.max.apply(null, [1].concat(R.viloes.map(function (v) { return v.minutos; })));
+    var viloes = !R.temUso ? '<p class="sub" style="font-size:14px">Libere "ver qual app está aberto" pra eu mostrar o tempo nos vilões.</p>'
+      : (R.viloes.length ? R.viloes.slice(0, 5).map(function (v) {
+        return '<div style="display:grid;grid-template-columns:96px minmax(0,1fr) 60px;align-items:center;gap:10px;font-size:14px"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(v.nome) + '</span>' +
+          '<div class="barra"><i style="width:' + Math.round(v.minutos / max * 100) + '%"></i></div><span class="sub" style="font-size:13px;text-align:right">' + tempo(v.minutos) + '</span></div>';
+      }).join('') : '<p class="sub" style="font-size:14px">Nem encostou nos vilões hoje. Uau!</p>');
+    var dif = R.mediaViloes - R.minutosViloes;
+    var comp = R.temUso && R.mediaViloes > 0 ? '<strong style="font-size:13px;color:' + (dif >= 0 ? 'var(--ok)' : 'var(--peteleco-escuro)') + '">' +
+      (dif >= 0 ? tempo(dif) + ' a menos que a sua média' : tempo(-dif) + ' a mais que a sua média') + '</strong>' : '';
+    var marcos = [7, 30, 100], prox = marcos.filter(function (m) { return S.sequencia < m; })[0];
+    var evol = prox ? '<section class="card-noite" style="display:flex;flex-direction:column;gap:10px"><div style="display:flex;justify-content:space-between;align-items:baseline"><h2 style="font-size:17px">Próxima evolução</h2><span style="font-size:14px;color:#D9CCF5">' + S.sequencia + ' de ' + prox + ' dias</span></div>' +
+      '<div class="barra" style="background:rgba(201,167,255,.18)"><i style="width:' + Math.round(S.sequencia / prox * 100) + '%;background:#C9A7FF"></i></div>' +
+      '<span style="font-size:14px;color:#D9CCF5">Com ' + prox + ' dias seguidos cumprindo metade dos hábitos, a Zoe ganha um visual novo.</span></section>' : '';
+    var stat = function (v, r, alerta) {
+      return '<div class="card" style="padding:14px 12px;display:flex;flex-direction:column;gap:4px' + (alerta ? ';background:#FFF1EC;border-color:#FFC9B9' : '') + '"><strong style="font-size:24px' + (alerta ? ';color:var(--peteleco-escuro)' : '') + '">' + v + '</strong><span class="sub" style="font-size:13px">' + r + '</span></div>';
+    };
+    return '<section class="tela">' +
+      '<div class="topo"><button class="voltar" data-acao="voltar" aria-label="Voltar">' + ico(I.voltar) + '</button><h1>Seu dia com a Zoe</h1></div>' +
+      '<div class="card" style="display:flex;gap:16px;align-items:center">' + orbe(84, bom ? 'feliz' : 'triste') + '<p class="texto" style="flex:1">' + fala + '</p></div>' +
+      '<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">' +
+      stat(feitos + '/' + total, 'hábitos') + stat(tempo(S.minutosFocoHoje), 'de foco') + stat(S.petelecosHoje, S.petelecosHoje === 1 ? 'peteleco' : 'petelecos', S.petelecosHoje > 0) + '</div>' +
+      (estudadas ? '<p class="sub" style="font-size:14px">' + ico(I.estudo, 16) + ' ' + estudadas + (estudadas === 1 ? ' pergunta revisada hoje.' : ' perguntas revisadas hoje.') + '</p>' : '') +
+      '<section class="card" style="display:flex;flex-direction:column;gap:12px"><h2 style="font-size:17px">Tempo nos vilões hoje</h2>' + viloes + comp + '</section>' +
+      evol + '</section>';
+  }
+
+  // ---------------- lembretes ----------------
+  function telaLembretes() {
+    if (!lemb) lemb = { ativo: S.lembrete.ativo, minuto: S.lembrete.minuto, resumo: S.lembrete.resumo };
+    var sw = function (acao, on, titulo, det) {
+      return '<button class="linha" role="switch" aria-checked="' + on + '" data-acao="' + acao + '"><span class="meio"><strong style="white-space:normal">' + titulo + '</strong><span class="det" style="white-space:normal">' + det + '</span></span><span class="interruptor" aria-hidden="true"></span></button>';
+    };
+    return '<section class="tela">' +
+      '<div class="topo"><button class="voltar" data-acao="voltar" aria-label="Voltar">' + ico(I.voltar) + '</button><h1>Lembretes</h1></div>' +
+      sw('lembAtivo', lemb.ativo, 'Lembrete dos hábitos', 'Só aparece se ainda faltar algum hábito no dia.') +
+      (lemb.ativo ? '<div class="campo"><label for="lemb-hora">Horário do lembrete</label><input id="lemb-hora" class="entrada" type="time" value="' + hhmm(lemb.minuto) + '" data-campo="lembHora"></div>' : '') +
+      sw('lembResumo', lemb.resumo, 'Resumo do dia às 22h', 'Hábitos, foco, petelecos e tempo nos vilões.') +
+      (!S.perms.notificacoes ? '<div class="aviso">' + ico(I.sino) + '<p>As notificações estão desligadas: os lembretes não vão aparecer.</p><button class="btn secundario pequeno" data-acao="liberar" data-arg="notificacoes">Liberar</button></div>' : '') +
+      '<div class="rodape"><button class="btn principal" data-acao="salvarLembretes">Salvar</button></div></section>';
   }
 
   function telaZoe() {
@@ -442,17 +514,24 @@
       item('editar', 'agenda', I.relogio, 'Horários de foco', S.blocos.length ? S.blocos.length + (S.blocos.length === 1 ? ' horário' : ' horários') : 'Nenhum') +
       item('editar', 'habitos', I.certo, 'Hábitos', S.habitos.length + ' hábitos') +
       item('editar', 'perms', I.escudo, 'Permissões', permsLiberadas() + ' de 5 liberadas') +
+      item('sub', 'ia', I.chave, 'Inteligência', S.ia.temChave ? 'Gemini conectado' : 'Configurar chave grátis') +
+      item('sub', 'lembretes', I.sino, 'Lembretes', S.lembrete.ativo ? 'Hábitos às ' + hhmm(S.lembrete.minuto) : 'Desligados') +
+      item('sub', 'resumo', I.grafico, 'Resumo do dia', 'Como foi hoje') +
       '</ul>' +
-      '<p class="sub" style="display:flex;gap:8px;align-items:flex-start">' + ico(I.escudo, 18) + '<span>Privacidade: a Zoe não tem permissão de internet. Seus hábitos e o uso dos apps ficam só neste celular.</span></p>' +
-      '<p class="sub" style="font-size:12px">Zoe Foco 0.1.0</p></section>';
+      '<p class="sub" style="display:flex;gap:8px;align-items:flex-start">' + ico(I.escudo, 18) + '<span>Privacidade: hábitos, horários e o uso dos apps ficam só neste celular. A internet é usada só em Estudos, e só com o tema da trilha.</span></p>' +
+      '<p class="sub" style="font-size:12px">Zoe Foco 0.2.0</p></section>';
   }
 
   // ---------------- ações ----------------
   var acoes = {
     avancar: function () { erro = ''; passo++; render(); },
     voltar: function () { window.zoeVoltar(); },
-    aba: function (a) { rota = a; render(); window.scrollTo(0, 0); },
-    editar: function (p) { rotaAnterior = rota; rota = p; erro = ''; delete rascunho[{ habitos: 'habitos', viloes: 'vigiados', agenda: 'blocos', jeito: 'tom' }[p]]; render(); window.scrollTo(0, 0); },
+    aba: function (a) { irAba(a); },
+    editar: function (p) { erro = ''; delete rascunho[{ habitos: 'habitos', viloes: 'vigiados', agenda: 'blocos', jeito: 'tom' }[p]]; abrir(p); },
+    sub: function (p) { if (p === 'lembretes') lemb = null; abrir(p); },
+    lembAtivo: function () { lemb.ativo = !lemb.ativo; render(); },
+    lembResumo: function () { lemb.resumo = !lemb.resumo; render(); },
+    salvarLembretes: function () { Z.salvarLembretes(!!lemb.ativo, lemb.minuto, !!lemb.resumo); carregar(); fechar(); },
     liberar: function (p) { Z.liberar(p); },
     habito: function (id) { Z.alternarHabito(id); carregar(); render(); },
     escolherHabito: function (id) {
@@ -511,17 +590,30 @@
       if (p === 'perms' && !S.onboarded) { Z.concluirBoasVindas(); rota = 'hoje'; }
       carregar();
       if (!S.onboarded) { passo++; }
-      else if (EDITORES.indexOf(rota) >= 0) { rota = rotaAnterior; }
+      else if (EDITORES.indexOf(rota) >= 0) { fechar(); return; }
       render();
       window.scrollTo(0, 0);
     }
   };
 
+  // ---------------- navegação ----------------
+  function abrir(r) { pilha.push(rota); rota = r; render(); window.scrollTo(0, 0); }
+  function trocar(r) { if (E) E.aoSair(rota); rota = r; render(); window.scrollTo(0, 0); }
+  function fechar() {
+    if (E) E.aoSair(rota);
+    rota = pilha.pop() || 'hoje';
+    erro = '';
+    carregar(); render(); window.scrollTo(0, 0);
+  }
+  function irAba(a) { if (E) E.aoSair(rota); pilha = []; rota = a; carregar(); render(); window.scrollTo(0, 0); }
+
   document.addEventListener('click', function (e) {
     var t = e.target.closest('[data-acao]');
     if (!t) return;
     e.preventDefault();
-    var f = acoes[t.getAttribute('data-acao')];
+    var nome = t.getAttribute('data-acao');
+    var f = acoes[nome] || (E && E.acoes[nome]);
+    if (t.disabled) return;
     if (f) f(t.getAttribute('data-arg'), t);
   });
 
@@ -536,6 +628,7 @@
   });
   document.addEventListener('change', function (e) {
     var t = e.target, campo = t.getAttribute('data-campo');
+    if (campo === 'lembHora' && t.value && lemb) lemb.minuto = paraMin(t.value);
     if ((campo === 'inicio' || campo === 'fim') && t.value) {
       rascunho.blocos[+t.getAttribute('data-i')][campo] = paraMin(t.value);
     }
@@ -547,10 +640,23 @@
       if (passo > 0) { passo--; erro = ''; render(); return true; }
       return false;
     }
-    if (EDITORES.indexOf(rota) >= 0) { rota = rotaAnterior; erro = ''; render(); return true; }
-    if (rota !== 'hoje') { rota = 'hoje'; render(); return true; }
+    if (pilha.length || EDITORES.indexOf(rota) >= 0 || INTERNAS.indexOf(rota) >= 0) { fechar(); return true; }
+    if (rota !== 'hoje') { irAba('hoje'); return true; }
     return false;
   };
+  /** O Android pede para abrir uma tela (notificação ou "pergunta no lugar" do peteleco). */
+  window.zoeAbrir = function (r, troca) {
+    if (!S.onboarded) return;
+    if (r === 'pilula') { E.abrirPilula(!!troca); pilha = []; rota = 'hoje'; abrir('pilula'); return; }
+    if (r === 'resumo') { pilha = []; rota = 'hoje'; abrir('resumo'); return; }
+    if (ABAS.indexOf(r) >= 0) irAba(r);
+  };
+  /** Recarrega o estado e redesenha, mantendo o que a pessoa está digitando. */
+  function recarregar() {
+    var foco = document.activeElement, id = foco && foco.id, val = foco && foco.value;
+    carregar(); render();
+    if (id) { var el = document.getElementById(id); if (el) { if (val != null && 'value' in el && !el.value) el.value = val; el.focus(); } }
+  }
   window.zoeVoltou = function () {
     var antes = S && S.perms.uso;
     carregar();
@@ -568,6 +674,8 @@
       foco: { ativo: false, fim: 0, tentativas: 0, proximo: Date.now() + 3600e3 },
       petelecosHoje: 1, minutosFocoHoje: 50,
       perms: { uso: true, sobrepor: false, notificacoes: true, alarmes: false, bateria: false, marca: 'Xiaomi', marcaAgressiva: 'xiaomi', android: 35 },
+      emergenciasRestantes: 2, lembrete: { ativo: true, minuto: 1200, resumo: true },
+      ia: { temChave: location.hash === '#chave', modelo: 'gemini-2.5-flash', conversasRestantes: 20 },
       agora: Date.now()
     };
     return {
@@ -585,11 +693,41 @@
       concluirBoasVindas: function () { st.onboarded = true; },
       liberar: function (p) { st.perms[p] = true; setTimeout(window.zoeVoltou, 50); },
       focarAgora: function (m) { st.foco = { ativo: true, fim: Date.now() + m * 60e3, tentativas: 0, proximo: 0 }; },
-      encerrarFoco: function () { st.foco.ativo = false; }
+      encerrarFoco: function () { st.foco.ativo = false; },
+      salvarLembretes: function (a, m, r) { st.lembrete = { ativo: a, minuto: m, resumo: r }; },
+      ler: function (k) { try { return localStorage.getItem('mock_' + k) || ''; } catch (e) { return ''; } },
+      guardar: function (k, v) { try { localStorage.setItem('mock_' + k, v); } catch (e) { } },
+      recompensa: function (p) { st.energia = Math.min(100, st.energia + p); return true; },
+      salvarChave: function () { st.ia.temChave = true; },
+      apagarChave: function () { st.ia.temChave = false; },
+      resumo: function () { return JSON.stringify({ viloes: [{ nome: 'Instagram', minutos: 51 }, { nome: 'YouTube', minutos: 32 }, { nome: 'TikTok', minutos: 12 }], minutosViloes: 95, mediaViloes: 188, temUso: true }); },
+      ia: function (id, tipo, dados) {
+        setTimeout(function () {
+          var r;
+          if (tipo === 'testar') r = { modelo: 'gemini-2.5-flash' };
+          if (tipo === 'conversa') r = { texto: 'Boa pergunta! Antes de eu responder: o que acontece se você tentar mudar um item de uma `tupla`?', restantes: 19 };
+          if (tipo === 'pacote') {
+            var t = JSON.parse(dados).trilha;
+            r = { modo: 'busca', modelo: 'gemini-2.5-flash', perguntas: t.tipo === 'leitura' ? [
+              { tipo: 'contraponto', citacao: 'O autor simplifica demais a história para caber na tese dele.', pergunta: 'Você concorda com essa crítica, pelo que leu até agora?', dica: 'Pense num exemplo do livro que sustente ou derrube a crítica.', resposta: 'Dá para defender que a simplificação é escolha didática, mas vale checar onde ela esconde nuances.', explicacao: '', dificuldade: 2, fonte: { titulo: 'Resenha de exemplo', url: 'https://example.com' } }
+            ] : [
+              { tipo: 'codigo', pergunta: 'O que este código imprime?', codigo: 'print([x * 2 for x in range(3)])', dica: 'range(3) gera 0, 1 e 2.', resposta: '[0, 2, 4]', explicacao: 'A compreensão de lista aplica `x * 2` a cada número e junta tudo numa lista nova.', dificuldade: 1, fonte: { titulo: 'docs.python.org', url: 'https://docs.python.org/3/tutorial/datastructures.html' } },
+              { tipo: 'erro', pergunta: 'Por que `def f(lista=[])` é uma armadilha?', codigo: '', dica: 'Quando o valor padrão é criado?', resposta: 'A lista padrão é criada uma vez só e compartilhada entre as chamadas.', explicacao: 'Use `None` como padrão e crie a lista dentro da função.', dificuldade: 2, fonte: null }
+            ] };
+          }
+          window.zoeResposta(id, true, JSON.stringify(r));
+        }, 400);
+      }
     };
   }
 
   if (!Z) Z = pontaFalsa();
   carregar();
+  E = window.ZoeEstudos({
+    Z: Z, esc: esc, ico: ico, I: I, orbe: orbe,
+    S: function () { return S; },
+    render: render, recarregar: recarregar,
+    abrir: abrir, trocar: trocar, voltar: fechar, irAba: irAba
+  });
   render();
 })();

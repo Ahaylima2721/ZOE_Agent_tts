@@ -46,6 +46,10 @@ a{color:var(--violeta)}
 .respira{animation:respira 5s ease-in-out infinite}
 @keyframes respira{50%{transform:scale(1.04)}}
 
+.oculos{position:absolute;z-index:4;left:17%;right:17%;top:37%;height:24%;display:flex;justify-content:space-between;pointer-events:none}
+.oculos::before{content:"";position:absolute;left:38%;right:38%;top:40%;height:calc(var(--s)*.02);background:#1E1336}
+.oculos i{width:40%;height:100%;border-radius:50%;border:calc(var(--s)*.025) solid #1E1336;box-sizing:border-box;background:rgba(255,255,255,.08)}
+
 @media (prefers-reduced-motion:reduce){
   .flutua,.respira,.orb::after,.eye,.treme,.dedo{animation:none!important}
 }

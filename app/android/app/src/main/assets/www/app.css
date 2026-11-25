@@ -93,3 +93,17 @@
 .erro{margin:0;color:var(--peteleco-escuro);font-size:14px;font-weight:600}
 .vazio{padding:24px;text-align:center;color:var(--suave);font-size:15px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- v0.2: estudos, conversa, resumo ---------- */
+.btn:disabled{opacity:.55;cursor:default}
+textarea.entrada{height:auto;resize:none;font:inherit;line-height:1.45}
+.cod{font-family:ui-monospace,"Roboto Mono",Menlo,monospace;font-size:.92em;background:#F1EBFF;padding:1px 5px;border-radius:5px}
+.cod-bloco{margin:0;background:var(--noite);color:#F4EEFF;border-radius:12px;padding:14px;font:500 14px/1.5 ui-monospace,"Roboto Mono",Menlo,monospace;overflow-x:auto;white-space:pre}
+.cod-bloco code{font:inherit}
+.citacao{margin:0;padding-left:14px;border-left:3px solid var(--peteleco);font-size:17px;line-height:1.45;font-style:italic}
+.dica{margin:0;font-size:14px;color:var(--suave);background:var(--fundo);border-radius:10px;padding:10px 12px}
+.msg{margin:0;max-width:86%;padding:12px 14px;font-size:15px;line-height:1.5;overflow-wrap:anywhere}
+.msg.zoe{align-self:flex-start;background:#FFFFFF;border:1px solid var(--borda);border-radius:18px 18px 18px 4px}
+.msg.eu{align-self:flex-end;background:var(--violeta);color:#FFFFFF;border-radius:18px 18px 4px 18px}
+.msg .cod-bloco{margin-top:8px;font-size:13px}
+.chip-btn:disabled{opacity:.5}

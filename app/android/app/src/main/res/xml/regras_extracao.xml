@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A chave do Gemini (segredo.xml) não vai para o backup nem para outro celular. -->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="sharedpref" path="segredo.xml" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="sharedpref" path="segredo.xml" />
+    </device-transfer>
+</data-extraction-rules>
