@@ -710,7 +710,10 @@
       habitos: HABITOS_SUGERIDOS.slice(0, 4), feitosHoje: ['ler'],
       foco: { ativo: false, fim: 0, tentativas: 0, proximo: Date.now() + 3600e3 },
       petelecosHoje: 1, minutosFocoHoje: 50,
-      perms: { uso: true, sobrepor: false, notificacoes: true, alarmes: false, bateria: false, marca: 'Xiaomi', marcaAgressiva: 'xiaomi', android: 35 },
+      // '#demo' (vídeos): tudo liberado, sem avisos de permissão
+      perms: location.hash === '#demo'
+        ? { uso: true, sobrepor: true, notificacoes: true, alarmes: true, bateria: true, marca: 'Google', marcaAgressiva: '', android: 35 }
+        : { uso: true, sobrepor: false, notificacoes: true, alarmes: false, bateria: false, marca: 'Xiaomi', marcaAgressiva: 'xiaomi', android: 35 },
       emergenciasRestantes: 2, lembrete: { ativo: true, minuto: 1200, resumo: true },
       recados: { ativos: true, porDia: 3, rolagem: true, seguidos: 20, limite: 60 },
       ia: { temChave: location.hash === '#chave', modelo: 'gemini-2.5-flash', conversasRestantes: 20 },
