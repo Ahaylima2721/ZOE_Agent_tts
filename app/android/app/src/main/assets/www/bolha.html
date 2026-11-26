@@ -5,21 +5,22 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Zoe</title>
 <link rel="stylesheet" href="zoe.css">
+<script src="zoe-anim.js"></script>
 <style>
 html,body{background:transparent!important;overflow:hidden}
-.btn{min-height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--borda-forte);background:#FFFFFF;font:600 14px system-ui,sans-serif;color:var(--tinta);cursor:pointer}
-.btn.forte{background:var(--violeta);border-color:var(--violeta);color:#FFFFFF}
-.op{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;width:100%;min-height:56px;padding:10px 14px;border-radius:16px;border:1px solid var(--borda-forte);background:#FFFFFF;text-align:left;font:600 15px system-ui,sans-serif;color:var(--tinta);cursor:pointer}
-.op.forte{background:var(--violeta);border-color:var(--violeta);color:#FFFFFF}
+.btn{min-height:44px;padding:0 14px;border-radius:14px;border:0;box-shadow:inset 0 0 0 1.5px var(--borda-forte);background:var(--papel);font:600 14px var(--f-texto);color:var(--tinta);cursor:pointer}
+.btn.forte{background:var(--tinta);box-shadow:none;color:#FFFFFF}
+.op{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;width:100%;min-height:56px;padding:10px 14px;border-radius:18px;border:0;box-shadow:inset 0 0 0 1.5px var(--borda-forte);background:var(--papel);text-align:left;font:600 15px var(--f-texto);color:var(--tinta);cursor:pointer}
+.op.forte{background:var(--tinta);box-shadow:none;color:#FFFFFF}
 .op small{font-size:12px;font-weight:400;opacity:.8;margin-top:2px}
-.msg{margin:0;background:#FFFFFF;border:1px solid var(--borda);border-radius:18px 18px 18px 4px;padding:12px 14px;font-size:16px;line-height:1.45}
-.eu{align-self:flex-end;max-width:80%;background:var(--violeta);color:#FFFFFF;border:0;border-radius:18px 18px 4px 18px;font-size:15px}
+.msg{margin:0;background:var(--papel);border-radius:20px 20px 20px 6px;padding:12px 14px;font-size:16px;line-height:1.45;box-shadow:0 1px 0 var(--borda)}
+.eu{align-self:flex-end;max-width:80%;background:var(--lavanda);color:#FFFFFF;border-radius:20px 20px 6px 20px;font-size:15px;box-shadow:none}
 
 /* bolha */
 #bolha{position:fixed;inset:0;display:flex;align-items:center;gap:10px;padding:0 10px;flex-direction:row-reverse}
 #bolha.esquerda{flex-direction:row}
-.balao{max-width:200px;border:0;text-align:left;background:#FFFFFF;border-radius:18px 18px 4px 18px;padding:10px 14px;font:500 15px/1.35 system-ui,sans-serif;color:var(--tinta);box-shadow:0 10px 30px -10px rgba(20,8,50,.6);cursor:pointer;transition:opacity .2s}
-#bolha.esquerda .balao{border-radius:18px 18px 18px 4px}
+.balao{max-width:200px;border:0;text-align:left;background:var(--papel);border-radius:20px 20px 6px 20px;padding:9px 14px;font:700 19px/1.1 var(--f-mao);color:var(--lavanda-escura);box-shadow:0 10px 30px -10px rgba(43,37,64,.55);cursor:pointer;transition:opacity .2s}
+#bolha.esquerda .balao{border-radius:20px 20px 20px 6px}
 #bolha.arrastando .balao{opacity:0;pointer-events:none}
 .tocar{border:0;padding:0;background:none;border-radius:50%;cursor:pointer}
 .entra{animation:entra .5s cubic-bezier(.3,1.5,.5,1) both}
@@ -32,11 +33,12 @@ html,body{background:transparent!important;overflow:hidden}
 @keyframes sobe{from{transform:translateY(30px) scale(.96);opacity:0}to{transform:none;opacity:1}}
 
 /* topo e tela */
-#topo{position:fixed;left:12px;right:12px;top:12px;background:#FFFFFF;border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:14px;box-shadow:0 24px 50px -18px rgba(20,8,50,.55),0 0 0 1px rgba(109,40,217,.12)}
+#topo{position:fixed;left:12px;right:12px;top:12px;background-color:var(--papel);background-image:var(--grao);border-radius:26px 26px 26px 8px;padding:16px;display:flex;flex-direction:column;gap:14px;box-shadow:0 24px 50px -18px rgba(43,37,64,.5),0 0 0 1px rgba(141,120,214,.14)}
 .grade{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-#fundo{position:fixed;inset:0;background:rgba(22,10,51,.55)}
-#cartao{position:fixed;left:14px;right:14px;top:0;bottom:0;margin:auto 0;height:fit-content;background:var(--fundo);border-radius:26px;padding:20px;display:flex;flex-direction:column;gap:14px;box-shadow:0 30px 60px -20px rgba(10,4,30,.8);max-height:88vh;overflow:auto}
-.fechar{display:grid;place-items:center;width:44px;height:44px;border:0;border-radius:50%;background:#EAE2FA;cursor:pointer;flex:none}
+#fundo{position:fixed;inset:0;background:rgba(34,29,51,.55)}
+#cartao{position:fixed;left:14px;right:14px;top:0;bottom:0;margin:auto 0;height:fit-content;background-color:var(--fundo);background-image:var(--grao);border-radius:28px 28px 28px 8px;padding:20px;display:flex;flex-direction:column;gap:14px;box-shadow:0 30px 60px -20px rgba(10,4,30,.8);max-height:88vh;overflow:auto}
+.fechar{display:grid;place-items:center;width:44px;height:44px;border:0;border-radius:50%;background:var(--lavanda-bg);cursor:pointer;flex:none}
+.titulo-z{font:800 17px var(--f-titulo)}
 @media (prefers-reduced-motion:reduce){.entra,.desce,.sobe{animation:none}}
 </style>
 </head>
@@ -62,11 +64,8 @@ html,body{background:transparent!important;overflow:hidden}
   var reacao = null;
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-  function orbe(tam, humor, extra) {
-    return '<div class="orb ' + (humor || '') + ' ' + (extra || '') + '" style="--s:' + tam + 'px" role="img" aria-label="Zoe">' +
-      '<span class="bochecha e"></span><span class="bochecha d"></span><div class="face"><i class="eye"></i><i class="eye"></i></div></div>';
-  }
-  var X = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1E1336" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+  function orbe(tam, humor) { return ZoeAnim.html(tam, humor); }
+  var X = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2B2540" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 
   function botoes(estilo) {
     return (R.botoes || []).map(function (b) {
@@ -78,25 +77,25 @@ html,body{background:transparent!important;overflow:hidden}
   function render() {
     var html;
     if (modo === 'bolha') {
-      html = '<div id="bolha" class="' + lado + '"><button class="tocar entra" data-abrir="1" aria-label="Abrir recado da Zoe">' + orbe(62, R.humor, 'flutua') + '</button>' +
+      html = '<div id="bolha" class="' + lado + '"><button class="tocar entra" data-abrir="1" aria-label="Abrir recado da Zoe">' + orbe(58, R.humor) + '</button>' +
         '<button class="balao entra" data-abrir="1">' + esc(R.balao || R.texto) + '</button></div>';
     } else if (modo === 'topo') {
       html = '<div id="topo" class="desce" role="dialog" aria-label="Recado da Zoe">' +
         '<div style="display:flex;gap:12px;align-items:flex-start">' + orbe(48, reacao ? reacao.humor : R.humor) +
         '<div style="flex:1;display:flex;flex-direction:column;gap:4px">' +
         (reacao ? '<p style="margin:0;font-size:15px;line-height:1.45">' + esc(reacao.reacao) + '</p>'
-          : '<strong style="font-size:16px;line-height:1.3">' + esc(R.titulo) + '</strong><span style="font-size:14px;line-height:1.45;color:#3D3456">' + esc(R.texto) + '</span>') +
+          : '<strong style="font-size:16px;line-height:1.3">' + esc(R.titulo) + '</strong><span style="font-size:14px;line-height:1.45;color:var(--suave)">' + esc(R.texto) + '</span>') +
         '</div></div>' + (reacao ? '' : '<div class="grade">' + botoes('btn') + '</div>') + '</div>';
     } else if (R.chave === 'rolagem2') {
       html = '<div id="fundo"></div><div id="cartao" class="sobe" role="dialog" aria-labelledby="t">' +
         '<div style="display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center">' + orbe(84, reacao ? reacao.humor : R.humor) +
         (reacao ? '<p style="margin:0;font-size:16px;line-height:1.5">' + esc(reacao.reacao) + '</p>'
-          : '<h1 id="t" style="margin:0;font-size:21px;line-height:1.25">' + esc(R.titulo) + '</h1><p style="margin:0;font-size:15px;line-height:1.5;color:#3D3456">' + esc(R.texto) + '</p>') +
+          : '<h1 id="t" style="margin:0;font-size:22px;line-height:1.2">' + esc(R.titulo) + '</h1><p style="margin:0;font-size:15px;line-height:1.5;color:var(--suave)">' + esc(R.texto) + '</p>') +
         '</div>' + (reacao ? '' : '<div style="display:flex;flex-direction:column;gap:8px">' + botoes('op') + '</div>') + '</div>';
     } else {
       html = '<div id="fundo" data-fora="1"></div><div id="cartao" class="sobe" role="dialog" aria-label="Recado da Zoe">' +
         '<div style="display:flex;align-items:center;gap:12px">' + orbe(52, reacao ? reacao.humor : R.humor) +
-        '<div style="flex:1;display:flex;flex-direction:column;gap:2px"><strong style="font-size:17px">Zoe</strong><span style="font-size:12px;color:var(--suave)">' + esc(R.contexto || '') + '</span></div>' +
+        '<div style="flex:1;display:flex;flex-direction:column;gap:2px"><strong class="titulo-z">Zoe</strong><span style="font-size:12px;color:var(--suave)">' + esc(R.contexto || '') + '</span></div>' +
         '<button class="fechar" data-fechar="1" aria-label="Fechar">' + X + '</button></div>' +
         '<p class="msg">' + esc(R.texto) + '</p>' +
         (reacao ? '<p class="msg eu">' + esc(reacao.escolha) + '</p><p class="msg">' + esc(reacao.reacao) + '</p>'
@@ -106,6 +105,14 @@ html,body{background:transparent!important;overflow:hidden}
     if (modo === 'topo') {
       var t = document.getElementById('topo');
       Z.altura(Math.ceil(t.getBoundingClientRect().height + 30));
+    }
+    // a Zoe reage: chega falando, desconfia da rolagem, comemora a resposta boa
+    var z = document.querySelector('#raiz .zoe');
+    if (z) {
+      var h = reacao ? reacao.humor : R.humor;
+      var anim = reacao ? (h === 'feliz' ? 'feliz' : (h === 'triste' ? 'murcha' : 'olhar'))
+        : (modo === 'bolha' ? 'falando' : (modo === 'topo' ? 'olhar' : (h === 'triste' ? 'murcha' : 'olhar')));
+      setTimeout(function () { ZoeAnim.tocar(z, anim); }, modo === 'bolha' && !reacao ? 450 : 200);
     }
   }
 

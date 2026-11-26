@@ -1,4 +1,4 @@
-# Zoe · app Android (v0.3)
+# Zoe · app Android (v0.4)
 
 Do [conceito](../CONCEITO.md) e da [Zoe de estudos](../INTELIGENCIA.md):
 
@@ -10,14 +10,21 @@ Do [conceito](../CONCEITO.md) e da [Zoe de estudos](../INTELIGENCIA.md):
 - **v0.3**: o app passa a se chamar **Zoe**, ganha animação de entrada e a **bolinha** (estilo chat head):
   recados fora do foco (livro parado, revisão, hábito pendente, trilha parada, sequência) e **aviso de rolagem**
   quando você passa muito tempo nos apps vigiados fora do foco. Fora do foco ela só avisa; nunca fecha o app.
+- **v0.4**: identidade nova, a **estufa da Zoe** ([IDENTIDADE.md](../IDENTIDADE.md)). A Zoe vira o **Broto** (corpo fosco
+  com um broto na cabeça que mostra o humor) e ganha **28 animações** com gatilhos no app (`zoe-anim.js`). Hábitos viram
+  vasos, a energia vira água, o foco fecha uma redoma ("estufa") e o resumo vira um diário. As abas passam a se chamar
+  Canteiro, Estudos, Estufa e Zoe.
 - **Sem voz**: a Zoe usa só texto e vibração.
-- **Leve**: o APK tem cerca de 95 KB. Usa só Kotlin e o WebView do sistema, sem bibliotecas extras.
+- **Leve**: o APK tem cerca de 270 KB (136 KB são as fontes, que ficam dentro do app porque ele funciona offline).
+  Usa só Kotlin e o WebView do sistema, sem bibliotecas extras.
 - **Privado**: hábitos, horários e uso dos apps ficam só no celular. A internet é usada só em Estudos, com o tema da trilha.
 - **Android 8.0 ou mais novo** (minSdk 26).
 
 ## Como instalar no celular
 
-1. Baixe `app/dist/zoe-0.3.0.apk` (ou gere com o comando abaixo).
+1. Baixe `app/dist/zoe-0.4.0.apk` (ou gere com o comando abaixo).
+   Se o celular tiver a v0.3.0 e o Android recusar a atualização ("app não instalado"), desinstale a versão antiga antes:
+   as duas foram assinadas com chaves de debug de máquinas diferentes.
 2. No celular, abra o arquivo e permita "instalar apps desta fonte" quando o Android pedir.
 3. Abra a Zoe Foco e siga as boas-vindas.
 

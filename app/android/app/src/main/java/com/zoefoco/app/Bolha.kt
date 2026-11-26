@@ -186,7 +186,7 @@ object Bolha {
             gravity = Gravity.CENTER
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
-                setColor(Color.argb(150, 22, 10, 51))
+                setColor(Color.argb(150, 34, 29, 51))
                 setStroke(dp(2), Color.WHITE)
             }
             contentDescription = "Solte aqui para dispensar"

@@ -72,6 +72,7 @@ window.ZoeEstudos = function (ctx) {
   function gerarPacote(t) {
     if (gerando[t.id]) return;
     gerando[t.id] = true; delete erros[t.id];
+    setTimeout(function () { ZoeAnim.tocar(ZoeAnim.principal(), 'pensando'); }, 150);
     var existentes = daTrilha(t.id).map(function (q) { return q.pergunta; });
     pedir('pacote', { trilha: t, existentes: existentes }, function (ok, dados) {
       delete gerando[t.id];
@@ -377,7 +378,7 @@ window.ZoeEstudos = function (ctx) {
       delete conversas[id]; salvarTudo();
       ctx.voltar();
     },
-    pilula: function (id) { iniciarPilula(id || null, false); ctx.abrir('pilula'); },
+    pilula: function (id) { iniciarPilula(id || null, false); ctx.abrir('pilula'); setTimeout(function () { ZoeAnim.tocar(ZoeAnim.principal(), 'lendo'); }, 120); },
     irEstudos: function () { pil = null; ctx.irAba('estudos'); },
     maisUma: function () { var troca = pil && pil.troca; iniciarPilula(null, false); pil.troca = troca; ctx.render(); },
     pilDica: function () { pil.dica = true; ctx.render(); },
@@ -417,6 +418,7 @@ window.ZoeEstudos = function (ctx) {
         }
         salvarTudo(); ctx.recarregar();
         window.scrollTo(0, document.body.scrollHeight);
+        if (ok && /obrigad|valeu|amei|te amo|você é demais|vc é demais/i.test(texto)) setTimeout(function () { ZoeAnim.tocar(ZoeAnim.principal(), 'coracoes'); }, 120);
         if (!ok) { var e2 = document.getElementById('msg'); if (e2) e2.value = texto; }
       });
     },
@@ -460,6 +462,7 @@ window.ZoeEstudos = function (ctx) {
     pil.recompensa = Z.recompensa(pts) ? '+' + pts + ' de energia para a Zoe' : 'Energia de estudo do dia já está no máximo';
     pil.acerto = acertou; pil.etapa = 'fim'; pil.feitas++;
     salvarTudo(); ctx.recarregar();
+    if (acertou || leitura) setTimeout(function () { ZoeAnim.tocar(ZoeAnim.principal(), acertou && !leitura ? 'eureka' : 'feliz'); }, 80);
   }
 
   document.addEventListener('input', function (e) {

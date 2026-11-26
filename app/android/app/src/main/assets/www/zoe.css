@@ -1,55 +1,147 @@
-/* Zoe · estilos compartilhados (app, peteleco e bolinha). Sem fontes externas. */
+/* Zoe · estilos compartilhados (app, peteleco e bolinha).
+   Identidade "estufa": lavanda + sálvia, papel com grão, letra de mão só nos recados da Zoe.
+   As fontes ficam dentro do app (pasta fontes/, licença OFL), porque ele funciona offline. */
+@font-face{font-family:"Figtree";font-weight:400;font-display:swap;src:url(fontes/figtree-latin-400-normal.woff2) format("woff2")}
+@font-face{font-family:"Figtree";font-weight:500 600;font-display:swap;src:url(fontes/figtree-latin-600-normal.woff2) format("woff2")}
+@font-face{font-family:"Figtree";font-weight:700 900;font-display:swap;src:url(fontes/figtree-latin-700-normal.woff2) format("woff2")}
+@font-face{font-family:"Bricolage Grotesque";font-weight:500 600;font-display:swap;src:url(fontes/bricolage-grotesque-latin-600-normal.woff2) format("woff2")}
+@font-face{font-family:"Bricolage Grotesque";font-weight:700 900;font-display:swap;src:url(fontes/bricolage-grotesque-latin-800-normal.woff2) format("woff2")}
+@font-face{font-family:"Caveat";font-weight:400 900;font-display:swap;src:url(fontes/caveat-latin-700-normal.woff2) format("woff2")}
+
 :root{
-  --lilas:#C9A7FF; --violeta:#6D28D9; --violeta-claro:#8B5CF6; --roxo:#5B21B6;
-  --noite:#160A33; --fundo:#F6F2FF; --tinta:#1E1336; --suave:#5E5478;
-  --borda:#E6DDFB; --borda-forte:#D9CCF5; --peteleco:#FF6B4A; --peteleco-escuro:#B3360F;
-  --ok:#1F7A4D;
+  /* papel e tinta */
+  --fundo:#EEEBF4; --papel:#FBFAFD; --tinta:#2B2540; --suave:#6B6480; --borda:#E0DCEA; --borda-forte:#D0CADF;
+  /* lavanda (você, escolhas) */
+  --lavanda:#8D78D6; --lavanda-escura:#6A58B8; --lavanda-bg:#E6E0F7; --lilas:#C9B9F2;
+  /* sálvia (o que cresce: hábitos, energia, fontes) */
+  --salvia:#6F9C7C; --folha:#93BC9C; --salvia-bg:#DDEBDF;
+  /* pêssego (cuidado, peteleco) */
+  --pessego:#E99A86; --peteleco:#E2846C; --peteleco-escuro:#A9503A; --pessego-bg:#F8E2DA;
+  --sol:#FFD98A; --barro:#C98B6B; --terra:#DCD2C8;
+  /* noite (estufa fechada) */
+  --noite:#2B2540; --noite-fundo:#221D33; --noite-tinta:#F3F0FA; --noite-suave:#C9C2DC;
+  --ok:#4F8A62;
+  /* nomes antigos, mantidos para o que ainda os usa */
+  --violeta:var(--lavanda); --violeta-claro:#A996E3; --roxo:var(--lavanda-escura);
+  --f-titulo:"Bricolage Grotesque","Figtree",system-ui,sans-serif;
+  --f-texto:"Figtree",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --f-mao:"Caveat","Segoe Print",cursive;
+  --grao:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .55  0 0 0 0 .5  0 0 0 0 .65  0 0 0 .16 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%}
-body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--tinta);background:var(--fundo);-webkit-font-smoothing:antialiased}
-h1,h2,h3{margin:0;font-weight:700;letter-spacing:-.01em}
+body{font-family:var(--f-texto);color:var(--tinta);background:var(--fundo);-webkit-font-smoothing:antialiased}
+h1,h2,h3{margin:0;font-family:var(--f-titulo);font-weight:600;letter-spacing:-.015em}
 button{font:inherit;color:inherit}
-a{color:var(--violeta)}
+a{color:var(--lavanda-escura)}
+.mao{font-family:var(--f-mao);font-weight:700}
 
-/* ---------- o orbe da Zoe ---------- */
-.orb{position:relative;flex:none;width:var(--s);height:var(--s);border-radius:50%;overflow:hidden;
-  background:radial-gradient(circle at 32% 26%,#C9A7FF 0%,#8B5CF6 38%,#5B21B6 72%,#2A0E5E 100%);
-  box-shadow:inset calc(var(--s)*-.05) calc(var(--s)*-.07) calc(var(--s)*.15) rgba(30,8,70,.55),
-    0 0 0 calc(var(--s)*.05) rgba(167,139,250,.18),
-    0 calc(var(--s)*.12) calc(var(--s)*.25) calc(var(--s)*-.08) rgba(124,58,237,.65)}
-.orb::before{content:"";position:absolute;z-index:2;left:20%;top:13%;width:28%;height:20%;border-radius:50%;
-  background:radial-gradient(closest-side,rgba(255,255,255,.95),rgba(255,255,255,0))}
-.orb::after{content:"";position:absolute;left:-20%;right:-20%;top:var(--nivel,64%);height:80%;border-radius:45%;
-  background:rgba(201,167,255,.3);animation:onda 6s linear infinite;transition:top .6s cubic-bezier(.3,1.4,.5,1)}
-@keyframes onda{to{transform:rotate(360deg)}}
-.face{position:absolute;z-index:3;inset:0;display:flex;justify-content:center;align-items:center;
-  gap:calc(var(--s)*.16);padding-bottom:calc(var(--s)*.04);transition:transform .4s}
-.eye{display:block;width:calc(var(--s)*.09);height:calc(var(--s)*.15);border-radius:999px;background:#F7F3FF;
-  box-shadow:0 0 calc(var(--s)*.06) rgba(247,243,255,.9);animation:piscar 5.5s infinite}
-@keyframes piscar{0%,46%,50%,100%{transform:scaleY(1)}48%{transform:scaleY(.1)}}
-.feliz .eye{width:calc(var(--s)*.13);height:calc(var(--s)*.065);background:none;box-shadow:none;
-  border:calc(var(--s)*.03) solid #F7F3FF;border-bottom:0;border-radius:999px 999px 0 0;animation:none}
-.foco .eye{height:calc(var(--s)*.1)}
-.sono .eye{height:calc(var(--s)*.025);width:calc(var(--s)*.12);animation:none}
-.brava .eye:first-child{clip-path:polygon(0 0,100% 40%,100% 100%,0 100%);animation:none}
-.brava .eye:last-child{clip-path:polygon(0 40%,100% 0,100% 100%,0 100%);animation:none}
-.triste .eye:first-child{clip-path:polygon(0 40%,100% 0,100% 100%,0 100%)}
-.triste .eye:last-child{clip-path:polygon(0 0,100% 40%,100% 100%,0 100%)}
-.pensa .face{transform:translate(calc(var(--s)*.08),calc(var(--s)*-.12))}
-.bochecha{position:absolute;z-index:3;top:60%;width:15%;height:8%;border-radius:50%;background:#FF8FB1;filter:blur(1.5px);opacity:0;transition:opacity .3s}
-.bochecha.e{left:16%}.bochecha.d{right:16%}
-.feliz .bochecha{opacity:.85}
-.brava .bochecha{opacity:.85;background:var(--peteleco)}
-.flutua{animation:flutua 4.5s ease-in-out infinite}
-@keyframes flutua{50%{transform:translateY(-6px)}}
-.respira{animation:respira 5s ease-in-out infinite}
-@keyframes respira{50%{transform:scale(1.04)}}
+/* =====================================================================
+   A ZOE (Broto). Tudo proporcional a --s.
+   Peças: .rig (flutua) > .tilt (pose) > .sq (pulo/achatar) > broto, corpo, rosto, bochechas, mãos.
+   Expressão por atributos: data-eyes, data-mouth, data-leaves, data-bead, data-hands, data-dim, data-flor.
+   ===================================================================== */
+.zoe{--s:120px;--fx:0;--fy:0;--rot:0deg;--tx:0;--ty:0;--ch:.45;--hlx:0;--hly:0;--hrx:0;--hry:0;--ink:#2B2442;
+  position:relative;flex:none;width:var(--s);height:calc(var(--s)*1.42);user-select:none;-webkit-user-select:none}
+.zoe .rig{position:absolute;left:0;right:0;bottom:calc(var(--s)*.1);height:var(--s);animation:z-flutua 6s ease-in-out infinite}
+.zoe.quieta .rig{animation:none}
+.zoe .tilt{position:absolute;inset:0;transform-origin:50% 92%;transform:translate(calc(var(--tx)*var(--s)),calc(var(--ty)*var(--s))) rotate(var(--rot));transition:transform .45s cubic-bezier(.3,1.3,.5,1)}
+.zoe .sq{position:absolute;inset:0;transform-origin:50% 100%}
+.zoe.respira .sq{animation:z-respira 5s ease-in-out infinite}
+.zoe .corpo{position:absolute;inset:0;overflow:hidden;z-index:1;border-radius:50% 50% 47% 47% / 56% 56% 44% 44%;
+  background:radial-gradient(circle at 38% 30%,#EEE7FC 0%,#CCBEF3 38%,#A996E3 74%,#8D7ACF 100%);
+  box-shadow:inset calc(var(--s)*-.05) calc(var(--s)*-.07) calc(var(--s)*.12) rgba(70,50,140,.32);animation:z-morfa 9s ease-in-out infinite;transition:filter .5s}
+.zoe .corpo::before{content:"";position:absolute;left:22%;top:12%;width:32%;height:20%;border-radius:50%;background:rgba(255,255,255,.55);filter:blur(calc(var(--s)*.05));z-index:2}
+.zoe .corpo::after{content:"";position:absolute;inset:0;border-radius:inherit;opacity:.3;mix-blend-mode:soft-light;z-index:3;
+  background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+/* água dentro dela = energia (--nivel vem do app) */
+.zoe .liq{position:absolute;left:-25%;right:-25%;top:var(--nivel,64%);height:95%;border-radius:44%;background:rgba(255,255,255,.17);animation:z-gira 7s linear infinite;transition:top 1s cubic-bezier(.3,1.3,.5,1);z-index:1}
+.zoe .broto{position:absolute;left:50%;bottom:91%;width:calc(var(--s)*.44);height:calc(var(--s)*.44);margin-left:calc(var(--s)*-.22);transform-origin:50% 100%;animation:z-balanca 4.5s ease-in-out infinite;z-index:0;transition:transform .7s}
+.zoe .broto svg{width:100%;height:100%;overflow:visible;display:block}
+.zoe .caule{fill:none;stroke:#6F9C7C;stroke-width:2.4;stroke-linecap:round}
+.zoe .folha{fill:#93BC9C;transition:transform .5s cubic-bezier(.3,1.5,.5,1),fill .4s}
+.zoe .folha.d{fill:#A9CDB0}
+.zoe .folha.e{transform-origin:20px 22px}.zoe .folha.d{transform-origin:21px 19px}
+.zoe .luz{fill:#FFE6A3;opacity:0;transition:opacity .3s}
+.zoe .flor{transform-box:fill-box;transform-origin:center;transform:scale(0)}
+.zoe .flor circle{fill:#F6B8C8}.zoe .flor .miolo{fill:#FFD98A}
+.zoe[data-flor] .flor{transform:scale(.8)}
+.zoe[data-flor] .luz{display:none}
+.zoe[data-leaves="open"] .folha.e{transform:rotate(-16deg) scale(1.12)}
+.zoe[data-leaves="open"] .folha.d{transform:rotate(16deg) scale(1.12)}
+.zoe[data-leaves="droop"] .broto{animation:none;transform:rotate(-34deg) translateY(4%)}
+.zoe[data-leaves="droop"] .folha.e{transform:rotate(30deg)}.zoe[data-leaves="droop"] .folha.d{transform:rotate(40deg)}
+.zoe[data-leaves="red"] .folha{fill:#E99A86}.zoe[data-leaves="red"] .folha.d{fill:#F0B1A0}
+.zoe[data-leaves="red"] .broto{animation:z-treme .25s linear infinite}
+.zoe[data-leaves="up"] .broto{animation:none}
+.zoe[data-leaves="up"] .folha.e{transform:rotate(18deg) scale(.95)}.zoe[data-leaves="up"] .folha.d{transform:rotate(-14deg) scale(.95)}
+.zoe[data-bead="on"] .luz{opacity:1;animation:z-acende 1.2s ease-in-out infinite}
+.zoe[data-dim] .corpo{filter:saturate(.65) brightness(.96)}
 
-.oculos{position:absolute;z-index:4;left:17%;right:17%;top:37%;height:24%;display:flex;justify-content:space-between;pointer-events:none}
-.oculos::before{content:"";position:absolute;left:38%;right:38%;top:40%;height:calc(var(--s)*.02);background:#1E1336}
-.oculos i{width:40%;height:100%;border-radius:50%;border:calc(var(--s)*.025) solid #1E1336;box-sizing:border-box;background:rgba(255,255,255,.08)}
+.zoe .rosto{position:absolute;left:50%;top:49%;width:calc(var(--s)*.54);height:calc(var(--s)*.36);z-index:4;
+  transform:translate(calc(-50% + var(--fx)*var(--s)),calc(-50% + var(--fy)*var(--s)));transition:transform .35s cubic-bezier(.3,1.3,.5,1)}
+.zoe .olho{position:absolute;top:12%;width:calc(var(--s)*.13);height:calc(var(--s)*.15)}
+.zoe .olho.e{left:6%}.zoe .olho.d{right:6%}
+.zoe .olho > *{position:absolute;inset:0;margin:auto;display:none}
+.zoe .olho .pill{width:calc(var(--s)*.07);height:calc(var(--s)*.105);background:var(--ink);border-radius:999px;animation:z-pisca 5.5s infinite}
+.zoe .olho .big{width:calc(var(--s)*.095);height:calc(var(--s)*.13);background:var(--ink);border-radius:999px}
+.zoe .olho .big::after{content:"";position:absolute;left:22%;top:16%;width:34%;height:26%;border-radius:50%;background:#fff}
+.zoe .olho .arc{width:calc(var(--s)*.095);height:calc(var(--s)*.05);border:max(1.5px,calc(var(--s)*.026)) solid var(--ink);border-bottom:0;border-radius:999px 999px 0 0}
+.zoe .olho .line{width:calc(var(--s)*.085);height:max(1.5px,calc(var(--s)*.02));background:var(--ink);border-radius:999px}
+.zoe .olho .focus{width:calc(var(--s)*.075);height:calc(var(--s)*.05);background:var(--ink);border-radius:999px}
+.zoe .olho .angry{width:calc(var(--s)*.075);height:calc(var(--s)*.09);background:var(--ink);border-radius:999px;clip-path:polygon(0 0,100% 38%,100% 100%,0 100%)}
+.zoe .olho .sad{width:calc(var(--s)*.075);height:calc(var(--s)*.09);background:var(--ink);border-radius:999px;clip-path:polygon(0 36%,100% 0,100% 100%,0 100%)}
+.zoe .olho.d .angry,.zoe .olho.d .sad,.zoe .olho.d .x{transform:scaleX(-1)}
+.zoe .olho svg{width:calc(var(--s)*.13);height:calc(var(--s)*.13);overflow:visible}
+.zoe .olho .heart path{fill:#F27C9A}
+.zoe .olho .heart{animation:z-pulsa .6s ease-in-out infinite}
+.zoe .olho .star path{fill:#FFC94D;stroke:#E8A93A;stroke-width:1}
+.zoe .olho .spiral{animation:z-gira 1s linear infinite}
+.zoe .olho .spiral path,.zoe .olho .x path{fill:none;stroke:var(--ink);stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.zoe[data-eyes="open"] .pill,.zoe[data-eyes="big"] .big,.zoe[data-eyes="happy"] .arc,.zoe[data-eyes="closed"] .line,.zoe[data-eyes="focus"] .focus,
+.zoe[data-eyes="angry"] .angry,.zoe[data-eyes="sad"] .sad,.zoe[data-eyes="heart"] .heart,.zoe[data-eyes="star"] .star,.zoe[data-eyes="spiral"] .spiral,.zoe[data-eyes="x"] .x,
+.zoe[data-eyes="wink"] .olho.e .line,.zoe[data-eyes="wink"] .olho.d .pill{display:block}
+.zoe .boca{position:absolute;left:50%;top:78%;width:0;height:0}
+.zoe .boca > *{position:absolute;left:0;top:0;transform:translate(-50%,-50%);display:none}
+.zoe .m-smile{width:calc(var(--s)*.1);height:calc(var(--s)*.05);border:max(1.5px,calc(var(--s)*.02)) solid var(--ink);border-top:0;border-radius:0 0 999px 999px}
+.zoe .m-o{width:calc(var(--s)*.06);height:calc(var(--s)*.07);border-radius:50%;background:var(--ink)}
+.zoe .m-open{width:calc(var(--s)*.12);height:calc(var(--s)*.13);border-radius:45% 45% 50% 50%;background:var(--ink);box-shadow:inset 0 calc(var(--s)*-.03) 0 #E88FA0}
+.zoe .m-flat{width:calc(var(--s)*.08);height:max(1.5px,calc(var(--s)*.018));border-radius:999px;background:var(--ink)}
+.zoe .m-wavy{width:calc(var(--s)*.14);height:calc(var(--s)*.05)}
+.zoe .m-wavy path{fill:none;stroke:var(--ink);stroke-width:2.4;stroke-linecap:round}
+.zoe .m-talk{width:calc(var(--s)*.07);height:calc(var(--s)*.03);border-radius:50%;background:var(--ink);animation:z-fala .22s ease-in-out infinite alternate}
+.zoe[data-mouth="smile"] .m-smile,.zoe[data-mouth="o"] .m-o,.zoe[data-mouth="open"] .m-open,.zoe[data-mouth="flat"] .m-flat,.zoe[data-mouth="wavy"] .m-wavy,.zoe[data-mouth="talk"] .m-talk{display:block}
+.zoe .bochechas{position:absolute;left:50%;top:66%;width:calc(var(--s)*.62);margin-left:calc(var(--s)*-.31);display:flex;justify-content:space-between;z-index:4;pointer-events:none}
+.zoe .bochechas b{width:calc(var(--s)*.14);height:calc(var(--s)*.075);border-radius:50%;background:#F29C8C;opacity:var(--ch);filter:blur(calc(var(--s)*.012));transition:opacity .4s,transform .4s}
+.zoe .mao-z{position:absolute;top:58%;width:calc(var(--s)*.16);height:calc(var(--s)*.13);border-radius:50%;z-index:5;opacity:0;
+  background:radial-gradient(circle at 40% 35%,#C8BAF2,#9D89DE);box-shadow:inset 0 calc(var(--s)*-.015) calc(var(--s)*.02) rgba(60,40,120,.25);
+  transition:opacity .25s,transform .4s cubic-bezier(.3,1.4,.5,1)}
+.zoe .mao-z.e{left:-7%;transform:translate(calc(var(--hlx)*var(--s)),calc(var(--hly)*var(--s)))}
+.zoe .mao-z.d{right:-7%;transform:translate(calc(var(--hrx)*var(--s)),calc(var(--hry)*var(--s)))}
+.zoe[data-hands="on"] .mao-z{opacity:1}
+.zoe .sombra{position:absolute;left:50%;bottom:calc(var(--s)*.04);width:calc(var(--s)*.6);height:calc(var(--s)*.08);margin-left:calc(var(--s)*-.3);border-radius:50%;
+  background:radial-gradient(closest-side,rgba(50,35,100,.26),transparent);animation:z-sombra 6s ease-in-out infinite}
+.zoe.quieta .sombra{animation:none}
+.zoe .fx{position:absolute;left:50%;top:55%;width:0;height:0;z-index:6;pointer-events:none}
+.zoe .fx > *{position:absolute;left:0;top:0}
+.zoe .prop{position:absolute;pointer-events:none}
+.zoe .oculos{position:absolute;left:-6%;top:2%;width:112%;z-index:5;pointer-events:none}
+.zoe .oculos svg{width:100%;display:block}
+.z-txt{font:700 calc(var(--s)*.2)/1 var(--f-mao);color:var(--lavanda);white-space:nowrap;transform:translate(-50%,-50%)}
+.z-bolha{background:#FFFFFF;color:#2B2540;font:700 calc(var(--s)*.16)/1 var(--f-mao);padding:calc(var(--s)*.05) calc(var(--s)*.08);border-radius:calc(var(--s)*.12) calc(var(--s)*.12) calc(var(--s)*.12) calc(var(--s)*.02);white-space:nowrap;box-shadow:0 4px 12px rgba(40,30,80,.12)}
+
+@keyframes z-flutua{0%,100%{transform:translateY(0)}50%{transform:translateY(calc(var(--s)*-.04))}}
+@keyframes z-sombra{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(.86);opacity:.7}}
+@keyframes z-respira{0%,100%{transform:scale(1)}50%{transform:scale(1.035,.97)}}
+@keyframes z-morfa{0%,100%{border-radius:50% 50% 47% 47% / 56% 56% 44% 44%}50%{border-radius:48% 52% 50% 46% / 53% 58% 42% 47%}}
+@keyframes z-gira{to{transform:rotate(360deg)}}
+@keyframes z-balanca{0%,100%{transform:rotate(-7deg)}50%{transform:rotate(7deg)}}
+@keyframes z-treme{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+@keyframes z-pisca{0%,91%,100%{transform:scaleY(1)}94%,96%{transform:scaleY(.08)}}
+@keyframes z-acende{0%,100%{opacity:.6;filter:drop-shadow(0 0 1px #FFE6A3)}50%{opacity:1;filter:drop-shadow(0 0 5px #FFD36B)}}
+@keyframes z-pulsa{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
+@keyframes z-fala{from{transform:translate(-50%,-50%) scale(1,.6)}to{transform:translate(-50%,-50%) scale(1.15,2.4)}}
 
 @media (prefers-reduced-motion:reduce){
-  .flutua,.respira,.orb::after,.eye,.treme,.dedo{animation:none!important}
+  .zoe *,.zoe *::before,.zoe *::after{animation:none!important;transition:none!important}
 }

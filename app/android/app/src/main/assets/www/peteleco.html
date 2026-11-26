@@ -5,32 +5,42 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Peteleco</title>
 <link rel="stylesheet" href="zoe.css">
+<script src="zoe-anim.js"></script>
 <style>
-body{background:rgba(22,10,51,.92);color:#F4EEFF;min-height:100%}
-.tela{min-height:100vh;display:flex;flex-direction:column;padding:40px 24px 24px;gap:20px}
+/* peteleco: uma folha de papel pêssego por cima do app vilão; no nível 3 a estufa fecha (noite) */
+body{background-color:rgba(248,226,218,.97);background-image:var(--grao),radial-gradient(110% 70% at 50% 32%,rgba(252,237,231,.9),rgba(243,207,194,.9));color:var(--tinta);min-height:100%}
+body.n3{background-color:rgba(34,29,51,.97);background-image:var(--grao),radial-gradient(120% 70% at 50% 28%,#3D3558 0%,rgba(34,29,51,.97) 62%);color:var(--noite-tinta)}
+.tela{min-height:100vh;display:flex;flex-direction:column;padding:40px 24px 24px;gap:18px}
 .passos{display:flex;justify-content:center;gap:8px}
-.passos i{width:28px;height:6px;border-radius:3px;background:rgba(255,255,255,.2)}
+.passos i{width:28px;height:7px;border-radius:0 7px 0 7px;background:rgba(169,80,58,.18)}
 .passos i.on{background:var(--peteleco)}
-.palco{position:relative;display:grid;place-items:center;height:240px}
-.titulo{text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px}
-.titulo h1{font-size:44px;line-height:1;color:var(--peteleco)}
-.titulo h1.calmo{color:#FFFFFF;font-size:28px;line-height:1.2}
-.fala{margin:0;font-size:19px;line-height:1.45;max-width:320px}
-.chip{display:inline-block;font-size:13px;font-weight:600;color:#FFB4A3;background:rgba(255,107,74,.14);padding:6px 12px;border-radius:999px}
+.n3 .passos i{background:rgba(255,255,255,.18)}.n3 .passos i.on{background:var(--pessego)}
+.palco{position:relative;display:flex;align-items:flex-end;justify-content:center;height:250px}
+.palco .terra{position:absolute;left:-24px;right:-24px;bottom:8px;height:40px;width:calc(100% + 48px)}
+.palco > .zoe{margin-bottom:20px;z-index:1}
+.vidro{position:absolute;bottom:22px;left:50%;width:190px;height:200px;margin-left:-95px;border-radius:95px 95px 14px 14px;border:1.5px solid rgba(255,255,255,.4);
+  background:linear-gradient(115deg,rgba(255,255,255,.18),rgba(255,255,255,.03) 40%,rgba(255,255,255,.08));z-index:2;animation:desce .9s .3s cubic-bezier(.3,1.2,.5,1) both}
+@keyframes desce{from{transform:translateY(-140px);opacity:0}70%{opacity:1}to{transform:none}}
+.titulo{text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
+.titulo h1{font:800 30px/1.05 var(--f-titulo);letter-spacing:-.02em}
+.titulo h1.mao{font:700 58px/1 var(--f-mao);color:var(--peteleco-escuro);letter-spacing:0}
+.n3 .titulo h1{font-size:26px;line-height:1.15}
+.fala{margin:0;font-size:18px;line-height:1.45;max-width:320px}
+.chip{display:inline-block;font-size:13px;font-weight:600;color:var(--peteleco-escuro);background:rgba(233,154,134,.22);padding:6px 12px;border-radius:999px}
 .acoes{margin-top:auto;display:flex;flex-direction:column;gap:10px}
-.btn{display:grid;place-items:center;min-height:56px;border-radius:16px;border:0;font-size:17px;font-weight:600;cursor:pointer}
-.btn.principal{background:#FFFFFF;color:var(--noite)}
-.btn.texto{background:transparent;color:#D9CCF5;font-size:15px;min-height:48px}
-.btn.troca{background:rgba(201,167,255,.16);border:1px solid rgba(201,167,255,.4);color:#FFFFFF;font-size:16px}
-.esgotada{margin:0;text-align:center;font-size:14px;color:#D9CCF5;padding:12px 0}
-.treme{animation:treme .5s cubic-bezier(.36,.07,.19,.97) .25s 2 both}
-@keyframes treme{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(4px)}30%,50%,70%{transform:translateX(-8px) rotate(-1deg)}40%,60%{transform:translateX(8px) rotate(1deg)}}
-.dedo{position:absolute;right:calc(50% - 150px);top:6px;animation:dedo .6s ease-out both}
-@keyframes dedo{from{opacity:0;transform:translate(-20px,10px) scale(.8)}to{opacity:1;transform:none}}
-.braco{position:absolute;height:24px;width:112px;border-radius:999px;background:linear-gradient(#D9C5FF,#A78BFA);box-shadow:0 4px 10px rgba(22,10,51,.5);left:calc(50% - 56px);top:150px}
-.cadeado{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,.08)}
-.caixa{background:rgba(255,255,255,.06);border:1px solid rgba(201,167,255,.2);border-radius:18px;padding:16px;font-size:14px;line-height:1.5;color:#D9CCF5}
-.caixa strong{color:#FFFFFF;display:block;margin-bottom:4px;font-size:15px}
+.btn{display:grid;place-items:center;min-height:56px;border-radius:18px;border:0;font:700 16.5px var(--f-texto);cursor:pointer;text-align:center;padding:0 16px}
+.btn.principal{background:var(--tinta);color:#FFFFFF}
+.n3 .btn.principal{background:var(--noite-tinta);color:var(--noite)}
+.btn.texto{background:transparent;color:var(--peteleco-escuro);font-size:14.5px;font-weight:600;min-height:48px}
+.n3 .btn.texto{color:var(--noite-suave)}
+.btn.troca{background:rgba(255,255,255,.55);box-shadow:inset 0 0 0 1.5px var(--lavanda);color:var(--lavanda-escura);font-size:15.5px}
+.n3 .btn.troca{background:rgba(255,255,255,.08);color:#fff;box-shadow:inset 0 0 0 1.5px rgba(201,185,242,.5)}
+.esgotada{margin:0;text-align:center;font-size:14px;color:var(--suave);padding:12px 0}
+.n3 .esgotada{color:var(--noite-suave)}
+.cadeado{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.1)}
+.caixa{border-top:1.5px dashed rgba(255,255,255,.2);padding-top:12px;font-size:14px;line-height:1.5;color:var(--noite-suave)}
+.caixa strong{color:#FFFFFF;display:block;margin-bottom:2px;font-size:15px}
+@media (prefers-reduced-motion:reduce){.vidro{animation:none}}
 </style>
 </head>
 <body>
@@ -68,37 +78,31 @@ body{background:rgba(22,10,51,.92);color:#F4EEFF;min-height:100%}
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
 
   var fala = preencher(escolher((falas[tom] || falas.firme)[nivel]));
-  var orbe = function (humor, s) {
-    return '<div class="orb ' + humor + '" style="--s:' + s + 'px" role="img" aria-label="Zoe ' + (humor === 'brava' ? 'brava' : 'séria') + '">' +
-      '<span class="bochecha e"></span><span class="bochecha d"></span><div class="face"><i class="eye"></i><i class="eye"></i></div></div>';
-  };
+  var orbe = function (humor, s) { return ZoeAnim.html(s, humor, { rotulo: 'Zoe ' + (humor === 'brava' ? 'brava' : 'séria') }); };
+  var TERRA = '<svg class="terra" viewBox="0 0 360 40" preserveAspectRatio="none" aria-hidden="true"><path d="M0 14 C45 4 90 18 135 10 S225 2 270 12 S335 16 360 8 V40 H0Z" fill="' + (nivel === 3 ? 'rgba(185,166,216,.25)' : 'rgba(201,139,107,.28)') + '"/></svg>';
   var passos = '<div class="passos" role="img" aria-label="Tentativa ' + nivel + ' de 3">' +
     [1, 2, 3].map(function (i) { return '<i class="' + (i <= nivel ? 'on' : '') + '"></i>'; }).join('') + '</div>';
 
   var html;
   if (nivel === 1) {
     html = passos +
-      '<div class="palco">' + orbe('foco flutua', 160) + '</div>' +
-      '<div class="titulo"><h1 id="titulo" class="calmo">Ei, é hora do foco</h1><p id="fala" class="fala">' + esc(fala) + '</p></div>' +
+      '<div class="palco">' + TERRA + orbe('foco', 150) + '</div>' +
+      '<div class="titulo"><h1 id="titulo">Ei, é hora da estufa</h1><p id="fala" class="fala">' + esc(fala) + '</p></div>' +
       '<div class="acoes"><button class="btn principal" id="ok">Tá bom, Zoe</button>' +
       '<button class="btn texto" id="emergencia">Preciso mesmo · 5 min</button></div>';
   } else if (nivel === 2) {
-    html = '<div class="treme" style="display:flex;flex-direction:column;gap:20px;flex:1">' + passos +
-      '<div class="palco">' + orbe('brava', 170) +
-      '<svg class="dedo" width="140" height="110" viewBox="0 0 140 110" aria-hidden="true">' +
-      '<path d="M8 96 C 40 92, 70 70, 96 36" fill="none" stroke="#C9A7FF" stroke-width="12" stroke-linecap="round" opacity=".35"/>' +
-      '<path d="M8 96 C 40 92, 70 70, 96 36" fill="none" stroke="#F7F3FF" stroke-width="5" stroke-linecap="round"/>' +
-      '<path d="M112 6 L116 22 M132 16 L120 26 M136 40 L122 36" stroke="#FF6B4A" stroke-width="4" stroke-linecap="round"/></svg></div>' +
-      '<div class="titulo"><h1 id="titulo">Peteleco!</h1><p id="fala" class="fala">' + esc(fala) + '</p>' +
-      '<span class="chip">Energia da Zoe −5 · na próxima, o app fica bloqueado</span></div>' +
+    html = passos +
+      '<div class="palco">' + TERRA + orbe('brava', 160) + '</div>' +
+      '<div class="titulo"><h1 id="titulo" class="mao">Peteleco!</h1><p id="fala" class="fala">' + esc(fala) + '</p>' +
+      '<span class="chip">Energia da Zoe −5 · na próxima, o app fica lá fora</span></div>' +
       '<div class="acoes"><button class="btn principal" id="ok">Tá bom, Zoe</button>' +
-      '<button class="btn texto" id="emergencia">Preciso mesmo · 5 min</button></div></div>';
+      '<button class="btn texto" id="emergencia">Preciso mesmo · 5 min</button></div>';
   } else {
     html = passos +
-      '<div class="palco">' + orbe('foco', 160) + '<i class="braco" style="transform:rotate(-16deg)"></i><i class="braco" style="transform:rotate(16deg)"></i></div>' +
-      '<div class="titulo"><span class="cadeado" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C9A7FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>' +
-      '<h1 id="titulo" class="calmo">' + esc(app) + ' bloqueado até as ' + esc(ate) + '</h1><p id="fala" class="fala">' + esc(fala) + '</p></div>' +
-      '<div class="caixa"><strong>Precisa mesmo?</strong>A emergência libera o app por 5 minutos. A Zoe perde 15 de energia e fica tristinha, mas nunca te prende.</div>' +
+      '<div class="palco"><div class="vidro"></div>' + TERRA + orbe('foco', 140) + '</div>' +
+      '<div class="titulo"><span class="cadeado" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#C9B9F2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>' +
+      '<h1 id="titulo">' + esc(app) + ' fica lá fora até as ' + esc(ate) + '</h1><p id="fala" class="fala">' + esc(fala) + '</p></div>' +
+      '<div class="caixa"><strong>Precisa mesmo?</strong>A emergência libera o app por 5 minutos. A Zoe perde 15 de energia e murcha um pouco, mas nunca te prende.</div>' +
       '<div class="acoes"><button class="btn principal" id="ok">Voltar para a tela inicial</button>' +
       '<button class="btn texto" id="emergencia">Usar emergência · 5 min</button></div>';
   }
@@ -109,6 +113,12 @@ body{background:rgba(22,10,51,.92);color:#F4EEFF;min-height:100%}
     return trocar + (emerg > 0 ? '<button class="btn texto" id="emergencia">' + txt + ' (' + emerg + (emerg === 1 ? ' restante' : ' restantes') + ')</button>' : sem);
   });
   document.getElementById('tela').innerHTML = html;
+  if (nivel === 3) document.body.classList.add('n3');
+  var zoe = document.querySelector('.palco .zoe');
+  if (nivel === 1) ZoeAnim.tocar(zoe, 'desconfiada');
+  if (nivel === 2) ZoeAnim.tocar(zoe, 'peteleco', { app: app }).then(function () { return ZoeAnim.tocar(zoe, 'brava'); });
+  if (nivel === 3) setTimeout(function () { ZoeAnim.tocar(zoe, 'vigia'); }, 1300);
+  ZoeAnim.vida({ gestos: function () { return nivel === 3 ? ['vigia'] : ['olhar']; } });
 
   var Z = window.Zoe || { ok: function () {}, emergencia: function () {}, pergunta: function () {} };
   document.getElementById('ok').onclick = function () { Z.ok(); };

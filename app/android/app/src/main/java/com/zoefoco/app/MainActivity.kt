@@ -46,12 +46,12 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Avisos.criarCanais(this)
-        // Começa no roxo-noite para emendar com a animação de entrada (index.html).
-        web = Web.criar(this, Ponte(), Web.NOITE) {
+        // Começa na cor da abertura para emendar com a animação de entrada (index.html).
+        web = Web.criar(this, Ponte(), Web.ABERTURA) {
             carregada = true
             abrirRotaPendente()
         }
-        setContentView(Web.moldura(this, web, Web.NOITE, iconesEscuros = false))
+        setContentView(Web.moldura(this, web, Web.ABERTURA, iconesEscuros = true))
         web.loadUrl("file:///android_asset/www/index.html")
         tratarIntent(intent)
 
@@ -231,7 +231,7 @@ class MainActivity : Activity() {
                 @Suppress("DEPRECATION")
                 window.statusBarColor = Web.FUNDO
                 @Suppress("DEPRECATION")
-                window.navigationBarColor = android.graphics.Color.WHITE
+                window.navigationBarColor = Web.PAPEL
             }
         }
 

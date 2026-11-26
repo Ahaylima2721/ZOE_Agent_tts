@@ -6,11 +6,15 @@
 <title>Zoe</title>
 <link rel="stylesheet" href="zoe.css">
 <link rel="stylesheet" href="app.css">
+<script src="zoe-anim.js"></script>
 </head>
 <body>
-<!-- Animação de entrada: o orbe nasce, enche de líquido, abre os olhos e diz o nome. -->
+<!-- Abertura: a Zoe brota da terra, abre os olhos e diz o nome. -->
 <div id="intro" aria-hidden="true">
-  <div class="intro-orb"><div class="orb" style="--s:150px"><span class="bochecha e"></span><span class="bochecha d"></span><div class="face"><i class="eye"></i><i class="eye"></i></div></div></div>
+  <div class="intro-chao">
+    <svg viewBox="0 0 260 36" preserveAspectRatio="none"><path d="M0 14 C40 4 90 18 130 10 S210 4 260 12 V36 H0Z" fill="#DCD2C8"/><path d="M0 14 C40 4 90 18 130 10 S210 4 260 12" fill="none" stroke="#C9B9AA" stroke-width="2" stroke-dasharray="3 5"/></svg>
+    <script>document.write(ZoeAnim.html(150, 'feliz', { quieta: true }));</script>
+  </div>
   <div class="intro-nome"><span>Z</span><span>o</span><span>e</span></div>
   <p class="intro-frase">cuidar de mim é cuidar de você</p>
 </div>

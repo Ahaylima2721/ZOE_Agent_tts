@@ -70,6 +70,10 @@ object Web {
         return f
     }
 
-    val NOITE = Color.parseColor("#160A33")
-    val FUNDO = Color.parseColor("#F6F2FF")
+    val NOITE = Color.parseColor("#221D33")
+    val FUNDO = Color.parseColor("#EEEBF4")
+    /** Cor da animação de entrada (a Zoe brotando da terra). */
+    val ABERTURA = Color.parseColor("#EEF1EC")
+    /** Cor da barra de abas (papel). */
+    val PAPEL = Color.parseColor("#FBFAFD")
 }
