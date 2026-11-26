@@ -619,7 +619,7 @@
       item('sub', 'resumo', I.grafico, 'Resumo do dia', 'Como foi hoje') +
       '</ul>' +
       '<p class="sub" style="display:flex;gap:8px;align-items:flex-start">' + ico(I.escudo, 18) + '<span>Privacidade: hábitos, horários e o uso dos apps ficam só neste celular. A internet é usada só em Estudos, e só com o tema da trilha.</span></p>' +
-      '<p class="sub" style="font-size:12px">Zoe 0.4.0</p></section>';
+      '<p class="sub" style="font-size:12px">Zoe 0.4.1</p></section>';
   }
 
   // ---------------- ações ----------------
@@ -787,11 +787,29 @@
   }
   var saiuEm = 0;
   document.addEventListener('visibilitychange', function () { if (document.hidden) saiuEm = Date.now(); });
+
+  // ---------------- virada do dia ----------------
+  // Os contadores do dia (mensagens, hábitos, petelecos, foco) ficam no Android por data; à meia-noite a tela relê tudo.
+  function diaDe(t) { var d = new Date(t); return d.getFullYear() + '-' + d.getMonth() + '-' + d.getDate(); }
+  var diaVisto = diaDe(Date.now());
+  function conferirDia() {
+    var hojeAgora = diaDe(Date.now());
+    if (hojeAgora === diaVisto) return;
+    diaVisto = hojeAgora;
+    recarregar();
+  }
+  (function agendarMeiaNoite() {
+    var agora = new Date(), meia = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() + 1, 0, 0, 5);
+    setTimeout(function () { conferirDia(); agendarMeiaNoite(); }, Math.min(meia - agora, 2147483000));
+  })();
+  setInterval(conferirDia, 60000); // garante a virada mesmo se o celular dormiu na hora exata
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) conferirDia(); });
   window.zoeVoltou = function () {
     var antes = S && S.perms.uso;
     carregar();
     if (S.onboarded && saiuEm && Date.now() - saiuEm > 3 * 3600e3 && !S.foco.ativo) animar('surpresa', null, 300);
     saiuEm = 0;
+    diaVisto = diaDe(Date.now());
     if (S.perms.uso && !antes) apps = null; // agora dá pra mostrar o tempo de uso
     render();
   };

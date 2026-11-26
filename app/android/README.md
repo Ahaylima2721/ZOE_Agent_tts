@@ -14,6 +14,9 @@ Do [conceito](../CONCEITO.md) e da [Zoe de estudos](../INTELIGENCIA.md):
   com um broto na cabeça que mostra o humor) e ganha **28 animações** com gatilhos no app (`zoe-anim.js`). Hábitos viram
   vasos, a energia vira água, o foco fecha uma redoma ("estufa") e o resumo vira um diário. As abas passam a se chamar
   Canteiro, Estudos, Estufa e Zoe.
+- **v0.4.1**: conserta os balões da conversa (a classe do balão colidia com a da Zoe), mostra uma mini Zoe pensando
+  enquanto a resposta não chega e redesenha o app à meia-noite, para os contadores do dia (mensagens, hábitos,
+  petelecos, foco) recomeçarem sem precisar fechar o app.
 - **Sem voz**: a Zoe usa só texto e vibração.
 - **Leve**: o APK tem cerca de 270 KB (136 KB são as fontes, que ficam dentro do app porque ele funciona offline).
   Usa só Kotlin e o WebView do sistema, sem bibliotecas extras.
@@ -22,7 +25,7 @@ Do [conceito](../CONCEITO.md) e da [Zoe de estudos](../INTELIGENCIA.md):
 
 ## Como instalar no celular
 
-1. Baixe `app/dist/zoe-0.4.0.apk` (ou gere com o comando abaixo).
+1. Baixe `app/dist/zoe-0.4.1.apk` (ou gere com o comando abaixo).
    Se o celular tiver a v0.3.0 e o Android recusar a atualização ("app não instalado"), desinstale a versão antiga antes:
    as duas foram assinadas com chaves de debug de máquinas diferentes.
 2. No celular, abra o arquivo e permita "instalar apps desta fonte" quando o Android pedir.

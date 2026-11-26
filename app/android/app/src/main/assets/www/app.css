@@ -111,7 +111,16 @@ textarea.entrada{height:auto;resize:none;font:inherit;line-height:1.45;padding:1
 .citacao{margin:0;padding-left:14px;border-left:3px solid var(--pessego);font-size:17px;line-height:1.45;font-style:italic}
 .dica{margin:0;font-size:14px;color:var(--suave);background:var(--fundo);border-radius:12px;padding:10px 12px}
 .msg{margin:0;max-width:86%;padding:12px 14px;font-size:15px;line-height:1.5;overflow-wrap:anywhere}
-.msg.zoe{align-self:flex-start;background:var(--papel);border-radius:20px 20px 20px 6px;box-shadow:0 1px 0 var(--borda)}
+.msg.dela{align-self:flex-start;background:var(--papel);border-radius:20px 20px 20px 6px;box-shadow:0 1px 0 var(--borda)}
+/* a Zoe pensando antes de responder */
+.pensando-chat{display:flex;align-items:flex-end;gap:6px;align-self:flex-start;margin-top:4px}
+.pensando-chat .zoe{margin-bottom:-6px}
+.pensando-chat .msg{display:flex;align-items:center;gap:5px;padding:8px 14px 10px;max-width:none}
+.pensando-chat .recado{font-size:19px;margin-right:2px}
+.pensando-chat .msg i{width:6px;height:6px;border-radius:50%;background:var(--lavanda);animation:pontinho 1.1s ease-in-out infinite}
+.pensando-chat .msg i:nth-of-type(2){animation-delay:.15s}.pensando-chat .msg i:nth-of-type(3){animation-delay:.3s}
+@keyframes pontinho{0%,100%{transform:translateY(0);opacity:.4}50%{transform:translateY(-4px);opacity:1}}
+@media (prefers-reduced-motion:reduce){.pensando-chat .msg i{animation:none}}
 .msg.eu{align-self:flex-end;background:var(--lavanda);color:#FFFFFF;border-radius:20px 20px 6px 20px}
 .msg .cod-bloco{margin-top:8px;font-size:13px}
 .chip-btn:disabled{opacity:.5}

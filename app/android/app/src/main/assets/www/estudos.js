@@ -300,11 +300,12 @@ window.ZoeEstudos = function (ctx) {
     if (!t) return telaEstudos(S);
     var hist = conversas[t.id] || [];
     var html = '<section class="tela" style="gap:12px">' +
-      cabecalho('Zoe · ' + esc(nomeTrilha(t)), 'Modo socrático · ' + S.ia.conversasRestantes + ' mensagens hoje') +
+      cabecalho('Zoe · ' + esc(nomeTrilha(t)), 'Modo socrático · ' + (S.ia.conversasRestantes > 0 ? 'restam ' + S.ia.conversasRestantes + (S.ia.conversasRestantes === 1 ? ' mensagem' : ' mensagens') + ' hoje' : 'mensagens de hoje esgotadas') + ' · renova à meia-noite') +
       '<div role="log" aria-label="Conversa" style="display:flex;flex-direction:column;gap:10px;flex:1">' +
-      '<p class="msg zoe">Sobre o que você quer pensar em <strong>' + esc(nomeTrilha(t)) + '</strong>? Pode mandar sua dúvida. Eu respondo com perguntas, pra você chegar lá sozinho.</p>' +
-      hist.map(function (m) { return '<p class="msg ' + (m.eu ? 'eu' : 'zoe') + '">' + (m.eu ? esc(m.texto) : formatar(m.texto)) + '</p>'; }).join('') +
-      (conv.enviando ? '<p class="msg zoe" aria-label="Zoe está pensando">…</p>' : '') +
+      '<p class="msg dela">Sobre o que você quer pensar em <strong>' + esc(nomeTrilha(t)) + '</strong>? Pode mandar sua dúvida. Eu respondo com perguntas, pra você chegar lá sozinho.</p>' +
+      hist.map(function (m) { return '<p class="msg ' + (m.eu ? 'eu' : 'dela') + '">' + (m.eu ? esc(m.texto) : formatar(m.texto)) + '</p>'; }).join('') +
+      (conv.enviando ? '<div class="pensando-chat" role="status" aria-label="Zoe está pensando">' + orbe(46, 'pensa') +
+        '<p class="msg dela"><span class="recado">pensando</span><i></i><i></i><i></i></p></div>' : '') +
       (conv.erro ? '<p class="erro" role="alert">' + esc(conv.erro) + '</p>' : '') + '</div>' +
       '<div class="chips">' + ['Me explica direto', 'Me dá um exemplo', 'Me faz uma pergunta'].map(function (c) {
         return '<button class="chip-btn" data-acao="enviar" data-arg="' + c + '"' + (conv.enviando ? ' disabled' : '') + '>' + c + '</button>';
@@ -406,6 +407,11 @@ window.ZoeEstudos = function (ctx) {
       hist.push({ eu: true, texto: texto });
       conv.enviando = true; conv.erro = '';
       ctx.render(); window.scrollTo(0, document.body.scrollHeight);
+      (function pensar() { // a mini Zoe pensa até a resposta chegar
+        var z = document.querySelector('.pensando-chat .zoe');
+        if (!z || !conv.enviando) return;
+        ZoeAnim.tocar(z, 'pensando', { semPontos: true }).then(function () { setTimeout(pensar, 150); });
+      })();
       pedir('conversa', { trilha: t, historico: hist }, function (ok, dados) {
         conv.enviando = false;
         if (ok) {

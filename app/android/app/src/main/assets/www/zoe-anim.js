@@ -218,8 +218,9 @@
       }
       v(z, { ty: 0, hly: 0, hry: 0, hlx: 0, hrx: 0 }); await W(500); pose(z, { eyes: 'happy' }); await W(400);
     },
-    pensando: async function (z) {
+    pensando: async function (z, d) {
       pose(z, { eyes: 'focus', bead: 'on' }); v(z, { fx: .07, fy: -.07, rot: '6deg' });
+      if (d && d.semPontos) { await W(1400); v(z, { fx: -.05, rot: '-4deg' }); await W(1200); piscar(z); await W(300); v(z, { fx: 0, fy: 0, rot: '0deg' }); return; }
       var t = Math.max(5, S(z) * .05);
       var b = prop(z, '<div style="display:flex;gap:4px">' + PONTO('#8D78D6', t) + PONTO('#8D78D6', t) + PONTO('#8D78D6', t) + '</div>', 'left:88%;top:-6%');
       [].forEach.call(b.querySelectorAll('i'), function (d, i) { A(d, [{ transform: 'translateY(0)', opacity: .4 }, { transform: 'translateY(-6px)', opacity: 1 }, { transform: 'translateY(0)', opacity: .4 }], { duration: 900, delay: i * 150, iterations: 3 }); });
